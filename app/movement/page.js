@@ -1,0 +1,47 @@
+import { redirect } from 'next/navigation';
+import { createClient } from '@/lib/supabase/server';
+import AppShell from '@/components/AppShell';
+import MovementClient from './MovementClient';
+
+export default async function MovementPage() {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) redirect('/login');
+
+  const today = new Date().toISOString().slice(0, 10);
+  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
+  const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+
+  const [
+    { data: profile },
+    { data: todaySteps },
+    { data: weekSteps },
+    { data: achievements },
+    { data: currentGoal },
+  ] = await Promise.all([
+    supabase.from('profiles')
+      .select('display_name, step_goal, step_streak, total_steps, last_step_date, activity_level')
+      .eq('id', user.id).single(),
+    supabase.from('daily_steps').select('steps, source, synced_at').eq('user_id', user.id).eq('step_date', today).single(),
+    supabase.from('daily_steps').select('step_date, steps').eq('user_id', user.id).gte('step_date', weekAgoStr).order('step_date'),
+    supabase.from('user_achievements')
+      .select('earned_at, achievements(slug, name, icon, description)')
+      .eq('user_id', user.id).order('earned_at', { ascending: false }).limit(5),
+    supabase.from('goals').select('step_target, started_at').eq('user_id', user.id).eq('is_current', true).single(),
+  ]);
+
+  return (
+    <AppShell>
+      <MovementClient
+        profile={profile || {}}
+        todaySteps={todaySteps?.steps || 0}
+        lastSync={todaySteps?.synced_at || null}
+        source={todaySteps?.source || null}
+        weekSteps={weekSteps || []}
+        recentAchievements={(achievements || []).map(a => ({ ...a.achievements, earned_at: a.earned_at }))}
+        currentGoal={currentGoal?.step_target || profile?.step_goal || 7500}
+        activityLevel={profile?.activity_level || null}
+      />
+    </AppShell>
+  );
+}
