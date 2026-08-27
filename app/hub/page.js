@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
-import HubClient from './HubClient';
+import HubClient from '@/app/HubClient';
 
 export default async function HubPage() {
   const supabase = await createClient();
