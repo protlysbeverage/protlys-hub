@@ -64,6 +64,12 @@ export default function ChallengesClient({ publicChallenges, myChallenges, myIds
     window.open(`https://wa.me/?text=${encodeURIComponent(`Join my Protlys challenge: ${challenge.name} — ${link}`)}`);
   }
 
+  function generateQR(challenge) {
+    const link = shareLink(challenge);
+    const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(link)}&color=1F7A45&bgcolor=E4F3EA`;
+    setSharePanel({ ...challenge, qrUrl });
+  }
+
   return (
     <>
       {toast && (
@@ -160,18 +166,27 @@ export default function ChallengesClient({ publicChallenges, myChallenges, myIds
                       <div style={{ fontSize:12, fontWeight:700, color:'var(--green-dark)', marginBottom:8 }}>
                         Invite friends
                       </div>
-                      <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
+                      <div style={{ display:'flex', gap:8, flexWrap:'wrap', marginBottom:8 }}>
                         <button className="btn-secondary" style={{ width:'auto', padding:'8px 14px', marginTop:0, fontSize:12 }}
                           onClick={() => copyLink(c)}>📋 Copy link</button>
                         <button className="btn-secondary" style={{ width:'auto', padding:'8px 14px', marginTop:0, fontSize:12 }}
                           onClick={() => shareWhatsApp(c)}>📲 WhatsApp</button>
-                        {navigator.share && (
+                        <button className="btn-secondary" style={{ width:'auto', padding:'8px 14px', marginTop:0, fontSize:12 }}
+                          onClick={() => generateQR(c)}>🔲 QR Code</button>
+                        {navigator?.share && (
                           <button className="btn-secondary" style={{ width:'auto', padding:'8px 14px', marginTop:0, fontSize:12 }}
                             onClick={() => navigator.share({ title: c.name, url: shareLink(c) })}>
-                            Share
+                            Share ↗
                           </button>
                         )}
                       </div>
+                      {sharePanel?.qrUrl && sharePanel?.id === c.id && (
+                        <div style={{ textAlign:'center', marginTop:8 }}>
+                          <img src={sharePanel.qrUrl} alt="QR Code"
+                            style={{ width:160, height:160, borderRadius:12, border:'2px solid var(--green)' }} />
+                          <p style={{ fontSize:11, color:'var(--ink-45)', marginTop:6 }}>Scan to join this challenge</p>
+                        </div>
+                      )}
                       <div style={{ fontSize:11, color:'var(--ink-45)', marginTop:8, wordBreak:'break-all' }}>
                         {shareLink(c)}
                       </div>

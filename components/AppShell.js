@@ -1,14 +1,13 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
-import { createClient } from '@/lib/supabase/client';
+import { usePathname } from 'next/navigation';
 
 const NAV_ITEMS = [
   {
     href: '/',
-    label: 'Hub',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="3"/></svg>,
+    label: 'Feed',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg>,
   },
   {
     href: '/movement',
@@ -21,9 +20,9 @@ const NAV_ITEMS = [
     icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2.5 4L17 12H4"/></svg>,
   },
   {
-    href: '/community',
-    label: 'Community',
-    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="8" cy="9" r="3.2"/><circle cx="16.5" cy="10" r="2.5"/><path d="M2.5 20c.6-3.4 3-5.4 5.5-5.4s4.9 2 5.5 5.4M14 20c.4-2.5 1.9-4.2 4-4.6c1.7-.3 3.3.4 4.5 1.7"/></svg>,
+    href: '/events',
+    label: 'Events',
+    icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>,
   },
   {
     href: '/account',
@@ -34,28 +33,25 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const router = useRouter();
-  const shopUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || '#';
-
-  async function handleLogout() {
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
-  }
+  const shopUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'https://protlys.com';
 
   return (
     <div className="protlys-app">
       <div className="app-shell">
+        {/* Header — logo only, shop link, no sign-out */}
         <div className="app-header">
-          <div className="wordmark display">PROT<span>LYS</span></div>
+          <a href={shopUrl} style={{ display: 'flex', alignItems: 'center', gap: 8, textDecoration: 'none' }}>
+            <img src="/logo.png" alt="Protlys" style={{ height: 36, width: 'auto', objectFit: 'contain' }}
+              onError={e => { e.target.style.display = 'none'; }} />
+          </a>
           <div className="header-icons">
-            <a className="icon-btn" href={shopUrl} aria-label="Shop on Protlys">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M6 2l1.5 5h9L18 2" /><path d="M3.5 7h17l-1.2 12.2a2 2 0 0 1-2 1.8H6.7a2 2 0 0 1-2-1.8L3.5 7z" /></svg>
+            {/* Return to store */}
+            <a className="icon-btn" href={shopUrl} aria-label="Return to Protlys store" title="Return to store">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                <polyline points="9 22 9 12 15 12 15 22"/>
+              </svg>
             </a>
-            <button className="icon-btn" onClick={handleLogout} aria-label="Log out">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4" /><polyline points="16 17 21 12 16 7" /><line x1="21" y1="12" x2="9" y2="12" /></svg>
-            </button>
           </div>
         </div>
 
