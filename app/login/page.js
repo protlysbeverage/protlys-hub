@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState, useEffect } from 'react';
+import { Suspense, useRef, useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
@@ -16,7 +16,7 @@ function Logo() {
   return <div style={{ textAlign:'center', marginBottom:32 }}><img src="/logo.png" alt="Protlys" style={{ width:120, height:'auto', objectFit:'contain' }} onError={e=>{e.target.style.display='none'}} /></div>;
 }
 
-export default function LoginPage() {
+function LoginPageContent() {
   const searchParams = useSearchParams();
   const emailRef = useRef();
   const passwordRef = useRef();
@@ -84,6 +84,16 @@ export default function LoginPage() {
       <form onSubmit={handleLogin}><div className="field-group"><label className="field-label" htmlFor="email">EMAIL</label><input id="email" ref={emailRef} type="email" required className="field-input" placeholder="you@example.com" autoComplete="email" /></div><div className="field-group"><div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:6 }}><label className="field-label" htmlFor="password" style={{ marginBottom:0 }}>PASSWORD</label><button type="button" onClick={()=>{setMode('forgot');setError('')}} style={linkStyle}>Forgot password?</button></div><div style={{ position:'relative' }}><input id="password" ref={passwordRef} type="password" required className="field-input" placeholder="Your password" autoComplete="current-password" style={{ paddingRight:48 }} /><button type="button" onClick={togglePw} style={{ position:'absolute', right:14, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', color:'var(--ink-45)', display:'flex', alignItems:'center', padding:0 }}><EyeIcon open={showPw} /></button></div></div>{error&&<div style={errStyle}>{error}</div>}<button className="btn-primary" type="submit" disabled={loading}>{loading?<Spinner/>:'Log in'}</button></form>
       <p style={{ textAlign:'center', marginTop:18, fontSize:14, color:'var(--ink-70)' }}>New to Protlys? <Link href="/signup" style={{ color:'var(--green-dark)', fontWeight:700 }}>Create an account</Link></p>
     </div></div><style>{`@keyframes spin{to{transform:rotate(360deg)}}`}</style></div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={
+      <div className="protlys-app"><div className="app-shell" style={{ justifyContent:'center' }}><div className="screen-pad"><Logo /><p style={{ textAlign:'center', color:'var(--ink-70)' }}>Loading…</p></div></div></div>
+    }>
+      <LoginPageContent />
+    </Suspense>
   );
 }
 
