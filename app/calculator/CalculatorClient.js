@@ -108,7 +108,21 @@ export default function CalculatorClient({ savedTarget }) {
         </div>
       </section>
 
-      <button className="btn-primary" style={{ marginTop: 18 }} onClick={calculate}>Calculate my protein target →</button>
+      <button
+        className="btn-primary"
+        style={{
+          marginTop: 18,
+          background: 'var(--berry, #D9486A)',
+          border: 'none',
+          boxShadow: '0 8px 20px rgba(217,72,106,.22)',
+          fontSize: 15,
+          fontWeight: 800,
+          minHeight: 50,
+        }}
+        onClick={calculate}
+      >
+        Calculate my protein target →
+      </button>
 
       {result && (
         <div style={{ marginTop: 26 }}>
