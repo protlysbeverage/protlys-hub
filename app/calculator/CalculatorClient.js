@@ -62,6 +62,12 @@ export default function CalculatorClient({ savedTarget }) {
     });
   }
 
+  const stepLabelStyle = {
+    fontSize: 13,
+    fontWeight: 800,
+    letterSpacing: '0.07em',
+  };
+
   return (
     <div className="screen-pad" style={{ maxWidth: 520, margin: '0 auto' }}>
       <span className="eyebrow">Protlys</span>
@@ -69,7 +75,7 @@ export default function CalculatorClient({ savedTarget }) {
       <p className="subhead">Based on peer-reviewed nutrition science. Takes 30 seconds — gives you a number you can actually use.</p>
 
       <section className="section-card" style={{ marginTop: 18 }}>
-        <span className="field-label">STEP 1 — YOUR WEIGHT</span>
+        <span className="field-label" style={stepLabelStyle}>STEP 1 — YOUR WEIGHT</span>
         <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
           <input id="weight" type="number" min="30" max="250" value={weight} onChange={(e) => setWeight(e.target.value)} className="field-input mono" style={{ fontSize: 28, fontWeight: 700, flex: 1 }} />
           <span className="mono" style={{ fontSize: 18, opacity: 0.55 }}>kg</span>
@@ -77,7 +83,7 @@ export default function CalculatorClient({ savedTarget }) {
       </section>
 
       <section className="section-card" style={{ marginTop: 14 }}>
-        <span className="field-label">STEP 2 — BIOLOGICAL SEX</span>
+        <span className="field-label" style={stepLabelStyle}>STEP 2 — BIOLOGICAL SEX</span>
         <div className="pill-select" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
           {SEX.map((item) => (
             <button key={item.v} className={`pill-opt${sex === item.v ? ' active' : ''}`} onClick={() => setSex(item.v)}>{item.label}</button>
@@ -86,7 +92,7 @@ export default function CalculatorClient({ savedTarget }) {
       </section>
 
       <section className="section-card" style={{ marginTop: 14 }}>
-        <span className="field-label">STEP 3 — ACTIVITY LEVEL</span>
+        <span className="field-label" style={stepLabelStyle}>STEP 3 — ACTIVITY LEVEL</span>
         <div className="pill-select" style={{ marginTop: 8 }}>
           {ACTIVITY.map((item) => (
             <button key={item.v} className={`pill-opt${activity === item.v ? ' active' : ''}`} onClick={() => setActivity(item.v)}>
@@ -98,7 +104,7 @@ export default function CalculatorClient({ savedTarget }) {
       </section>
 
       <section className="section-card" style={{ marginTop: 14 }}>
-        <span className="field-label">STEP 4 — YOUR GOAL</span>
+        <span className="field-label" style={stepLabelStyle}>STEP 4 — YOUR GOAL</span>
         <div className="pill-select" style={{ marginTop: 8 }}>
           {GOALS.map((item) => (
             <button key={item.id} className={`pill-opt${goal === item.id ? ' active' : ''}`} onClick={() => setGoal(item.id)}>
