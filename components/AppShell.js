@@ -52,6 +52,53 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C !important; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
+
+        /* Feed composer: make the post-type selector read as a control, not a post tag. */
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) {
+          position:relative;
+          display:flex !important;
+          gap:4px !important;
+          align-items:center;
+          padding:4px !important;
+          margin:18px 0 14px !important;
+          border:1px solid var(--line);
+          border-radius:12px;
+          background:var(--paper);
+          overflow-x:auto;
+          scrollbar-width:none;
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2)::-webkit-scrollbar { display:none; }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2)::before {
+          content:'POST TYPE';
+          flex:0 0 auto;
+          padding:0 7px 0 8px;
+          font-size:9px;
+          line-height:30px;
+          letter-spacing:.09em;
+          font-weight:850;
+          color:var(--ink-45);
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button {
+          flex:0 0 auto;
+          border:0 !important;
+          border-radius:8px !important;
+          padding:7px 11px !important;
+          min-height:30px;
+          background:transparent !important;
+          color:var(--ink-70) !important;
+          font-size:11.5px !important;
+          font-weight:750 !important;
+          transition:background .15s ease,color .15s ease,box-shadow .15s ease;
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:hover {
+          background:#fff !important;
+          color:var(--ink) !important;
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:first-of-type {
+          background:#fff !important;
+          color:var(--green-dark) !important;
+          box-shadow:0 1px 3px rgba(0,0,0,.08);
+        }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
