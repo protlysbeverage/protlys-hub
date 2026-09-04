@@ -3,6 +3,12 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import AccountClient from './AccountClient';
 
+function getShopUrl() {
+  const configured = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL?.trim();
+  if (!configured || configured.includes('yourstore.myshopify.com')) return 'https://protlys.com';
+  return configured.replace(/\/+$/, '');
+}
+
 export default async function AccountPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -19,14 +25,12 @@ export default async function AccountPage() {
       .order('earned_at', { ascending: false }),
   ]);
 
-  const shopUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'https://protlys.com';
-
   return (
     <AppShell>
       <AccountClient
         profile={profile || {}}
         achievements={achievements || []}
-        shopUrl={shopUrl}
+        shopUrl={getShopUrl()}
         email={user.email}
       />
     </AppShell>
