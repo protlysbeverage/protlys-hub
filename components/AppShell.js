@@ -52,45 +52,7 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C !important; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
-
-        /* Feed post type selector: compact horizontal scrolling pills. */
-        .protlys-app .feed-post-type-selector {
-          display:flex !important;
-          flex-wrap:nowrap !important;
-          gap:6px !important;
-          width:100%;
-          max-width:100%;
-          margin:10px 0 10px !important;
-          padding:0 0 1px !important;
-          box-sizing:border-box;
-          overflow-x:auto;
-          overflow-y:hidden;
-          scrollbar-width:none;
-          -webkit-overflow-scrolling:touch;
-        }
-        .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
-        .protlys-app .feed-post-type-selector button {
-          flex:0 0 auto;
-          width:auto;
-          min-width:max-content;
-          height:30px;
-          border:1px solid var(--line) !important;
-          border-radius:999px !important;
-          padding:5px 11px !important;
-          font-size:10.5px !important;
-          font-weight:750 !important;
-          line-height:18px !important;
-          white-space:nowrap;
-          text-align:center;
-          box-sizing:border-box;
-          background:#fff !important;
-          color:var(--ink-70) !important;
-          cursor:pointer;
-          transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease;
-        }
-        .protlys-app .feed-post-type-selector button[aria-pressed="true"] { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
-        .protlys-app .feed-post-type-selector button:hover { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
-        .protlys-app .feed-post-type-selector button:active { transform:scale(.98); }
+        .protlys-app .feed-image { display:block; width:100%; border-radius:12px; max-height:280px; object-fit:cover; }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
