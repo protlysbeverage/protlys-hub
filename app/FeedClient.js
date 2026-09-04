@@ -1,346 +1,462 @@
 'use client';
 
-import { useRef, useState, useTransition, useCallback } from 'react';
+import { useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFeedPostAction, toggleFeedLikeAction, addFeedCommentAction } from './feed-actions';
 
 const POST_TYPES = [
-  { value: 'progress', label: '📈 Progress update' },
-  { value: 'run',      label: '🏃 Run / Walk' },
-  { value: 'workout',  label: '💪 Workout' },
-  { value: 'milestone',label: '🏅 Milestone' },
-  { value: 'general',  label: '💬 General' },
+  { value: 'progress', label: 'Progress' },
+  { value: 'run', label: 'Run / Walk' },
+  { value: 'workout', label: 'Workout' },
+  { value: 'milestone', label: 'Milestone' },
+  { value: 'general', label: 'Post' },
 ];
 
-function Avatar({ name, url, size = 36 }) {
-  return url ? (
-    <img src={url} alt={name} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0 }} />
-  ) : (
-    <div style={{ width:size, height:size, borderRadius:'50%', background:'var(--green-soft)',
-      display:'flex', alignItems:'center', justifyContent:'center',
-      fontSize:size*0.4, fontWeight:700, color:'var(--green-dark)', flexShrink:0 }}>
-      {(name||'?')[0].toUpperCase()}
+function Icon({ name, size = 18, strokeWidth = 1.8 }) {
+  const paths = {
+    image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M3 16l5-5 4 4 3-3 6 6" /></>,
+    chart: <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
+    heart: <path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" />,
+    message: <path d="M20 11.5a7.5 7.5 0 0 1-7.7 7.5 8.5 8.5 0 0 1-3.4-.7L4 20l1.3-3.7A7.2 7.2 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5h.5A7.5 7.5 0 0 1 20 11.5Z" />,
+    x: <><path d="M6 6l12 12" /><path d="M18 6 6 18" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
+  };
+  return (
+    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
+      strokeWidth={strokeWidth} strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+      {paths[name]}
+    </svg>
+  );
+}
+
+function Avatar({ name, url, size = 40 }) {
+  if (url) {
+    return <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />;
+  }
+  return (
+    <div style={{
+      width: size, height: size, borderRadius: '50%', background: 'var(--green-soft)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center',
+      fontSize: size * 0.38, fontWeight: 800, color: 'var(--green-dark)', flexShrink: 0
+    }}>
+      {(name || '?')[0].toUpperCase()}
     </div>
   );
 }
 
 function timeAgo(ts) {
-  const s = Math.round((Date.now() - new Date(ts)) / 1000);
-  if (s < 60) return 'just now';
-  if (s < 3600) return Math.round(s/60) + 'm ago';
-  if (s < 86400) return Math.round(s/3600) + 'h ago';
-  return Math.round(s/86400) + 'd ago';
+  const seconds = Math.max(0, Math.round((Date.now() - new Date(ts)) / 1000));
+  if (seconds < 60) return 'Just now';
+  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
+  return `${Math.round(seconds / 86400)}d`;
 }
 
-// Isolated comment input — own state, no parent re-render on type
+function StatChip({ label, value }) {
+  return (
+    <div style={{
+      border: '1px solid var(--line)', borderRadius: 10, padding: '7px 9px',
+      background: 'var(--paper)', minWidth: 88
+    }}>
+      <div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 800, color: 'var(--ink-45)' }}>{label}</div>
+      <div className="mono" style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink)', marginTop: 2 }}>{value}</div>
+    </div>
+  );
+}
+
+async function prepareImage(file) {
+  const maxSide = 1600;
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.round(bitmap.width * scale);
+  canvas.height = Math.round(bitmap.height * scale);
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = reject;
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.readAsDataURL(blob);
+  });
+  return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.jpg`, type: 'image/jpeg' };
+}
+
 function CommentInput({ postId, onDone }) {
-  const ref = useRef();
+  const ref = useRef(null);
   const [loading, setLoading] = useState(false);
 
   async function submit() {
     const body = ref.current?.value?.trim();
-    if (!body) return;
+    if (!body || loading) return;
     setLoading(true);
-    await addFeedCommentAction({ postId, body });
-    ref.current.value = '';
+    const result = await addFeedCommentAction({ postId, body });
     setLoading(false);
+    if (result?.error) return;
+    ref.current.value = '';
     onDone();
   }
 
   return (
-    <div style={{ display:'flex', gap:8, marginTop:10 }}>
-      <input ref={ref} type="text" className="field-input"
-        style={{ flex:1, padding:'9px 12px', fontSize:13 }}
-        placeholder="Write a comment…"
+    <div style={{ display: 'flex', gap: 8, marginTop: 10 }}>
+      <input ref={ref} className="field-input" type="text" placeholder="Write a comment"
+        style={{ flex: 1, padding: '9px 12px', fontSize: 13 }}
         onKeyDown={e => e.key === 'Enter' && submit()} />
-      <button className="btn-primary" onClick={submit} disabled={loading}
-        style={{ width:'auto', padding:'9px 14px', marginTop:0, fontSize:13 }}>
-        {loading ? '…' : 'Post'}
+      <button className="btn-secondary" onClick={submit} disabled={loading}
+        style={{ width: 'auto', padding: '9px 14px', marginTop: 0, fontSize: 13 }}>
+        {loading ? 'Posting…' : 'Post'}
       </button>
     </div>
   );
 }
 
-// Compose form — isolated so it never re-renders the feed
-function ComposePost({ profile, userId, onPosted }) {
-  const bodyRef     = useRef();
-  const fileRef     = useRef();
-  const [postType, setPostType]   = useState('progress');
-  const [preview, setPreview]     = useState(null);
-  const [imageFile, setImageFile] = useState(null);
-  const [stats, setStats]         = useState({ steps:'', distance:'', duration:'' });
-  const [loading, setLoading]     = useState(false);
-  const [error, setError]         = useState('');
+function ComposePost({ profile, onPosted }) {
+  const bodyRef = useRef(null);
+  const fileRef = useRef(null);
+  const [postType, setPostType] = useState('progress');
+  const [preview, setPreview] = useState(null);
+  const [imageData, setImageData] = useState(null);
+  const [stats, setStats] = useState({ steps: '', distance: '', duration: '' });
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
   const [showStats, setShowStats] = useState(false);
 
   function handleFile(e) {
-    const f = e.target.files?.[0];
-    if (!f) return;
-    setImageFile(f);
-    setPreview(URL.createObjectURL(f));
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (!file.type.startsWith('image/')) {
+      setError('Please choose an image file.');
+      return;
+    }
+    setError('');
+    setPreview(URL.createObjectURL(file));
+    prepareImage(file).then(setImageData).catch(() => setError('Could not prepare that photo.'));
   }
 
   const handleStatChange = useCallback((key) => (e) => {
-    setStats(s => ({ ...s, [key]: e.target.value }));
+    setStats(current => ({ ...current, [key]: e.target.value }));
   }, []);
 
   async function handlePost() {
     const body = bodyRef.current?.value?.trim();
-    if (!body && !imageFile) { setError('Add a caption or photo'); return; }
-    setError('');
+    if (!body && !imageData) {
+      setError('Add a caption or photo before posting.');
+      return;
+    }
+
     setLoading(true);
+    setError('');
 
     const statsData = (stats.steps || stats.distance || stats.duration)
       ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null }
       : null;
 
-    let imageBase64 = null;
-    if (imageFile) {
-      imageBase64 = await new Promise(resolve => {
-        const reader = new FileReader();
-        reader.onload = e => resolve(e.target.result.split(',')[1]);
-        reader.readAsDataURL(imageFile);
-      });
-    }
-
     const result = await createFeedPostAction({
-      body, postType, stats: statsData, imageBase64,
-      imageName: imageFile?.name, imageType: imageFile?.type,
+      body,
+      postType,
+      stats: statsData,
+      imageBase64: imageData?.base64 || null,
+      imageName: imageData?.name || null,
+      imageType: imageData?.type || null,
     });
 
     setLoading(false);
-    if (result?.error) { setError(result.error); return; }
+    if (result?.error) {
+      setError(result.error);
+      return;
+    }
+
     if (bodyRef.current) bodyRef.current.value = '';
+    if (preview) URL.revokeObjectURL(preview);
     setPreview(null);
-    setImageFile(null);
-    setStats({ steps:'', distance:'', duration:'' });
+    setImageData(null);
+    setStats({ steps: '', distance: '', duration: '' });
     setShowStats(false);
+    if (fileRef.current) fileRef.current.value = '';
     onPosted();
   }
 
   return (
-    <div style={{ background:'#fff', borderRadius:18, padding:16, marginBottom:14,
-      border:'1.5px solid var(--line)', boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
-
-      <div style={{ display:'flex', gap:10, marginBottom:12 }}>
+    <div style={{
+      background: '#fff', borderRadius: 18, padding: 16, marginBottom: 14,
+      border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(0,0,0,.04)'
+    }}>
+      <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}>
         <Avatar name={profile?.display_name} url={profile?.avatar_url} />
-        <textarea ref={bodyRef} placeholder="Share your progress, run or milestone…"
-          style={{ flex:1, border:'none', outline:'none', fontSize:14, lineHeight:1.5,
-            fontFamily:'inherit', resize:'none', minHeight:70, color:'var(--ink)',
-            background:'transparent' }} />
+        <textarea ref={bodyRef} placeholder="Share your progress with the community…"
+          style={{
+            flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5,
+            fontFamily: 'inherit', resize: 'none', minHeight: 72, color: 'var(--ink)',
+            background: 'transparent'
+          }} />
       </div>
 
-      {/* Post type */}
-      <div style={{ display:'flex', gap:6, overflowX:'auto', marginBottom:12, paddingBottom:2 }}>
-        {POST_TYPES.map(t => (
-          <button key={t.value} onClick={() => setPostType(t.value)}
-            style={{ border: postType === t.value ? '2px solid var(--green)' : '2px solid var(--line)',
-              background: postType === t.value ? 'var(--green-soft)' : '#fff',
-              borderRadius:999, padding:'6px 12px', fontSize:12, fontWeight:700,
-              cursor:'pointer', whiteSpace:'nowrap', color: postType === t.value ? 'var(--green-dark)' : 'var(--ink-70)',
-              flexShrink:0 }}>
-            {t.label}
-          </button>
+      <div style={{ display: 'flex', gap: 6, overflowX: 'auto', marginBottom: 12, paddingBottom: 2 }}>
+        {POST_TYPES.map(type => (
+          <button key={type.value} onClick={() => setPostType(type.value)} style={{
+            border: postType === type.value ? '1.5px solid var(--green)' : '1.5px solid var(--line)',
+            background: postType === type.value ? 'var(--green-soft)' : '#fff',
+            borderRadius: 999, padding: '7px 12px', fontSize: 12, fontWeight: 700,
+            cursor: 'pointer', whiteSpace: 'nowrap', color: postType === type.value ? 'var(--green-dark)' : 'var(--ink-70)'
+          }}>{type.label}</button>
         ))}
       </div>
 
-      {/* Image preview */}
       {preview && (
-        <div style={{ position:'relative', marginBottom:12 }}>
-          <img src={preview} alt="preview" style={{ width:'100%', borderRadius:12, maxHeight:220, objectFit:'cover' }} />
-          <button onClick={() => { setPreview(null); setImageFile(null); fileRef.current.value=''; }}
-            style={{ position:'absolute', top:8, right:8, background:'rgba(0,0,0,.6)', border:'none',
-              color:'#fff', borderRadius:'50%', width:28, height:28, cursor:'pointer', fontSize:16 }}>✕</button>
+        <div style={{ position: 'relative', marginBottom: 12 }}>
+          <img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} />
+          <button onClick={() => {
+            URL.revokeObjectURL(preview);
+            setPreview(null); setImageData(null);
+            if (fileRef.current) fileRef.current.value = '';
+          }} aria-label="Remove photo"
+            style={{
+              position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%',
+              border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer'
+            }}>
+            <Icon name="x" size={16} />
+          </button>
         </div>
       )}
 
-      {/* Stats overlay fields */}
       {showStats && (
-        <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:8, marginBottom:12 }}>
-          {[['steps','Steps','👟'],['distance','Distance (km)','📍'],['duration','Duration','⏱']].map(([key,label,icon]) => (
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>
+          {[
+            ['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']
+          ].map(([key, label]) => (
             <div key={key}>
-              <label style={{ fontSize:10, fontWeight:700, color:'var(--ink-45)', display:'block', marginBottom:3 }}>
-                {icon} {label.toUpperCase()}
+              <label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>
+                {label.toUpperCase()}
               </label>
-              <input type="text" value={stats[key]} onChange={handleStatChange(key)}
-                className="field-input" style={{ padding:'8px 10px', fontSize:13 }} placeholder="—" />
+              <input className="field-input" type="text" value={stats[key]} onChange={handleStatChange(key)}
+                style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" />
             </div>
           ))}
         </div>
       )}
 
-      {error && <div style={{ fontSize:13, color:'#B3261E', marginBottom:8 }}>{error}</div>}
+      {error && <div style={{ fontSize: 13, color: '#B3261E', marginBottom: 10 }}>{error}</div>}
 
-      {/* Action bar */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8 }}>
-        <div style={{ display:'flex', gap:8 }}>
-          <button onClick={() => fileRef.current?.click()}
-            style={{ background:'none', border:'1.5px solid var(--line)', borderRadius:10,
-              padding:'8px 12px', fontSize:12, fontWeight:700, cursor:'pointer',
-              color:'var(--ink-70)', display:'flex', alignItems:'center', gap:5 }}>
-            📷 Photo
+      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8 }}>
+        <div style={{ display: 'flex', gap: 8 }}>
+          <button onClick={() => fileRef.current?.click()} className="btn-secondary"
+            style={{ width: 'auto', padding: '8px 12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6 }}>
+            <Icon name="image" size={16} /> Photo
           </button>
-          <button onClick={() => setShowStats(v => !v)}
-            style={{ background: showStats ? 'var(--green-soft)' : 'none',
-              border: showStats ? '1.5px solid var(--green)' : '1.5px solid var(--line)',
-              borderRadius:10, padding:'8px 12px', fontSize:12, fontWeight:700,
-              cursor:'pointer', color: showStats ? 'var(--green-dark)' : 'var(--ink-70)' }}>
-            📊 Stats
+          <button onClick={() => setShowStats(value => !value)} className="btn-secondary"
+            style={{
+              width: 'auto', padding: '8px 12px', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6,
+              background: showStats ? 'var(--green-soft)' : undefined
+            }}>
+            <Icon name="chart" size={16} /> Activity
           </button>
         </div>
         <button className="btn-primary" onClick={handlePost} disabled={loading}
-          style={{ width:'auto', padding:'9px 18px', marginTop:0 }}>
+          style={{ width: 'auto', padding: '9px 18px', marginTop: 0 }}>
           {loading ? 'Posting…' : 'Post'}
         </button>
       </div>
 
-      <input ref={fileRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleFile} />
+      <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
+    </div>
+  );
+}
+
+function EmptyState() {
+  return (
+    <div style={{
+      textAlign: 'center', padding: '38px 20px', background: '#fff', borderRadius: 18,
+      border: '1.5px solid var(--line)'
+    }}>
+      <div style={{
+        width: 44, height: 44, margin: '0 auto 12px', borderRadius: 12,
+        background: 'var(--green-soft)', color: 'var(--green-dark)',
+        display: 'flex', alignItems: 'center', justifyContent: 'center'
+      }}>
+        <Icon name="image" size={21} />
+      </div>
+      <div style={{ fontWeight: 800, marginBottom: 5 }}>Start the conversation</div>
+      <p className="subhead" style={{ margin: 0 }}>Share a workout, walk, milestone or photo with the community.</p>
     </div>
   );
 }
 
 export default function FeedClient({ posts, likedIds, userId, profile }) {
   const router = useRouter();
-  const [liked, setLiked]       = useState(new Set(likedIds));
+  const [liked, setLiked] = useState(new Set(likedIds));
   const [commenting, setCommenting] = useState(null);
-  const [toast, setToast]       = useState('');
+  const [toast, setToast] = useState('');
 
-  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2600); }
+  function showToast(message) {
+    setToast(message);
+    window.clearTimeout(showToast.timer);
+    showToast.timer = window.setTimeout(() => setToast(''), 2200);
+  }
 
   async function handleLike(postId) {
-    setLiked(prev => { const s = new Set(prev); s.has(postId) ? s.delete(postId) : s.add(postId); return s; });
-    await toggleFeedLikeAction({ postId });
+    const wasLiked = liked.has(postId);
+    setLiked(current => {
+      const next = new Set(current);
+      if (next.has(postId)) next.delete(postId);
+      else next.add(postId);
+      return next;
+    });
+
+    const result = await toggleFeedLikeAction({ postId });
+    if (result?.error) {
+      setLiked(current => {
+        const next = new Set(current);
+        if (wasLiked) next.add(postId);
+        else next.delete(postId);
+        return next;
+      });
+      showToast(result.error);
+      return;
+    }
+
     router.refresh();
   }
 
   function handlePosted() {
-    showToast('Posted! 🎉');
+    showToast('Your post is live.');
     router.refresh();
   }
 
   return (
     <>
       {toast && (
-        <div style={{ position:'fixed', bottom:80, left:'50%', transform:'translateX(-50%)',
-          background:'var(--ink)', color:'#fff', borderRadius:999, padding:'10px 18px',
-          fontSize:13, fontWeight:600, zIndex:999, whiteSpace:'nowrap', pointerEvents:'none' }}>
-          {toast}
-        </div>
+        <div style={{
+          position: 'fixed', bottom: 82, left: '50%', transform: 'translateX(-50%)',
+          background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px',
+          fontSize: 13, fontWeight: 700, zIndex: 999, whiteSpace: 'nowrap', pointerEvents: 'none'
+        }}>{toast}</div>
       )}
 
       <div className="screen-pad">
-        <span className="eyebrow">Progress Feed</span>
-        <h1 style={{ fontSize:22 }}>What's happening</h1>
+        <span className="eyebrow">Community</span>
+        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Progress Feed</h1>
+        <p className="subhead">Share the work. Follow the progress. Keep moving.</p>
       </div>
 
-      <div className="screen-pad" style={{ paddingTop:8 }}>
+      <div className="screen-pad" style={{ paddingTop: 10 }}>
+        <ComposePost profile={profile} onPosted={handlePosted} />
 
-        <ComposePost profile={profile} userId={userId} onPosted={handlePosted} />
-
-        {posts.length === 0 && (
-          <div style={{ textAlign:'center', padding:'32px 0' }}>
-            <div style={{ fontSize:40, marginBottom:12 }}>🌱</div>
-            <p className="subhead">No posts yet. Be the first to share your progress!</p>
-          </div>
-        )}
+        {posts.length === 0 && <EmptyState />}
 
         {posts.map(post => {
           const likeCount = post.feed_likes?.[0]?.count || 0;
-          const isLiked   = liked.has(post.id);
-          const comments  = post.feed_comments || [];
-          const stats     = post.stats;
+          const isLiked = liked.has(post.id);
+          const comments = post.feed_comments || [];
+          const stats = post.stats;
 
           return (
-            <div key={post.id} style={{ background:'#fff', borderRadius:18, marginBottom:12,
-              border:'1.5px solid var(--line)', overflow:'hidden',
-              boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
-
-              {/* Header */}
-              <div style={{ display:'flex', alignItems:'center', gap:10, padding:'14px 14px 10px' }}>
-                <Avatar name={post.profiles?.display_name} url={post.profiles?.avatar_url} />
-                <div style={{ flex:1 }}>
-                  <div style={{ fontSize:13, fontWeight:700, color:'var(--ink)' }}>
+            <article key={post.id} id={`post-${post.id}`} style={{
+              background: '#fff', borderRadius: 18, marginBottom: 12,
+              border: '1.5px solid var(--line)', overflow: 'hidden',
+              boxShadow: '0 2px 8px rgba(0,0,0,.04)'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 14px 11px' }}>
+                <Avatar name={post.profiles?.display_name} url={post.profiles?.avatar_url} size={40} />
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>
                     {post.profiles?.display_name || 'Member'}
                   </div>
-                  <div style={{ fontSize:11, color:'var(--ink-45)' }}>
-                    {timeAgo(post.created_at)}
+                  <div style={{ fontSize: 11, color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                    <span>{timeAgo(post.created_at)}</span>
                     {post.post_type !== 'general' && (
-                      <span style={{ marginLeft:6, background:'var(--green-soft)', color:'var(--green-dark)',
-                        padding:'1px 6px', borderRadius:999, fontSize:10, fontWeight:700 }}>
-                        {POST_TYPES.find(t => t.value === post.post_type)?.label || post.post_type}
+                      <span style={{
+                        background: 'var(--green-soft)', color: 'var(--green-dark)',
+                        padding: '2px 7px', borderRadius: 999, fontSize: 10, fontWeight: 800
+                      }}>
+                        {POST_TYPES.find(type => type.value === post.post_type)?.label || post.post_type}
                       </span>
                     )}
                   </div>
                 </div>
+                <button aria-label="Post options" style={{
+                  border: 'none', background: 'transparent', color: 'var(--ink-45)', padding: 4, cursor: 'pointer'
+                }}>
+                  •••
+                </button>
               </div>
 
-              {/* Photo */}
-              {post.image_url && (
-                <img src={post.image_url} alt="" style={{ width:'100%', maxHeight:300, objectFit:'cover' }} />
+              {post.body && (
+                <p style={{ fontSize: 14, color: 'var(--ink)', lineHeight: 1.6, margin: '0 14px 12px' }}>{post.body}</p>
               )}
 
-              {/* Stats chips */}
+              {post.image_url && (
+                <img src={post.image_url} alt="" style={{ width: '100%', maxHeight: 360, objectFit: 'cover', display: 'block' }} />
+              )}
+
               {stats && (
-                <div style={{ display:'flex', gap:8, padding:'10px 14px 0', flexWrap:'wrap' }}>
-                  {stats.steps    && <StatChip icon="👟" label="Steps"    value={Number(stats.steps).toLocaleString()} />}
-                  {stats.distance && <StatChip icon="📍" label="Distance" value={stats.distance + ' km'} />}
-                  {stats.duration && <StatChip icon="⏱"  label="Time"     value={stats.duration} />}
+                <div style={{ display: 'flex', gap: 8, padding: '10px 14px 2px', flexWrap: 'wrap' }}>
+                  {stats.steps && <StatChip label="Steps" value={Number(stats.steps).toLocaleString()} />}
+                  {stats.distance && <StatChip label="Distance" value={`${stats.distance} km`} />}
+                  {stats.duration && <StatChip label="Time" value={stats.duration} />}
                 </div>
               )}
 
-              {/* Body */}
-              {post.body && (
-                <p style={{ fontSize:14, color:'var(--ink)', lineHeight:1.55,
-                  margin:0, padding:'10px 14px' }}>{post.body}</p>
-              )}
-
-              {/* Actions */}
-              <div style={{ display:'flex', gap:16, padding:'10px 14px',
-                borderTop:'1.5px solid var(--line)', marginTop:4 }}>
-                <button onClick={() => handleLike(post.id)}
-                  style={{ background:'none', border:'none', cursor:'pointer',
-                    display:'flex', alignItems:'center', gap:5, fontSize:13, fontWeight:600,
-                    color: isLiked ? 'var(--green-dark)' : 'var(--ink-45)', padding:0 }}>
-                  {isLiked ? '❤️' : '🤍'} {likeCount > 0 ? likeCount : ''}
+              <div style={{
+                display: 'flex', gap: 18, padding: '12px 14px',
+                borderTop: '1px solid var(--line)', marginTop: 8
+              }}>
+                <button onClick={() => handleLike(post.id)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700,
+                  color: isLiked ? 'var(--green-dark)' : 'var(--ink-45)', padding: 0
+                }}>
+                  <Icon name="heart" size={17} strokeWidth={isLiked ? 2.3 : 1.8} />
+                  <span>{likeCount}</span>
                 </button>
-                <button onClick={() => setCommenting(commenting === post.id ? null : post.id)}
-                  style={{ background:'none', border:'none', cursor:'pointer',
-                    display:'flex', alignItems:'center', gap:5, fontSize:13, fontWeight:600,
-                    color:'var(--ink-45)', padding:0 }}>
-                  💬 {comments.length > 0 ? comments.length : 'Comment'}
+                <button onClick={() => setCommenting(commenting === post.id ? null : post.id)} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700,
+                  color: 'var(--ink-45)', padding: 0
+                }}>
+                  <Icon name="message" size={17} />
+                  <span>{comments.length}</span>
+                </button>
+                <button onClick={async () => {
+                  const link = `${window.location.origin}/#post-${post.id}`;
+                  if (navigator.share) await navigator.share({ title: 'Protlys progress', url: link });
+                  else { await navigator.clipboard.writeText(link); showToast('Post link copied.'); }
+                }} style={{
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  display: 'flex', alignItems: 'center', gap: 6, fontSize: 13, fontWeight: 700,
+                  color: 'var(--ink-45)', padding: 0, marginLeft: 'auto'
+                }}>
+                  <Icon name="share" size={17} />
+                  <span>Share</span>
                 </button>
               </div>
 
-              {/* Comments */}
               {comments.length > 0 && (
-                <div style={{ padding:'0 14px 10px' }}>
-                  {comments.slice(-3).map((c, i) => (
-                    <div key={i} style={{ fontSize:12.5, color:'var(--ink-70)', marginTop:5 }}>
-                      <strong style={{ color:'var(--ink)' }}>{c.profiles?.display_name}</strong>
-                      {' '}{c.body}
+                <div style={{ padding: '0 14px 10px' }}>
+                  {comments.slice(-3).map(comment => (
+                    <div key={comment.id} style={{
+                      fontSize: 12.5, color: 'var(--ink-70)', marginTop: 6,
+                      padding: '7px 9px', borderRadius: 10, background: 'var(--paper)'
+                    }}>
+                      <strong style={{ color: 'var(--ink)' }}>{comment.profiles?.display_name || 'Member'}</strong>{' '}
+                      {comment.body}
                     </div>
                   ))}
                 </div>
               )}
 
               {commenting === post.id && (
-                <div style={{ padding:'0 14px 14px' }}>
+                <div style={{ padding: '0 14px 14px' }}>
                   <CommentInput postId={post.id} onDone={() => { setCommenting(null); router.refresh(); }} />
                 </div>
               )}
-            </div>
+            </article>
           );
         })}
       </div>
     </>
   );
 }
-
-const StatChip = ({ icon, label, value }) => (
-  <div style={{ background:'var(--green-soft)', borderRadius:10, padding:'6px 10px',
-    display:'flex', flexDirection:'column', alignItems:'center', minWidth:64 }}>
-    <span style={{ fontSize:16 }}>{icon}</span>
-    <span style={{ fontSize:13, fontWeight:700, color:'var(--ink)' }}>{value}</span>
-    <span style={{ fontSize:9, color:'var(--ink-45)', fontWeight:600, letterSpacing:.5 }}>{label.toUpperCase()}</span>
-  </div>
-);
