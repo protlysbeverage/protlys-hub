@@ -79,6 +79,7 @@ export default function MovementPolish(props) {
           font-variant-numeric:tabular-nums;
           letter-spacing:-.025em;
         }
+        .movement-polish .qa-grid .qa-btn:nth-child(2) { display:none !important; }
         .movement-polish .setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin:0 18px 10px; }
         .movement-polish .setting-head { display:flex;justify-content:space-between;gap:12px;align-items:flex-start; }
         .movement-polish .setting-kicker { font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-45);font-weight:800; }
@@ -91,6 +92,7 @@ export default function MovementPolish(props) {
         .movement-polish .setting-option strong { display:block;font-size:12px;color:var(--ink); }
         .movement-polish .setting-option span { display:block;font-size:11px;color:var(--ink-70);margin-top:3px; }
         .movement-polish .phone-card { background:var(--green-soft);border-radius:16px;padding:16px;margin:10px 18px 0; }
+        .movement-polish .phone-coming-soon { display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:9.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--green-dark);margin-bottom:8px; }
         .movement-polish .phone-title { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750; }
         .movement-polish .phone-copy { font-size:12px;line-height:1.5;color:var(--ink-70);margin-top:5px; }
         .movement-polish .phone-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px; }
@@ -125,6 +127,7 @@ export default function MovementPolish(props) {
       <MovementClient {...props} />
 
       <div className="phone-card">
+        <div className="phone-coming-soon">Coming soon</div>
         <div className="phone-title">Connect your phone</div>
         <div className="phone-copy">Automatic step syncing will use your phone’s health data when the Protlys mobile app is connected.</div>
         <div className="phone-grid">
