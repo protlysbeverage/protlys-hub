@@ -1,109 +1,211 @@
 'use client';
 
 import { useState, useTransition } from 'react';
-import Link from 'next/link';
 import { saveTargetAction } from '@/app/actions';
 
+const SEX = [
+  { label: 'Male', v: 'male' },
+  { label: 'Female', v: 'female' },
+  { label: 'Prefer not to say', v: 'other' },
+];
+
 const ACTIVITY = [
-  { label: 'Low',       v: 1.0 },
-  { label: 'Light',     v: 1.2 },
-  { label: 'Moderate',  v: 1.4, default: true },
-  { label: 'High',      v: 1.6 },
-  { label: 'Very high', v: 1.8 },
+  { label: 'Sedentary', detail: 'Desk job, little exercise', v: 1.0 },
+  { label: 'Lightly active', detail: '1–2 days/week', v: 1.2 },
+  { label: 'Moderately active', detail: '3–4 days/week', v: 1.375, default: true },
+  { label: 'Very active', detail: '5–6 days/week', v: 1.55 },
+  { label: 'Athlete', detail: 'Twice daily / hard training', v: 1.725 },
 ];
+
 const GOALS = [
-  { label: 'General nutrition', v: 0.9 },
-  { label: 'Maintain',          v: 1.0, default: true },
-  { label: 'Build muscle',      v: 1.15 },
-  { label: 'Active lifestyle',  v: 1.05 },
+  { label: 'General health', detail: '0.8g / kg body weight', v: 0.8 },
+  { label: 'Maintain & stay active', detail: '1.2–1.4g / kg', v: 1.2, default: true },
+  { label: 'Build muscle', detail: '1.6–2.0g / kg', v: 1.6 },
+  { label: 'Athletic performance', detail: '1.8–2.2g / kg', v: 1.8 },
+  { label: 'Lose weight', detail: 'Higher protein preserves muscle in a calorie deficit', v: 1.2 },
 ];
+
+const PROTLYS_PRODUCTS = [
+  { name: 'Protlys High-Protein Milk', size: '250ml', occasion: 'Breakfast or with meals', proteinG: 15 },
+  { name: 'Protlys High-Protein Yoghurt', size: '250g', occasion: 'Snack or post-workout', proteinG: 20 },
+  { name: 'Protlys Protein Drink', size: '330ml', occasion: 'On the move or pre-gym', proteinG: 25 },
+];
+
+function activityLabel(v) {
+  const item = ACTIVITY.find((a) => a.v === v);
+  return item?.label?.toLowerCase() || 'moderate';
+}
 
 export default function CalculatorClient({ savedTarget }) {
-  const [weight, setWeight]     = useState(65);
-  const [activity, setActivity] = useState(1.4);
-  const [goal, setGoal]         = useState(1.0);
-  const [result, setResult]     = useState(null);
-  const [saved, setSaved]       = useState(false);
-  const [isPending, start]      = useTransition();
+  const [weight, setWeight] = useState(70);
+  const [sex, setSex] = useState('male');
+  const [activity, setActivity] = useState(1.375);
+  const [goal, setGoal] = useState(1.2);
+  const [result, setResult] = useState(null);
+  const [saved, setSaved] = useState(false);
+  const [isPending, start] = useTransition();
 
   function calculate() {
-    setResult(Math.round(weight * activity * goal));
+    const w = Number(weight);
+    if (!w || w < 20 || w > 300) return;
+
+    const sexFactor = sex === 'female' ? 0.92 : sex === 'other' ? 0.96 : 1.0;
+    const target = Math.round(w * goal * sexFactor);
+    const min = Math.round(w * 0.8);
+    const max = Math.round(w * 2.2);
+    const pct = Math.min(100, Math.max(0, Math.round(((target - min) / (max - min)) * 100)));
+
+    setResult({ target, min, max, pct, goal, activity, sex, weight: w });
     setSaved(false);
   }
 
   function saveTarget() {
+    if (!result) return;
     start(async () => {
-      await saveTargetAction({ targetG: result });
+      await saveTargetAction({ targetG: result.target });
       setSaved(true);
     });
   }
 
+  const resultPerMeal = result ? Math.round(result.target / 3) : null;
+  const resultPerSnack = result ? Math.round(result.target / 5) : null;
+  const resultPerKg = result ? result.goal : null;
+
+  let scienceInsight = '';
+  if (result) {
+    if (resultPerMeal < 20) {
+      scienceInsight = `At ${resultPerMeal}g per meal you are just below the 20g threshold shown to maximise muscle protein synthesis. Consider a Protlys snack between meals to bridge the gap.`;
+    } else if (resultPerMeal > 40) {
+      scienceInsight = `At ${resultPerMeal}g per meal, some protein may exceed what your body can use for MPS in one sitting. Spreading across 4–5 meals or adding a Protlys snack may improve uptake.`;
+    } else {
+      scienceInsight = `${resultPerMeal}g per meal sits within the 20–40g range shown to optimally stimulate muscle protein synthesis in peer-reviewed research.`;
+    }
+  }
+
   return (
-    <div className="screen-pad">
-      <span className="eyebrow">Protein calculator</span>
-      <h1 style={{ fontSize: 22 }}>What's your daily target?</h1>
-      <p className="subhead">An estimate to help you plan — not medical advice.</p>
+    <div className="screen-pad" style={{ maxWidth: 520, margin: '0 auto' }}>
+      <span className="eyebrow">Protlys</span>
+      <h1 style={{ fontSize: 26 }}>Find your daily protein target</h1>
+      <p className="subhead">Based on peer-reviewed nutrition science. Takes 30 seconds — gives you a number you can actually use.</p>
 
-      <div style={{ marginTop: 20 }}>
-        <label className="field-label" htmlFor="weight">BODY WEIGHT (KG)</label>
-        <input
-          id="weight" type="number" min="30" max="180"
-          value={weight} onChange={(e) => setWeight(Number(e.target.value))}
-          className="field-input mono" style={{ fontSize: 16, fontWeight: 600, marginTop: 8 }}
-        />
-      </div>
+      <section className="section-card" style={{ marginTop: 18 }}>
+        <span className="field-label">STEP 1 — YOUR WEIGHT</span>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 8 }}>
+          <input
+            id="weight"
+            type="number"
+            min="30"
+            max="250"
+            value={weight}
+            onChange={(e) => setWeight(e.target.value)}
+            className="field-input mono"
+            style={{ fontSize: 28, fontWeight: 700, flex: 1 }}
+          />
+          <span className="mono" style={{ fontSize: 18, opacity: 0.55 }}>kg</span>
+        </div>
+      </section>
 
-      <div style={{ marginTop: 18 }}>
-        <label className="field-label">ACTIVITY LEVEL</label>
-        <div className="pill-select">
-          {ACTIVITY.map((a) => (
-            <button key={a.v} className={`pill-opt${activity === a.v ? ' active' : ''}`}
-              onClick={() => setActivity(a.v)}>{a.label}</button>
+      <section className="section-card" style={{ marginTop: 14 }}>
+        <span className="field-label">STEP 2 — BIOLOGICAL SEX</span>
+        <div className="pill-select" style={{ gridTemplateColumns: 'repeat(3, 1fr)' }}>
+          {SEX.map((item) => (
+            <button key={item.v} className={`pill-opt${sex === item.v ? ' active' : ''}`} onClick={() => setSex(item.v)}>
+              {item.label}
+            </button>
           ))}
         </div>
-      </div>
+        <div className="science-row" style={{ marginTop: 12 }}>
+          <span>Biological sex affects basal metabolic rate and lean mass ratios, which influence how much protein supports muscle maintenance. This is used only for your calculation.</span>
+        </div>
+      </section>
 
-      <div style={{ marginTop: 18 }}>
-        <label className="field-label">GOAL</label>
-        <div className="pill-select">
-          {GOALS.map((g) => (
-            <button key={g.v} className={`pill-opt${goal === g.v ? ' active' : ''}`}
-              onClick={() => setGoal(g.v)}>{g.label}</button>
+      <section className="section-card" style={{ marginTop: 14 }}>
+        <span className="field-label">STEP 3 — ACTIVITY LEVEL</span>
+        <div className="pill-select" style={{ marginTop: 8 }}>
+          {ACTIVITY.map((item) => (
+            <button key={item.v} className={`pill-opt${activity === item.v ? ' active' : ''}`} onClick={() => setActivity(item.v)}>
+              <span>{item.label}</span>
+              <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
+            </button>
           ))}
         </div>
-      </div>
+        <div className="science-row" style={{ marginTop: 12 }}>
+          <span>Based on the Harris-Benedict PAL (Physical Activity Level) multipliers, the same framework used by registered dietitians to estimate total daily energy and protein needs.</span>
+        </div>
+      </section>
 
-      <button className="btn-primary" style={{ marginTop: 22 }} onClick={calculate}>
-        Calculate your protein
+      <section className="section-card" style={{ marginTop: 14 }}>
+        <span className="field-label">STEP 4 — YOUR GOAL</span>
+        <div className="pill-select" style={{ marginTop: 8 }}>
+          {GOALS.map((item) => (
+            <button key={`${item.label}-${item.v}`} className={`pill-opt${goal === item.v && (item.label !== 'Lose weight' || goal === 1.2) ? ' active' : ''}`} onClick={() => setGoal(item.v)}>
+              <span>{item.label}</span>
+              <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
+            </button>
+          ))}
+        </div>
+        <div className="science-row" style={{ marginTop: 12 }}>
+          <span>The International Society of Sports Nutrition (ISSN) recommends 1.4–2.0g/kg for active individuals. The WHO minimum is 0.8g/kg. Higher intake supports muscle protein synthesis especially in a calorie deficit.</span>
+        </div>
+      </section>
+
+      <button className="btn-primary" style={{ marginTop: 18 }} onClick={calculate}>
+        Calculate my protein target →
       </button>
 
       {result && (
         <div style={{ marginTop: 26 }}>
           <div className="hr-tight" />
-          <div style={{ textAlign: 'center' }}>
-            <span className="eyebrow">Your estimated daily target</span>
-            <div className="data-chip lg" style={{ margin: '8px auto 0', display: 'inline-flex' }}>
-              <span className="value mono">{result}g</span>
-              <span className="label">per day</span>
-            </div>
-          </div>
 
-          <button
-            className="btn-secondary" style={{ marginTop: 14 }}
-            onClick={saveTarget} disabled={isPending || saved}
-          >
-            {saved ? '✓ Target saved to your Hub' : isPending ? 'Saving…' : 'Save this as my daily target'}
+          <section className="section-card" style={{ marginTop: 20, border: '2px solid var(--green, #2E9E5B)' }}>
+            <span className="eyebrow">Your daily protein target</span>
+            <div style={{ display: 'flex', alignItems: 'baseline', gap: 8, marginTop: 6 }}>
+              <span className="mono" style={{ fontSize: 52, fontWeight: 700, lineHeight: 1 }}>{result.target}</span>
+              <span style={{ fontSize: 18, fontWeight: 700, opacity: 0.5 }}>g / day</span>
+            </div>
+            <p className="subhead" style={{ margin: '8px 0 14px' }}>
+              Based on {result.weight.toFixed(1)}kg body weight · {result.goal}g per kg target · {activityLabel(result.activity)} activity
+            </p>
+            <div style={{ height: 8, background: 'var(--line, rgba(15,42,74,.12))', borderRadius: 999, overflow: 'hidden' }}>
+              <div style={{ height: '100%', width: `${result.pct}%`, background: 'var(--green, #2E9E5B)', borderRadius: 999 }} />
+            </div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 10, opacity: 0.55, marginTop: 5 }}>
+              <span>WHO minimum (0.8g/kg)</span>
+              <span>Athletic (2.2g/kg)</span>
+            </div>
+          </section>
+
+          <section className="section-card" style={{ marginTop: 14 }}>
+            <h2 className="section-title" style={{ fontSize: 16 }}>What that looks like per day</h2>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 14 }}>
+              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{resultPerMeal}g</span><span className="label">PER MEAL</span></div>
+              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{resultPerSnack}g</span><span className="label">PER SNACK</span></div>
+              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{resultPerKg}g</span><span className="label">PER KG</span></div>
+            </div>
+            <div className="science-row" style={{ marginTop: 12 }}>
+              <span>{scienceInsight}</span>
+            </div>
+          </section>
+
+          <section className="section-card" style={{ marginTop: 14 }}>
+            <h2 className="section-title" style={{ fontSize: 16 }}>How Protlys gets you there</h2>
+            {PROTLYS_PRODUCTS.map((product) => (
+              <div className="find-item" key={product.name}>
+                <span><strong>{product.name}</strong><small style={{ display: 'block', opacity: 0.6 }}>{product.size} · {product.occasion}</small></span>
+                <span className="find-a">+{product.proteinG}g</span>
+              </div>
+            ))}
+            <a className="btn-primary" href="https://protlys.com/collections/all" style={{ marginTop: 18 }}>
+              Shop Protlys products →
+            </a>
+          </section>
+
+          <button className="btn-secondary" style={{ marginTop: 12 }} onClick={saveTarget} disabled={isPending || saved}>
+            {saved ? 'Target saved to your Hub' : isPending ? 'Saving…' : 'Save this as my daily target'}
           </button>
 
-          <div style={{ marginTop: 22 }}>
-            <h2 className="section-title" style={{ fontSize: 16 }}>How Protlys can fit in</h2>
-            <div className="find-item"><span className="find-q">Breakfast</span><span className="find-a">Yoghurt →</span></div>
-            <div className="find-item"><span className="find-q">Lunch / snack</span><span className="find-a">Milk →</span></div>
-            <div className="find-item"><span className="find-q">After exercise, on the move</span><span className="find-a">Drink →</span></div>
-          </div>
-
           <p className="disclaimer" style={{ marginTop: 14 }}>
-            This is an estimate based on general activity guidance, not medical advice. Talk to a healthcare provider for guidance specific to you.
+            Estimates based on Harris-Benedict, ISSN guidelines, and WHO dietary protein reference values. Not medical advice — speak with a registered dietitian for personalised guidance.
           </p>
         </div>
       )}
