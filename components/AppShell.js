@@ -11,6 +11,12 @@ const NAV_ITEMS = [
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
+function getShopUrl() {
+  const configured = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL?.trim();
+  if (!configured || configured.includes('yourstore.myshopify.com')) return 'https://protlys.com';
+  return configured.replace(/\/+$/, '');
+}
+
 function CartIcon({ size = 19 }) {
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -23,7 +29,7 @@ function CartIcon({ size = 19 }) {
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const shopUrl = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'https://protlys.com';
+  const shopUrl = getShopUrl();
 
   return (
     <div className="protlys-app">
@@ -53,7 +59,6 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
 
-        /* Feed: consistent post geometry and clear separation between posts. */
         .protlys-app .feed-card {
           width:100%;
           margin:0 0 14px;
@@ -123,7 +128,6 @@ export default function AppShell({ children }) {
           border-top:1px solid var(--line);
         }
 
-        /* Keep the composer compact and aligned with the feed cards. */
         .protlys-app .feed-post-type-selector {
           display:flex;
           gap:6px;
@@ -143,7 +147,7 @@ export default function AppShell({ children }) {
       `}</style>
       <div className="app-shell">
         <div className="app-header">
-          <a href={shopUrl} style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }}>
+          <a href={shopUrl} style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }} aria-label="Protlys store">
             <img src="/logo.png" alt="Protlys" style={{ height:36, width:'auto', objectFit:'contain' }} onError={e => { e.target.style.display='none'; }} />
           </a>
           <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys">
