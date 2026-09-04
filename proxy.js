@@ -2,6 +2,13 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function proxy(request) {
+  // Let the OAuth callback handle the one-time PKCE code exchange directly.
+  // Running auth session refresh before that exchange can interfere with the
+  // verifier/state cookies needed by exchangeCodeForSession().
+  if (request.nextUrl.pathname.startsWith('/auth/callback')) {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
@@ -27,7 +34,7 @@ export async function proxy(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const publicPaths = ['/login', '/signup', '/reset-password', '/auth/callback'];
+  const publicPaths = ['/login', '/signup', '/reset-password'];
   const isPublicPath = publicPaths.some((path) =>
     request.nextUrl.pathname.startsWith(path)
   );
@@ -39,7 +46,7 @@ export async function proxy(request) {
     return NextResponse.redirect(url);
   }
 
-  if (user && isPublicPath && !request.nextUrl.pathname.startsWith('/auth/callback')) {
+  if (user && isPublicPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     url.search = '';
