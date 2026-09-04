@@ -15,6 +15,13 @@ function Icon({ name, size = 19 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
+function normalizeShopUrl(value) {
+  const raw = (value || '').trim();
+  if (!raw || raw.includes('yourstore.myshopify.com')) return 'https://protlys.com';
+  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
+  return withProtocol.replace(/\/+$/, '');
+}
+
 export default function AccountClient({ profile, achievements = [], shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
@@ -25,6 +32,8 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
+  const storeUrl = normalizeShopUrl(shopUrl);
+  const ordersUrl = `${storeUrl}/account`;
 
   async function handlePhoto(event) {
     const file = event.target.files?.[0];
@@ -62,7 +71,7 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
     { href: '/movement', label: 'Movement & steps', desc: 'Track movement, goals and progress.', icon: 'steps' },
     { href: '/challenges', label: 'Challenges', desc: 'Join challenges and track completion.', icon: 'challenge' },
     { href: '/', label: 'Community', desc: 'See the progress feed and share with the Hub.', icon: 'community' },
-    { href: `${shopUrl}/account`, label: 'Manage Protlys orders', desc: 'View orders and manage your store account.', icon: 'box', external: true },
+    { href: ordersUrl, label: 'Manage Protlys orders', desc: 'View orders and manage your store account.', icon: 'box', external: true },
   ];
 
   const statCards = [
@@ -112,12 +121,12 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
-        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}>
+        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}>
           <div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div>
         </a>)}
       </div>
 
-      <a href={shopUrl} target="_blank" rel="noopener" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Return to Protlys store</a>
+      <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Return to Protlys store</a>
 
       <div style={{marginTop:24,paddingTop:18,borderTop:'1px solid var(--line)',textAlign:'center'}}>
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} style={{background:'none',border:0,color:'var(--ink-45)',fontSize:13,fontWeight:700,cursor:'pointer'}}>Sign out</button> : <div style={{background:'#FEE2E2',borderRadius:14,padding:15}}><div style={{fontSize:13,color:'#B3261E',fontWeight:700,marginBottom:11}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:9}}><button type="button" className="btn-secondary" style={{flex:1,marginTop:0}} onClick={() => setConfirmSignOut(false)}>Cancel</button><button type="button" disabled={signingOut} onClick={handleSignOut} style={{flex:1,border:0,borderRadius:12,padding:12,background:'#B3261E',color:'#fff',fontWeight:800,cursor:'pointer'}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
