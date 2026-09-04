@@ -17,7 +17,7 @@ function Icon({ name, size = 19 }) {
 
 function normalizeShopUrl(value) {
   const raw = (value || '').trim();
-  if (!raw || raw.includes('yourstore.myshopify.com')) return 'https://protlys.com';
+  if (!raw || raw.includes('yourstore.myshopify.com')) return 'https://protlys.myshopify.com';
   const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
   return withProtocol.replace(/\/+$/, '');
 }
