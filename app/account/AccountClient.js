@@ -67,8 +67,8 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
   const statCards = [
     ['Protein streak', `${profile?.streak || 0}d`],
-    ['Step streak', `${profile?.step_streak || 0}d`],
     ['Lifetime steps', (profile?.total_steps || 0).toLocaleString()],
+    ['Step streak', `${profile?.step_streak || 0}d`],
     ['Daily goal', (profile?.step_goal || 0).toLocaleString()],
   ];
 
