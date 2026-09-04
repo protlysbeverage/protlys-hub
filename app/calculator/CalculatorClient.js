@@ -18,11 +18,11 @@ const ACTIVITY = [
 ];
 
 const GOALS = [
-  { label: 'General health', detail: '0.8g / kg body weight', v: 0.8 },
-  { label: 'Maintain & stay active', detail: '1.2–1.4g / kg', v: 1.2, default: true },
-  { label: 'Build muscle', detail: '1.6–2.0g / kg', v: 1.6 },
-  { label: 'Athletic performance', detail: '1.8–2.2g / kg', v: 1.8 },
-  { label: 'Lose weight', detail: 'Higher protein preserves muscle in a calorie deficit', v: 1.2 },
+  { id: 'health', label: 'General health', detail: '0.8g / kg body weight', v: 0.8 },
+  { id: 'maintain', label: 'Maintain & stay active', detail: '1.2–1.4g / kg', v: 1.2, default: true },
+  { id: 'muscle', label: 'Build muscle', detail: '1.6–2.0g / kg', v: 1.6 },
+  { id: 'performance', label: 'Athletic performance', detail: '1.8–2.2g / kg', v: 1.8 },
+  { id: 'lose', label: 'Lose weight', detail: '', v: 1.2 },
 ];
 
 function activityLabel(v) {
@@ -34,7 +34,7 @@ export default function CalculatorClient({ savedTarget }) {
   const [weight, setWeight] = useState(70);
   const [sex, setSex] = useState('male');
   const [activity, setActivity] = useState(1.375);
-  const [goal, setGoal] = useState(1.2);
+  const [goal, setGoal] = useState('maintain');
   const [result, setResult] = useState(null);
   const [saved, setSaved] = useState(false);
   const [isPending, start] = useTransition();
@@ -43,13 +43,14 @@ export default function CalculatorClient({ savedTarget }) {
     const w = Number(weight);
     if (!w || w < 20 || w > 300) return;
 
+    const selectedGoal = GOALS.find((item) => item.id === goal) || GOALS[1];
     const sexFactor = sex === 'female' ? 0.92 : sex === 'other' ? 0.96 : 1.0;
-    const target = Math.round(w * goal * sexFactor);
+    const target = Math.round(w * selectedGoal.v * sexFactor);
     const min = Math.round(w * 0.8);
     const max = Math.round(w * 2.2);
     const pct = Math.min(100, Math.max(0, Math.round(((target - min) / (max - min)) * 100)));
 
-    setResult({ target, min, max, pct, goal, activity, sex, weight: w });
+    setResult({ target, min, max, pct, goal: selectedGoal.v, activity, sex, weight: w });
     setSaved(false);
   }
 
@@ -100,9 +101,11 @@ export default function CalculatorClient({ savedTarget }) {
         <span className="field-label">STEP 4 — YOUR GOAL</span>
         <div className="pill-select" style={{ marginTop: 8 }}>
           {GOALS.map((item) => (
-            <button key={`${item.label}-${item.v}`} className={`pill-opt${goal === item.v && (item.label !== 'Lose weight' || goal === 1.2) ? ' active' : ''}`} onClick={() => setGoal(item.v)}>
+            <button key={item.id} className={`pill-opt${goal === item.id ? ' active' : ''}`} onClick={() => setGoal(item.id)}>
               <span>{item.label}</span>
-              <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
+              {item.detail && (
+                <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
+              )}
             </button>
           ))}
         </div>
