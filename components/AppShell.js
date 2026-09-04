@@ -53,45 +53,39 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
 
-        /* Feed post type selector: every option uses the same capsule geometry. */
-        .protlys-app .screen-pad > div:first-child > div:nth-child(2) {
-          display:flex !important;
+        /* Feed post type selector: dedicated grid so it cannot collide with other screen-pad elements. */
+        .protlys-app .feed-post-type-selector {
+          display:grid !important;
+          grid-template-columns:repeat(6,minmax(0,1fr));
           gap:7px !important;
-          align-items:center;
-          padding:2px !important;
+          width:100%;
           margin:16px 0 14px !important;
-          border:0 !important;
-          border-radius:0 !important;
-          background:transparent !important;
-          overflow-x:auto;
-          scrollbar-width:none;
+          padding:0 !important;
+          box-sizing:border-box;
         }
-        .protlys-app .screen-pad > div:first-child > div:nth-child(2)::-webkit-scrollbar { display:none; }
-        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button {
-          flex:1 0 auto;
+        .protlys-app .feed-post-type-selector button {
+          grid-column:span 2;
+          width:100%;
           min-width:0;
-          height:34px;
+          height:38px;
           border:1px solid var(--line) !important;
-          border-radius:999px !important;
-          padding:7px 13px !important;
-          font-size:11.5px !important;
+          border-radius:11px !important;
+          padding:7px 6px !important;
+          font-size:11px !important;
           font-weight:750 !important;
           line-height:18px !important;
           white-space:nowrap;
+          text-align:center;
+          box-sizing:border-box;
           background:#fff !important;
           color:var(--ink-70) !important;
-          box-sizing:border-box;
+          cursor:pointer;
+          transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease;
         }
-        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:hover {
-          background:var(--green-soft) !important;
-          border-color:var(--green) !important;
-          color:var(--green-dark) !important;
-        }
-        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:first-of-type {
-          background:var(--green-soft) !important;
-          border-color:var(--green) !important;
-          color:var(--green-dark) !important;
-        }
+        .protlys-app .feed-post-type-selector button:nth-child(4) { grid-column:2 / span 2; }
+        .protlys-app .feed-post-type-selector button:first-child { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
+        .protlys-app .feed-post-type-selector button:hover { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
+        .protlys-app .feed-post-type-selector button:active { transform:scale(.98); }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
