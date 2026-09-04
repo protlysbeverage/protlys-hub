@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -12,6 +12,7 @@ function Icon({ name, size = 19 }) {
     community: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M3 20c.5-3.2 2.5-5 6-5s5.5 1.8 6 5" /><path d="M14.5 15.5c2.5-.2 4.5 1.3 5 3.5" /></>,
     box: <><path d="m4 8 8-4 8 4-8 4-8-4Z" /><path d="M4 8v9l8 4 8-4V8M12 12v9" /></>,
     store: <><path d="M4 10h16l-1-5H5l-1 5Z" /><path d="M6 10v9h12v-9M9 19v-5h6v5" /></>,
+    camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z" /><circle cx="12" cy="12.5" r="3.2" /></>,
   };
   return (
     <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
@@ -30,8 +31,8 @@ function AchievementBadge({ achievement, index }) {
       <div style={{
         width: 30, height: 30, borderRadius: 9, background: 'var(--green-soft)',
         color: 'var(--green-dark)', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: 12, fontWeight: 900
-      }}>{String(index + 1).padStart(2, '0')}</div>
+        justifyContent: 'center', fontSize: 12, fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif'
+      }}>{index + 1}</div>
       <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink)', marginTop: 8, lineHeight: 1.3 }}>
         {achievement?.achievements?.name}
       </div>
@@ -41,8 +42,56 @@ function AchievementBadge({ achievement, index }) {
 
 export default function AccountClient({ profile, achievements, shopUrl, email }) {
   const router = useRouter();
+  const fileRef = useRef(null);
   const [signingOut, setSigningOut] = useState(false);
   const [showSignOut, setShowSignOut] = useState(false);
+  const [uploadingPhoto, setUploadingPhoto] = useState(false);
+  const [photoMessage, setPhotoMessage] = useState('');
+
+  async function handlePhotoChange(event) {
+    const file = event.target.files?.[0];
+    event.target.value = '';
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      setPhotoMessage('Choose an image file.');
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      setPhotoMessage('Photo must be 5MB or smaller.');
+      return;
+    }
+
+    setUploadingPhoto(true);
+    setPhotoMessage('');
+    try {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) throw new Error('Not signed in');
+
+      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
+      const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
+
+      const { error: uploadError } = await supabase.storage
+        .from('feed-images')
+        .upload(path, file, { cacheControl: '3600', upsert: false });
+      if (uploadError) throw uploadError;
+
+      const { data: publicUrl } = supabase.storage.from('feed-images').getPublicUrl(path);
+      const { error: profileError } = await supabase
+        .from('profiles')
+        .update({ avatar_url: publicUrl.publicUrl })
+        .eq('id', user.id);
+      if (profileError) throw profileError;
+
+      setPhotoMessage('Profile photo updated.');
+      router.refresh();
+    } catch (error) {
+      setPhotoMessage(error?.message || 'Could not update profile photo.');
+    } finally {
+      setUploadingPhoto(false);
+    }
+  }
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -53,6 +102,7 @@ export default function AccountClient({ profile, achievements, shopUrl, email })
   }
 
   const name = profile?.display_name || email || 'Member';
+  const avatarUrl = profile?.avatar_url;
 
   const rows = [
     { label: 'Hub dashboard', href: '/hub', icon: 'dashboard' },
@@ -70,17 +120,46 @@ export default function AccountClient({ profile, achievements, shopUrl, email })
         <p className="subhead">Your movement, activity and community in one place.</p>
 
         <div style={{
-          display: 'flex', alignItems: 'center', gap: 11, marginTop: 14,
+          display: 'flex', alignItems: 'center', gap: 12, marginTop: 14,
           background: '#fff', border: '1.5px solid var(--line)', borderRadius: 16, padding: 13
         }}>
-          <div style={{
-            width: 46, height: 46, borderRadius: '50%', background: 'var(--green-soft)',
-            display: 'flex', alignItems: 'center', justifyContent: 'center',
-            fontSize: 18, fontWeight: 800, color: 'var(--green-dark)', flexShrink: 0
-          }}>{name[0].toUpperCase()}</div>
-          <div style={{ minWidth: 0 }}>
+          <button
+            type="button"
+            onClick={() => fileRef.current?.click()}
+            disabled={uploadingPhoto}
+            aria-label="Change profile photo"
+            style={{
+              width: 54, height: 54, borderRadius: '50%', background: 'var(--green-soft)',
+              border: 'none', padding: 0, overflow: 'hidden', position: 'relative',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              color: 'var(--green-dark)', flexShrink: 0, cursor: uploadingPhoto ? 'wait' : 'pointer'
+            }}
+          >
+            {avatarUrl ? (
+              <img src={avatarUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+            ) : (
+              <span style={{ fontSize: 19, fontWeight: 800 }}>{name[0].toUpperCase()}</span>
+            )}
+            <span style={{
+              position: 'absolute', right: 0, bottom: 0, width: 19, height: 19,
+              borderRadius: '50%', background: 'var(--ink)', color: '#fff',
+              display: 'flex', alignItems: 'center', justifyContent: 'center',
+              border: '2px solid #fff'
+            }}>
+              <Icon name="camera" size={10} />
+            </span>
+          </button>
+
+          <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
+
+          <div style={{ minWidth: 0, flex: 1 }}>
             <div style={{ fontWeight: 800, fontSize: 15 }}>{name}</div>
             <div style={{ fontSize: 12, color: 'var(--ink-45)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{email}</div>
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
+              style={{ marginTop: 5, padding: 0, border: 0, background: 'none', color: 'var(--green-dark)', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}>
+              {uploadingPhoto ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}
+            </button>
+            {photoMessage && <div style={{ marginTop: 3, fontSize: 10.5, color: photoMessage.includes('updated') ? 'var(--green-dark)' : '#B3261E' }}>{photoMessage}</div>}
           </div>
         </div>
       </div>
