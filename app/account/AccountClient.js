@@ -61,7 +61,7 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
   const links = [
     { href: '/movement', label: 'Movement & steps', desc: 'Track movement, goals and progress.', icon: 'steps' },
     { href: '/challenges', label: 'Challenges', desc: 'Join challenges and track completion.', icon: 'challenge' },
-    { href: '/community', label: 'Community', desc: 'Connect with the Protlys Hub community.', icon: 'community' },
+    { href: '/', label: 'Community', desc: 'See the progress feed and share with the Hub.', icon: 'community' },
     { href: `${shopUrl}/account`, label: 'Manage Protlys orders', desc: 'View orders and manage your store account.', icon: 'box', external: true },
   ];
 
