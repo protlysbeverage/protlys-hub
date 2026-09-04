@@ -1,7 +1,7 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
-import MovementClient from './MovementClient';
+import MovementPolish from './MovementPolish';
 
 export default async function MovementPage() {
   const supabase = await createClient();
@@ -32,7 +32,7 @@ export default async function MovementPage() {
 
   return (
     <AppShell>
-      <MovementClient
+      <MovementPolish
         profile={profile || {}}
         todaySteps={todaySteps?.steps || 0}
         lastSync={todaySteps?.synced_at || null}
