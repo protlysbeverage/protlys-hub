@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
   { href: '/movement', label: 'Movement', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1 8"/></svg> },
   { href: '/challenges', label: 'Challenges', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2.5 4L17 12H4"/></svg> },
-  { href: '/hub', label: 'Hub', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="8"/><path d="M8 12h8M12 8v8"/></svg> },
+  { href: '/calculator', label: 'Protein', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h2"/></svg> },
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
@@ -32,19 +32,8 @@ export default function AppShell({ children }) {
   return (
     <div className="protlys-app">
       <style>{`
-        .protlys-app .hub-card .mono,
-        .protlys-app .metric-number,
-        .protlys-app .stat-number {
-          font-family: 'Space Grotesk', sans-serif !important;
-          font-variant-numeric: tabular-nums;
-          letter-spacing: -0.025em;
-        }
-        .protlys-app .shop-header-link {
-          display:flex;align-items:center;gap:7px;padding:7px 10px;
-          border:1px solid var(--line);border-radius:999px;background:#fff;
-          color:var(--ink);font-size:11.5px;font-weight:800;text-decoration:none;
-          transition:background .15s ease,border-color .15s ease,transform .15s ease;
-        }
+        .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
+        .protlys-app .shop-header-link { display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-size:11.5px;font-weight:800;text-decoration:none;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
         .protlys-app .shop-header-link:hover { background:var(--green-soft);border-color:var(--green); }
         .protlys-app .shop-header-link:active { transform:scale(.98); }
         .protlys-app .movement-setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:10px; }
@@ -53,22 +42,12 @@ export default function AppShell({ children }) {
         .protlys-app .movement-setting-title { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750;margin-top:3px; }
         .protlys-app .movement-setting-value { font-size:12px;color:var(--ink-70);margin-top:3px; }
         .protlys-app .movement-setting-button { border:0;background:var(--green-soft);color:var(--green-dark);border-radius:999px;padding:8px 11px;font-size:11.5px;font-weight:800;white-space:nowrap;cursor:pointer; }
-        .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C !important; }
+        .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C!important; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
-        .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
-
-        .protlys-app .feed-card {
-          width:100%;
-          margin:0 0 14px;
-          padding:16px;
-          background:#fff;
-          border:1px solid var(--line);
-          border-radius:18px;
-          box-shadow:0 2px 8px rgba(15,42,74,.035);
-          overflow:hidden;
-        }
+        .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C;stroke:#E1306C; }
+        .protlys-app .feed-card { width:100%;margin:0 0 14px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 2px 8px rgba(15,42,74,.035);overflow:hidden; }
         .protlys-app .feed-card-head { display:flex;align-items:center;gap:10px;min-height:40px;padding:0 0 12px;margin:0;border-bottom:1px solid var(--line); }
-        .protlys-app .feed-card-head > a { flex-shrink:0; }
+        .protlys-app .feed-card-head>a { flex-shrink:0; }
         .protlys-app .feed-author { display:block;font-size:13px;line-height:1.25;font-weight:800;color:var(--ink); }
         .protlys-app .feed-meta { margin-top:3px;font-size:10.5px;line-height:1.2;color:var(--ink-45); }
         .protlys-app .feed-body { padding:12px 0 0;font-size:13.5px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere; }
@@ -78,26 +57,18 @@ export default function AppShell({ children }) {
         .protlys-app .feed-card .feed-comments { margin-top:10px;padding-top:10px;border-top:1px solid var(--line); }
         .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
         .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
-        .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px !important;padding:7px 12px !important;font-size:11.5px !important;line-height:18px; }
+        .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
-          <a href={shopUrl} style={{ display:'flex', alignItems:'center', gap:8, textDecoration:'none' }} aria-label="Protlys store">
-            <img src="/logo.png" alt="Protlys" style={{ height:36, width:'auto', objectFit:'contain' }} onError={e => { e.target.style.display='none'; }} />
+          <a href={shopUrl} style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}} aria-label="Protlys store">
+            <img src="/logo.png" alt="Protlys" style={{height:36,width:'auto',objectFit:'contain'}} onError={e=>{e.target.style.display='none';}} />
           </a>
-          <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys">
-            <CartIcon size={18} />
-            <span>Shop Protlys</span>
-          </a>
+          <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys"><CartIcon size={18}/><span>Shop Protlys</span></a>
         </div>
         <section className="screen active">{children}</section>
         <div className="bottom-nav">
-          {NAV_ITEMS.map((item) => (
-            <Link key={item.href} href={item.href} className={`nav-btn${pathname === item.href ? ' active' : ''}`}>
-              {item.icon}
-              {item.label}
-            </Link>
-          ))}
+          {NAV_ITEMS.map(item=><Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}{item.label}</Link>)}
         </div>
       </div>
     </div>
