@@ -6,91 +6,48 @@ import { createClient } from '@/lib/supabase/client';
 
 function Icon({ name, size = 19 }) {
   const paths = {
-    dashboard: <><rect x="3" y="3" width="7" height="7" rx="1" /><rect x="14" y="3" width="7" height="7" rx="1" /><rect x="3" y="14" width="7" height="7" rx="1" /><rect x="14" y="14" width="7" height="7" rx="1" /></>,
-    steps: <><path d="M8.5 4.5c1.4 2 1.8 4.2.8 6.2-.8 1.7-2.5 2.7-4.1 2.5-1.6-.2-2.5-1.7-1.9-3.1.6-1.4 2-2 3.3-2.7 1.1-.5 1.5-1.4 1.9-2.9Z" /><path d="M15.5 19.5c-1.4-2-1.8-4.2-.8-6.2.8-1.7 2.5-2.7 4.1-2.5 1.6.2 2.5 1.7 1.9 3.1-.6 1.4-2 2-3.3 2.7-1.1.5-1.5 1.4-1.9 2.9Z" /></>,
-    challenge: <><path d="M8 4h8l-1 6a3 3 0 0 1-6 0L8 4Z" /><path d="M12 13v5M8 21h8M5 4h3M16 4h3" /></>,
-    community: <><circle cx="9" cy="9" r="3" /><circle cx="17" cy="10" r="2.5" /><path d="M3 20c.5-3.2 2.5-5 6-5s5.5 1.8 6 5" /><path d="M14.5 15.5c2.5-.2 4.5 1.3 5 3.5" /></>,
-    box: <><path d="m4 8 8-4 8 4-8 4-8-4Z" /><path d="M4 8v9l8 4 8-4V8M12 12v9" /></>,
-    store: <><path d="M4 10h16l-1-5H5l-1 5Z" /><path d="M6 10v9h12v-9M9 19v-5h6v5" /></>,
-    camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z" /><circle cx="12" cy="12.5" r="3.2" /></>,
+    steps: <><path d="M8.5 4.5c1.4 2 1.8 4.2.8 6.2-.8 1.7-2.5 2.7-4.1 2.5-1.6-.2-2.5-1.7-1.9-3.1.6-1.4 2-2 3.3-2.7 1.1-.5 1.5-1.4 1.9-2.9Z"/><path d="M15.5 19.5c-1.4-2-1.8-4.2-.8-6.2.8-1.7 2.5-2.7 4.1-2.5 1.6.2 2.5 1.7 1.9 3.1-.6 1.4-2 2-3.3 2.7-1.1.5-1.5 1.4-1.9 2.9Z"/></>,
+    challenge: <><path d="M8 4h8l-1 6a3 3 0 0 1-6 0L8 4Z"/><path d="M12 13v5M8 21h8M5 4h3M16 4h3"/></>,
+    community: <><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c.5-3.2 2.5-5 6-5s5.5 1.8 6 5M14.5 15.5c2.5-.2 4.5 1.3 5 3.5"/></>,
+    box: <><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v9l8 4 8-4V8M12 12v9"/></>,
+    camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z"/><circle cx="12" cy="12.5" r="3.2"/></>,
   };
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
-      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
+  return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function AchievementBadge({ achievement, index }) {
-  return (
-    <div title={achievement?.achievements?.description} style={{
-      minWidth: 98, background: '#fff', borderRadius: 14, padding: 12,
-      border: '1.5px solid var(--line)', flexShrink: 0
-    }}>
-      <div style={{
-        width: 30, height: 30, borderRadius: 9, background: 'var(--green-soft)',
-        color: 'var(--green-dark)', display: 'flex', alignItems: 'center',
-        justifyContent: 'center', fontSize: 12, fontWeight: 900, fontFamily: 'Space Grotesk, sans-serif'
-      }}>{index + 1}</div>
-      <div style={{ fontSize: 11, fontWeight: 800, color: 'var(--ink)', marginTop: 8, lineHeight: 1.3 }}>
-        {achievement?.achievements?.name}
-      </div>
-    </div>
-  );
-}
-
-export default function AccountClient({ profile, achievements, shopUrl, email }) {
+export default function AccountClient({ profile, achievements = [], shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
+  const [uploading, setUploading] = useState(false);
+  const [message, setMessage] = useState('');
+  const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [showSignOut, setShowSignOut] = useState(false);
-  const [uploadingPhoto, setUploadingPhoto] = useState(false);
-  const [photoMessage, setPhotoMessage] = useState('');
 
-  async function handlePhotoChange(event) {
+  const name = profile?.display_name || email || 'Member';
+  const avatarUrl = profile?.avatar_url;
+
+  async function handlePhoto(event) {
     const file = event.target.files?.[0];
     event.target.value = '';
     if (!file) return;
-
-    if (!file.type.startsWith('image/')) {
-      setPhotoMessage('Choose an image file.');
-      return;
-    }
-    if (file.size > 5 * 1024 * 1024) {
-      setPhotoMessage('Photo must be 5MB or smaller.');
-      return;
-    }
-
-    setUploadingPhoto(true);
-    setPhotoMessage('');
+    if (!file.type.startsWith('image/')) return setMessage('Choose an image file.');
+    if (file.size > 5 * 1024 * 1024) return setMessage('Photo must be 5MB or smaller.');
+    setUploading(true); setMessage('');
     try {
       const supabase = createClient();
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
       const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
-
-      const { error: uploadError } = await supabase.storage
-        .from('feed-images')
-        .upload(path, file, { cacheControl: '3600', upsert: false });
-      if (uploadError) throw uploadError;
-
-      const { data: publicUrl } = supabase.storage.from('feed-images').getPublicUrl(path);
-      const { error: profileError } = await supabase
-        .from('profiles')
-        .update({ avatar_url: publicUrl.publicUrl })
-        .eq('id', user.id);
+      const { error } = await supabase.storage.from('feed-images').upload(path, file, { cacheControl: '3600', upsert: false });
+      if (error) throw error;
+      const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
+      const { error: profileError } = await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
       if (profileError) throw profileError;
-
-      setPhotoMessage('Profile photo updated.');
+      setMessage('Profile photo updated.');
       router.refresh();
-    } catch (error) {
-      setPhotoMessage(error?.message || 'Could not update profile photo.');
-    } finally {
-      setUploadingPhoto(false);
-    }
+    } catch (error) { setMessage(error?.message || 'Could not update profile photo.'); }
+    finally { setUploading(false); }
   }
 
   async function handleSignOut() {
@@ -101,162 +58,61 @@ export default function AccountClient({ profile, achievements, shopUrl, email })
     router.refresh();
   }
 
-  const name = profile?.display_name || email || 'Member';
-  const avatarUrl = profile?.avatar_url;
-
-  const rows = [
-    { label: 'Hub dashboard', href: '/hub', icon: 'dashboard' },
-    { label: 'Movement & steps', href: '/movement', icon: 'steps' },
-    { label: 'Challenges', href: '/challenges', icon: 'challenge' },
-    { label: 'Community', href: '/community', icon: 'community' },
-    { label: 'Manage Protlys orders', href: `${shopUrl}/account`, external: true, icon: 'box' },
+  const links = [
+    { href: '/movement', label: 'Movement & steps', desc: 'Track movement, goals and progress.', icon: 'steps' },
+    { href: '/challenges', label: 'Challenges', desc: 'Join challenges and track completion.', icon: 'challenge' },
+    { href: '/community', label: 'Community', desc: 'Connect with the Protlys Hub community.', icon: 'community' },
+    { href: `${shopUrl}/account`, label: 'Manage Protlys orders', desc: 'View orders and manage your store account.', icon: 'box', external: true },
   ];
 
-  return (
-    <>
-      <div className="screen-pad">
-        <span className="eyebrow">Account</span>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Your Protlys profile</h1>
-        <p className="subhead">Your movement, activity and community in one place.</p>
+  return <>
+    <div className="screen-pad">
+      <span className="eyebrow">Account</span>
+      <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys profile</h1>
+      <p className="subhead">Manage your profile and access the parts of Hub that belong to you.</p>
 
-        <div style={{
-          display: 'flex', alignItems: 'center', gap: 12, marginTop: 14,
-          background: '#fff', border: '1.5px solid var(--line)', borderRadius: 16, padding: 13
-        }}>
-          <button
-            type="button"
-            onClick={() => fileRef.current?.click()}
-            disabled={uploadingPhoto}
-            aria-label="Change profile photo"
-            style={{
-              width: 54, height: 54, borderRadius: '50%', background: 'var(--green-soft)',
-              border: 'none', padding: 0, overflow: 'hidden', position: 'relative',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: 'var(--green-dark)', flexShrink: 0, cursor: uploadingPhoto ? 'wait' : 'pointer'
-            }}
-          >
-            {avatarUrl ? (
-              <img src={avatarUrl} alt="Profile" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
-            ) : (
-              <span style={{ fontSize: 19, fontWeight: 800 }}>{name[0].toUpperCase()}</span>
-            )}
-            <span style={{
-              position: 'absolute', right: 0, bottom: 0, width: 19, height: 19,
-              borderRadius: '50%', background: 'var(--ink)', color: '#fff',
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              border: '2px solid #fff'
-            }}>
-              <Icon name="camera" size={10} />
-            </span>
-          </button>
-
-          <input ref={fileRef} type="file" accept="image/*" onChange={handlePhotoChange} style={{ display: 'none' }} />
-
-          <div style={{ minWidth: 0, flex: 1 }}>
-            <div style={{ fontWeight: 800, fontSize: 15 }}>{name}</div>
-            <div style={{ fontSize: 12, color: 'var(--ink-45)', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}>{email}</div>
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploadingPhoto}
-              style={{ marginTop: 5, padding: 0, border: 0, background: 'none', color: 'var(--green-dark)', fontSize: 11.5, fontWeight: 800, cursor: 'pointer' }}>
-              {uploadingPhoto ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}
-            </button>
-            {photoMessage && <div style={{ marginTop: 3, fontSize: 10.5, color: photoMessage.includes('updated') ? 'var(--green-dark)' : '#B3261E' }}>{photoMessage}</div>}
-          </div>
+      <div style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:14}}>
+        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
+          {avatarUrl ? <img src={avatarUrl} alt="Profile" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:20,fontWeight:800}}>{name[0].toUpperCase()}</span>}
+          <span style={{position:'absolute',right:0,bottom:0,width:20,height:20,borderRadius:'50%',background:'var(--ink)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}><Icon name="camera" size={10}/></span>
+        </button>
+        <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
+        <div style={{minWidth:0,flex:1}}>
+          <div style={{fontWeight:800,fontSize:16}}>{name}</div>
+          <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
+          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{marginTop:5,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
+          {message && <div style={{fontSize:10.5,color:message.includes('updated')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
         </div>
       </div>
+    </div>
 
-      <div className="screen-pad" style={{ paddingTop: 8 }}>
-        <div style={{
-          display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginBottom: 17
-        }}>
-          <div className="hub-card">
-            <div className="t">Protein streak</div>
-            <div className="mono" style={{ fontSize: 22, fontWeight: 800 }}>{profile?.streak || 0}d</div>
-          </div>
-          <div className="hub-card">
-            <div className="t">Step streak</div>
-            <div className="mono" style={{ fontSize: 22, fontWeight: 800 }}>{profile?.step_streak || 0}d</div>
-          </div>
-          <div className="hub-card">
-            <div className="t">Lifetime steps</div>
-            <div className="mono" style={{ fontSize: 20, fontWeight: 800 }}>
-              {(profile?.total_steps || 0) >= 1000
-                ? `${Math.round((profile.total_steps || 0) / 1000)}K`
-                : (profile?.total_steps || 0)}
-            </div>
-          </div>
-          <div className="hub-card">
-            <div className="t">Daily goal</div>
-            <div className="mono" style={{ fontSize: 20, fontWeight: 800 }}>{(profile?.step_goal || 0).toLocaleString()}</div>
-          </div>
-        </div>
-
-        {achievements.length > 0 && (
-          <div style={{ marginBottom: 17 }}>
-            <div style={{ fontWeight: 800, fontSize: 14, marginBottom: 9 }}>Milestones</div>
-            <div style={{ display: 'flex', gap: 9, overflowX: 'auto', paddingBottom: 4 }}>
-              {achievements.slice(0, 8).map((achievement, index) => (
-                <AchievementBadge key={achievement.id || index} achievement={achievement} index={index} />
-              ))}
-            </div>
-          </div>
-        )}
-
-        <div style={{
-          border: '1.5px solid var(--line)', borderRadius: 16, overflow: 'hidden', background: '#fff'
-        }}>
-          {rows.map((row, index) => (
-            <div key={row.label} style={{ borderBottom: index === rows.length - 1 ? 'none' : '1px solid var(--line)' }}>
-              <a href={row.href} target={row.external ? '_blank' : undefined}
-                rel={row.external ? 'noopener' : undefined}
-                style={{ textDecoration: 'none', display: 'block' }}>
-                <div className="list-row" style={{ padding: '14px 15px' }}>
-                  <div className="left" style={{ display: 'flex', alignItems: 'center', gap: 11 }}>
-                    <span style={{ color: 'var(--green-dark)', display: 'flex' }}><Icon name={row.icon} /></span>
-                    <span className="lbl">{row.label}</span>
-                  </div>
-                  <svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                    <path d="m9 18 6-6-6-6" />
-                  </svg>
-                </div>
-              </a>
-            </div>
-          ))}
-        </div>
-
-        <a href={shopUrl} target="_blank" rel="noopener" className="btn-secondary"
-          style={{ textDecoration: 'none', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7, marginTop: 16 }}>
-          <Icon name="store" size={17} /> Return to Protlys store
-        </a>
-
-        <div style={{ marginTop: 23, paddingTop: 18, borderTop: '1.5px solid var(--line)' }}>
-          {!showSignOut ? (
-            <button onClick={() => setShowSignOut(true)}
-              style={{ background: 'none', border: 'none', color: 'var(--ink-45)', fontSize: 13, fontWeight: 700, cursor: 'pointer', width: '100%' }}>
-              Sign out
-            </button>
-          ) : (
-            <div style={{ background: '#FEE2E2', borderRadius: 14, padding: 15, textAlign: 'center' }}>
-              <p style={{ fontSize: 13, color: '#B3261E', fontWeight: 700, marginBottom: 12 }}>Sign out of Protlys Hub?</p>
-              <div style={{ display: 'flex', gap: 10 }}>
-                <button className="btn-secondary" style={{ flex: 1, marginTop: 0 }}
-                  onClick={() => setShowSignOut(false)}>Cancel</button>
-                <button onClick={handleSignOut} disabled={signingOut}
-                  style={{
-                    flex: 1, background: '#B3261E', color: '#fff', border: 'none',
-                    borderRadius: 12, padding: 12, fontWeight: 800, fontSize: 14,
-                    cursor: 'pointer', fontFamily: 'inherit'
-                  }}>
-                  {signingOut ? 'Signing out…' : 'Sign out'}
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
-
-        <p style={{ fontSize: 11, color: 'var(--ink-45)', textAlign: 'center', marginTop: 15 }}>
-          Protlys Hub
-        </p>
+    <div className="screen-pad" style={{paddingTop:4}}>
+      <div className="hub-grid" style={{marginBottom:20}}>
+        <div className="hub-card"><div className="t">Protein streak</div><div className="mono" style={{fontSize:22,fontWeight:800}}>{profile?.streak || 0}d</div></div>
+        <div className="hub-card"><div className="t">Step streak</div><div className="mono" style={{fontSize:22,fontWeight:800}}>{profile?.step_streak || 0}d</div></div>
+        <div className="hub-card"><div className="t">Lifetime steps</div><div className="mono" style={{fontSize:20,fontWeight:800}}>{(profile?.total_steps || 0).toLocaleString()}</div></div>
+        <div className="hub-card"><div className="t">Daily goal</div><div className="mono" style={{fontSize:20,fontWeight:800}}>{(profile?.step_goal || 0).toLocaleString()}</div></div>
       </div>
-    </>
-  );
+
+      {achievements.length > 0 && <div style={{marginBottom:20}}>
+        <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Milestones</div>
+        <div style={{display:'flex',gap:9,overflowX:'auto',paddingBottom:4}}>
+          {achievements.slice(0,8).map((a,i) => <div key={a.id || i} style={{minWidth:112,background:'#fff',border:'1px solid var(--line)',borderRadius:14,padding:12}}><div style={{width:30,height:30,borderRadius:9,background:'var(--green-soft)',color:'var(--green-dark)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900}}>{i+1}</div><div style={{fontSize:11,fontWeight:800,marginTop:8,lineHeight:1.3}}>{a?.achievements?.name || 'Milestone'}</div></div>)}
+        </div>
+      </div>}
+
+      <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
+      <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
+        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}>
+          <div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div>
+        </a>)}
+      </div>
+
+      <a href={shopUrl} target="_blank" rel="noopener" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Return to Protlys store</a>
+
+      <div style={{marginTop:24,paddingTop:18,borderTop:'1px solid var(--line)',textAlign:'center'}}>
+        {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} style={{background:'none',border:0,color:'var(--ink-45)',fontSize:13,fontWeight:700,cursor:'pointer'}}>Sign out</button> : <div style={{background:'#FEE2E2',borderRadius:14,padding:15}}><div style={{fontSize:13,color:'#B3261E',fontWeight:700,marginBottom:11}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:9}}><button type="button" className="btn-secondary" style={{flex:1,marginTop:0}} onClick={() => setConfirmSignOut(false)}>Cancel</button><button type="button" disabled={signingOut} onClick={handleSignOut} style={{flex:1,border:0,borderRadius:12,padding:12,background:'#B3261E',color:'#fff',fontWeight:800,cursor:'pointer'}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
+      </div>
+    </div>
+  </>;
 }
