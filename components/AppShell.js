@@ -12,10 +12,7 @@ const NAV_ITEMS = [
 ];
 
 function getShopUrl() {
-  const configured = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL?.trim();
-  if (!configured || configured.includes('yourstore.myshopify.com')) return 'https://protlys.com/collections/all';
-  if (configured.includes('/collections/all')) return configured.replace(/\/+$/, '');
-  return `${configured.replace(/\/+$/, '')}/collections/all`;
+  return 'https://protlys.com/collections/all';
 }
 
 function CartIcon({ size = 19 }) {
