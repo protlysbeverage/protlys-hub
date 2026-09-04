@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import { useRef, useState, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { createFeedPostAction, toggleFeedLikeAction, addFeedCommentAction } from './feed-actions';
@@ -30,11 +31,10 @@ function Icon({ name, size = 18, strokeWidth = 1.8 }) {
   );
 }
 
-function Avatar({ name, url, size = 40 }) {
-  if (url) {
-    return <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />;
-  }
-  return (
+function Avatar({ name, url, size = 40, href }) {
+  const avatar = url ? (
+    <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+  ) : (
     <div style={{
       width: size, height: size, borderRadius: '50%', background: 'var(--green-soft)',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
@@ -43,6 +43,9 @@ function Avatar({ name, url, size = 40 }) {
       {(name || '?')[0].toUpperCase()}
     </div>
   );
+
+  if (!href) return avatar;
+  return <Link href={href} aria-label={`View ${name || 'member'} profile`} style={{ display: 'block', lineHeight: 0 }}>{avatar}</Link>;
 }
 
 function timeAgo(ts) {
@@ -352,6 +355,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
           const isLiked = liked.has(post.id);
           const comments = post.feed_comments || [];
           const stats = post.stats;
+          const memberId = post.profiles?.id;
 
           return (
             <article key={post.id} id={`post-${post.id}`} style={{
@@ -360,11 +364,12 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
               boxShadow: '0 2px 8px rgba(0,0,0,.04)'
             }}>
               <div style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '14px 14px 11px' }}>
-                <Avatar name={post.profiles?.display_name} url={post.profiles?.avatar_url} size={40} />
+                <Avatar name={post.profiles?.display_name} url={post.profiles?.avatar_url} size={40}
+                  href={memberId ? `/member/${memberId}` : undefined} />
                 <div style={{ flex: 1, minWidth: 0 }}>
-                  <div style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)' }}>
+                  <Link href={memberId ? `/member/${memberId}` : '#'} style={{ fontSize: 13, fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>
                     {post.profiles?.display_name || 'Member'}
-                  </div>
+                  </Link>
                   <div style={{ fontSize: 11, color: 'var(--ink-45)', display: 'flex', alignItems: 'center', gap: 6 }}>
                     <span>{timeAgo(post.created_at)}</span>
                     {post.post_type !== 'general' && (
