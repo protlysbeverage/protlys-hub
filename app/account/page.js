@@ -5,7 +5,7 @@ import AccountClient from './AccountClient';
 
 function getShopUrl() {
   const configured = process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL?.trim();
-  if (!configured || configured.includes('yourstore.myshopify.com')) return 'https://protlys.com';
+  if (!configured || configured.includes('yourstore.myshopify.com')) return 'https://protlys.myshopify.com';
   return configured.replace(/\/+$/, '');
 }
 
