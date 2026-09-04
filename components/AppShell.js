@@ -49,6 +49,9 @@ export default function AppShell({ children }) {
         .protlys-app .movement-setting-title { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750;margin-top:3px; }
         .protlys-app .movement-setting-value { font-size:12px;color:var(--ink-70);margin-top:3px; }
         .protlys-app .movement-setting-button { border:0;background:var(--green-soft);color:var(--green-dark);border-radius:999px;padding:8px 11px;font-size:11.5px;font-weight:800;white-space:nowrap;cursor:pointer; }
+        .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C !important; }
+        .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
+        .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
