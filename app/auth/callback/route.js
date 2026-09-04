@@ -1,14 +1,19 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
+function getSafeNext(value) {
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+}
+
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const code = requestUrl.searchParams.get('code');
+  const next = getSafeNext(requestUrl.searchParams.get('next'));
   const error = requestUrl.searchParams.get('error');
   const errorDescription = requestUrl.searchParams.get('error_description');
 
-  if (error) {
-    const message = errorDescription || error;
+  if (error || errorDescription) {
+    const message = errorDescription || error || 'OAuth sign-in failed.';
     return NextResponse.redirect(
       new URL(`/login?error_message=${encodeURIComponent(message)}`, requestUrl.origin)
     );
@@ -29,5 +34,5 @@ export async function GET(request) {
     );
   }
 
-  return NextResponse.redirect(new URL('/', requestUrl.origin));
+  return NextResponse.redirect(new URL(next, requestUrl.origin));
 }
