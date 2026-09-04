@@ -135,9 +135,9 @@ export default function AppShell({ children }) {
         .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
         .protlys-app .feed-post-type-selector button {
           flex:0 0 auto;
-          border-radius:999px !important;
+          border-radius:7px !important;
           padding:7px 12px !important;
-          font-size:12px !important;
+          font-size:11.5px !important;
           line-height:18px;
         }
       `}</style>
