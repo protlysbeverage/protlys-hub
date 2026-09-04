@@ -67,9 +67,9 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
   return <>
     <div className="screen-pad">
-      <span className="eyebrow">Account</span>
-      <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys profile</h1>
-      <p className="subhead">Manage your profile and access the parts of Hub that belong to you.</p>
+      <span className="eyebrow">Dashboard</span>
+      <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
+      <p className="subhead">Your progress, milestones and Hub shortcuts in one place.</p>
 
       <div style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:14}}>
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
