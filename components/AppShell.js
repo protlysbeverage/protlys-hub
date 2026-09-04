@@ -53,46 +53,44 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
 
-        /* Feed post type selector: five identical-width capsules. */
+        /* Feed post type selector: every option uses the same capsule geometry. */
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) {
-          display:grid !important;
-          grid-template-columns:repeat(5,minmax(0,1fr));
-          gap:6px !important;
-          align-items:stretch;
-          width:100%;
+          display:flex !important;
+          gap:7px !important;
+          align-items:center;
           padding:2px !important;
           margin:16px 0 14px !important;
           border:0 !important;
           border-radius:0 !important;
           background:transparent !important;
-          overflow:hidden;
-          box-sizing:border-box;
+          overflow-x:auto;
+          scrollbar-width:none;
         }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2)::-webkit-scrollbar { display:none; }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) button {
-          width:100%;
+          flex:1 0 auto;
           min-width:0;
-          height:32px;
+          height:34px;
           border:1px solid var(--line) !important;
           border-radius:999px !important;
-          padding:6px 3px !important;
-          font-size:9px !important;
+          padding:7px 13px !important;
+          font-size:11.5px !important;
           font-weight:750 !important;
-          line-height:16px !important;
+          line-height:18px !important;
           white-space:nowrap;
-          text-align:center;
+          background:#fff !important;
+          color:var(--ink-70) !important;
           box-sizing:border-box;
-          overflow:hidden;
-          text-overflow:clip;
-          background:#fff;
-          color:var(--ink-70);
-          cursor:pointer;
-          transition:background .15s ease,color .15s ease,border-color .15s ease;
         }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:hover {
-          background:var(--green-soft);
-          border-color:var(--green);
-          color:var(--green-dark);
+          background:var(--green-soft) !important;
+          border-color:var(--green) !important;
+          color:var(--green-dark) !important;
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:first-of-type {
+          background:var(--green-soft) !important;
+          border-color:var(--green) !important;
+          color:var(--green-dark) !important;
         }
       `}</style>
       <div className="app-shell">
