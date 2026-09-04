@@ -53,7 +53,7 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
 
-        /* Feed post type selector: dedicated grid so it cannot collide with other screen-pad elements. */
+        /* Feed post type selector: stable two-row tabs avoid the problem corner and keep every option readable. */
         .protlys-app .feed-post-type-selector {
           display:grid !important;
           grid-template-columns:repeat(6,minmax(0,1fr));
@@ -67,10 +67,10 @@ export default function AppShell({ children }) {
           grid-column:span 2;
           width:100%;
           min-width:0;
-          height:38px;
+          height:36px;
           border:1px solid var(--line) !important;
-          border-radius:11px !important;
-          padding:7px 6px !important;
+          border-radius:10px !important;
+          padding:7px 7px !important;
           font-size:11px !important;
           font-weight:750 !important;
           line-height:18px !important;
@@ -83,7 +83,8 @@ export default function AppShell({ children }) {
           transition:background .15s ease,color .15s ease,border-color .15s ease,transform .15s ease;
         }
         .protlys-app .feed-post-type-selector button:nth-child(4) { grid-column:2 / span 2; }
-        .protlys-app .feed-post-type-selector button:first-child { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
+        .protlys-app .feed-post-type-selector button:nth-child(5) { grid-column:4 / span 2; }
+        .protlys-app .feed-post-type-selector button[aria-pressed="true"] { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
         .protlys-app .feed-post-type-selector button:hover { background:var(--green-soft) !important;border-color:var(--green) !important;color:var(--green-dark) !important; }
         .protlys-app .feed-post-type-selector button:active { transform:scale(.98); }
       `}</style>
