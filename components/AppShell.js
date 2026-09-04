@@ -53,31 +53,43 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
 
-        /* Feed composer post-type control */
+        /* Feed post type selector: every option uses the same capsule geometry. */
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) {
           display:flex !important;
-          gap:6px !important;
+          gap:7px !important;
           align-items:center;
-          padding:3px !important;
+          padding:2px !important;
           margin:16px 0 14px !important;
-          border:1px solid var(--line);
-          border-radius:12px;
-          background:var(--paper);
+          border:0 !important;
+          border-radius:0 !important;
+          background:transparent !important;
           overflow-x:auto;
           scrollbar-width:none;
         }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2)::-webkit-scrollbar { display:none; }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2)::before { display:none; }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) button {
-          flex:0 0 auto;
-          border-radius:9px !important;
-          padding:7px 12px !important;
-          min-height:31px;
+          flex:1 0 auto;
+          min-width:0;
+          height:34px;
+          border:1px solid var(--line) !important;
+          border-radius:999px !important;
+          padding:7px 13px !important;
           font-size:11.5px !important;
           font-weight:750 !important;
+          line-height:18px !important;
+          white-space:nowrap;
+          background:#fff !important;
+          color:var(--ink-70) !important;
+          box-sizing:border-box;
           transition:background .15s ease,color .15s ease,border-color .15s ease;
         }
         .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:hover {
+          background:var(--green-soft) !important;
+          border-color:var(--green) !important;
+          color:var(--green-dark) !important;
+        }
+        .protlys-app .screen-pad > div:first-child > div:nth-child(2) button:first-of-type {
           background:var(--green-soft) !important;
           border-color:var(--green) !important;
           color:var(--green-dark) !important;
