@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { setActivityLevelAction } from '@/app/movement-actions';
 import MovementClient from './MovementClient';
@@ -24,6 +24,25 @@ function PhoneIcon({ type }) {
   );
 }
 
+function removeLegacyMovementBlocks(root) {
+  const walker = document.createTreeWalker(root, NodeFilter.SHOW_ELEMENT);
+  const elements = [];
+  let node;
+  while ((node = walker.nextNode())) elements.push(node);
+
+  for (const element of elements) {
+    const text = (element.textContent || '').trim();
+    if (element.classList.contains('hub-card') && text.includes('Your milestone journey')) {
+      element.remove();
+      continue;
+    }
+    if (text.includes('Auto-sync coming soon') && element.children.length <= 2) {
+      const card = element.closest('div[style*="var(--green-soft)"]') || element;
+      card.remove();
+    }
+  }
+}
+
 export default function MovementPolish(props) {
   const router = useRouter();
   const [isPending, start] = useTransition();
@@ -31,6 +50,15 @@ export default function MovementPolish(props) {
   const activityLevel = props.activityLevel || 'moderate';
   const current = ACTIVITY_OPTIONS.find(option => option.value === activityLevel) || ACTIVITY_OPTIONS[1];
   const stepGoal = props.currentGoal || props.profile?.step_goal || 7500;
+
+  useEffect(() => {
+    const root = document.querySelector('.movement-polish');
+    if (!root) return;
+    removeLegacyMovementBlocks(root);
+    const observer = new MutationObserver(() => removeLegacyMovementBlocks(root));
+    observer.observe(root, { childList: true, subtree: true });
+    return () => observer.disconnect();
+  }, []);
 
   function handleSetActivity(level) {
     start(async () => {
@@ -51,8 +79,7 @@ export default function MovementPolish(props) {
           font-variant-numeric:tabular-nums;
           letter-spacing:-.025em;
         }
-        .movement-polish .milestone-legacy-hide { display:none !important; }
-        .movement-polish .setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin:10px 0 0; }
+        .movement-polish .setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin:0 18px 10px; }
         .movement-polish .setting-head { display:flex;justify-content:space-between;gap:12px;align-items:flex-start; }
         .movement-polish .setting-kicker { font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-45);font-weight:800; }
         .movement-polish .setting-title { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750;margin-top:3px; }
@@ -63,7 +90,7 @@ export default function MovementPolish(props) {
         .movement-polish .setting-option.active { border:1.5px solid var(--green);background:var(--green-soft); }
         .movement-polish .setting-option strong { display:block;font-size:12px;color:var(--ink); }
         .movement-polish .setting-option span { display:block;font-size:11px;color:var(--ink-70);margin-top:3px; }
-        .movement-polish .phone-card { background:var(--green-soft);border-radius:16px;padding:16px;margin-top:10px; }
+        .movement-polish .phone-card { background:var(--green-soft);border-radius:16px;padding:16px;margin:10px 18px 0; }
         .movement-polish .phone-title { font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750; }
         .movement-polish .phone-copy { font-size:12px;line-height:1.5;color:var(--ink-70);margin-top:5px; }
         .movement-polish .phone-grid { display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px; }
@@ -72,42 +99,39 @@ export default function MovementPolish(props) {
         .movement-polish .phone-option span { display:block;font-size:10px;color:var(--ink-45);margin-top:3px;line-height:1.35; }
       `}</style>
 
-      <div className="movement-setting-card-placeholder" style={{display:'none'}} />
-      <div style={{padding:'0 18px 6px'}}>
-        <div className="setting-card">
-          <div className="setting-head">
-            <div>
-              <div className="setting-kicker">Your movement plan</div>
-              <div className="setting-title">{current.label} activity</div>
-              <div className="setting-value">Daily goal: <strong>{stepGoal.toLocaleString()} steps</strong></div>
-            </div>
-            <button type="button" className="setting-button" onClick={() => setShowActivity(v => !v)}>
-              {showActivity ? 'Close' : 'Change'}
-            </button>
+      <div className="setting-card">
+        <div className="setting-head">
+          <div>
+            <div className="setting-kicker">Your movement plan</div>
+            <div className="setting-title">{current.label} activity</div>
+            <div className="setting-value">Daily goal: <strong>{stepGoal.toLocaleString()} steps</strong></div>
           </div>
-          {showActivity && (
-            <div className="setting-options">
-              {ACTIVITY_OPTIONS.map(option => (
-                <button key={option.value} type="button" className={`setting-option${option.value === activityLevel ? ' active' : ''}`} onClick={() => !isPending && handleSetActivity(option.value)}>
-                  <strong>{option.label}</strong>
-                  <span>{option.desc} · {option.goal}</span>
-                </button>
-              ))}
-            </div>
-          )}
+          <button type="button" className="setting-button" onClick={() => setShowActivity(v => !v)}>
+            {showActivity ? 'Close' : 'Change activity'}
+          </button>
         </div>
-
-        <div className="phone-card">
-          <div className="phone-title">Connect your phone</div>
-          <div className="phone-copy">Automatic step syncing will use your phone’s health data when the Protlys mobile app is connected.</div>
-          <div className="phone-grid">
-            <div className="phone-option"><PhoneIcon type="apple" /><div><strong>iPhone</strong><span>Apple Health via Protlys mobile app</span></div></div>
-            <div className="phone-option"><PhoneIcon type="android" /><div><strong>Android</strong><span>Health Connect via Protlys mobile app</span></div></div>
+        {showActivity && (
+          <div className="setting-options">
+            {ACTIVITY_OPTIONS.map(option => (
+              <button key={option.value} type="button" className={`setting-option${option.value === activityLevel ? ' active' : ''}`} onClick={() => !isPending && handleSetActivity(option.value)}>
+                <strong>{option.label}</strong>
+                <span>{option.desc} · {option.goal}</span>
+              </button>
+            ))}
           </div>
-        </div>
+        )}
       </div>
 
       <MovementClient {...props} />
+
+      <div className="phone-card">
+        <div className="phone-title">Connect your phone</div>
+        <div className="phone-copy">Automatic step syncing will use your phone’s health data when the Protlys mobile app is connected.</div>
+        <div className="phone-grid">
+          <div className="phone-option"><PhoneIcon type="apple" /><div><strong>iPhone</strong><span>Apple Health through the Protlys mobile app</span></div></div>
+          <div className="phone-option"><PhoneIcon type="android" /><div><strong>Android</strong><span>Health Connect through the Protlys mobile app</span></div></div>
+        </div>
+      </div>
     </div>
   );
 }
