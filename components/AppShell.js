@@ -52,7 +52,94 @@ export default function AppShell({ children }) {
         .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C !important; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
         .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C; stroke:#E1306C; }
-        .protlys-app .feed-image { display:block; width:100%; border-radius:12px; max-height:280px; object-fit:cover; }
+
+        /* Feed: consistent post geometry and clear separation between posts. */
+        .protlys-app .feed-card {
+          width:100%;
+          margin:0 0 14px;
+          padding:16px;
+          background:#fff;
+          border:1px solid var(--line);
+          border-radius:18px;
+          box-shadow:0 2px 8px rgba(15,42,74,.035);
+          overflow:hidden;
+        }
+        .protlys-app .feed-card-head {
+          display:flex;
+          align-items:center;
+          gap:10px;
+          min-height:40px;
+          padding:0 0 12px;
+          margin:0;
+          border-bottom:1px solid var(--line);
+        }
+        .protlys-app .feed-card-head > a { flex-shrink:0; }
+        .protlys-app .feed-author {
+          display:block;
+          font-size:13px;
+          line-height:1.25;
+          font-weight:800;
+          color:var(--ink);
+        }
+        .protlys-app .feed-meta {
+          margin-top:3px;
+          font-size:10.5px;
+          line-height:1.2;
+          color:var(--ink-45);
+        }
+        .protlys-app .feed-body {
+          padding:12px 0 0;
+          font-size:13.5px;
+          line-height:1.55;
+          white-space:pre-wrap;
+          overflow-wrap:anywhere;
+        }
+        .protlys-app .feed-image {
+          display:block;
+          width:100%;
+          height:auto;
+          max-height:280px;
+          margin:12px 0 0;
+          border-radius:12px;
+          object-fit:cover;
+          background:var(--paper);
+        }
+        .protlys-app .feed-card .feed-actions {
+          display:flex;
+          align-items:center;
+          gap:18px;
+          margin-top:12px;
+          padding-top:10px;
+          border-top:1px solid var(--line);
+        }
+        .protlys-app .feed-card .feed-actions button {
+          display:inline-flex;
+          align-items:center;
+          gap:6px;
+        }
+        .protlys-app .feed-card .feed-comments {
+          margin-top:10px;
+          padding-top:10px;
+          border-top:1px solid var(--line);
+        }
+
+        /* Keep the composer compact and aligned with the feed cards. */
+        .protlys-app .feed-post-type-selector {
+          display:flex;
+          gap:6px;
+          overflow-x:auto;
+          margin:0 0 12px;
+          padding:0 0 2px;
+          scrollbar-width:none;
+        }
+        .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
+        .protlys-app .feed-post-type-selector button {
+          flex:0 0 auto;
+          border-radius:999px !important;
+          padding:7px 12px !important;
+          font-size:12px !important;
+          line-height:18px;
+        }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
