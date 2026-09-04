@@ -17,12 +17,13 @@ function stripMovementEmojis(root) {
   while ((node = walker.nextNode())) nodes.push(node);
 
   for (const textNode of nodes) {
-    let value = textNode.nodeValue || '';
+    const original = textNode.nodeValue || '';
+    let value = original;
     for (const [emoji, replacement] of EMOJI_TO_UI) value = value.split(emoji).join(replacement);
 
     // Remove any remaining pictographic emoji used by achievement data.
     value = value.replace(/[\u{1F1E6}-\u{1F1FF}\u{1F300}-\u{1FAFF}\u{2600}-\u{27BF}\u{FE0F}\u{200D}]/gu, '');
-    textNode.nodeValue = value;
+    if (value !== original) textNode.nodeValue = value;
   }
 }
 
@@ -52,7 +53,16 @@ export default function MovementPolish(props) {
         .movement-polish .hub-card [style*="minWidth:72"] {
           font-family: 'Space Grotesk', sans-serif;
         }
-        .movement-polish [data-movement-polish] button,
+        .movement-polish .hub-card [style*="minWidth:72"] .mono {
+          font-family: 'Space Grotesk', sans-serif !important;
+          font-size: 12px !important;
+          letter-spacing: -0.02em;
+        }
+        .movement-polish .data-chip .value,
+        .movement-polish .data-chip .label {
+          font-family: 'Manrope', sans-serif;
+          font-variant-numeric: tabular-nums;
+        }
         .movement-polish button {
           font-family: 'Manrope', sans-serif;
         }
