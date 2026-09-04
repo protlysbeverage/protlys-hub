@@ -22,7 +22,7 @@ const GOALS = [
   { id: 'maintain', label: 'Maintain & stay active', detail: '1.2–1.4g / kg', v: 1.2, default: true },
   { id: 'muscle', label: 'Build muscle', detail: '1.6–2.0g / kg', v: 1.6 },
   { id: 'performance', label: 'Athletic performance', detail: '1.8–2.2g / kg', v: 1.8 },
-  { id: 'lose', label: 'Lose weight', detail: '', v: 1.2 },
+  { id: 'lose', label: 'Lose weight', detail: '1.2g / kg', v: 1.2 },
 ];
 
 function activityLabel(v) {
@@ -103,9 +103,7 @@ export default function CalculatorClient({ savedTarget }) {
           {GOALS.map((item) => (
             <button key={item.id} className={`pill-opt${goal === item.id ? ' active' : ''}`} onClick={() => setGoal(item.id)}>
               <span>{item.label}</span>
-              {item.detail && (
-                <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
-              )}
+              <small style={{ display: 'block', marginTop: 2, opacity: 0.7 }}>{item.detail}</small>
             </button>
           ))}
         </div>
