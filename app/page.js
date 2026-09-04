@@ -23,11 +23,16 @@ export default async function FeedPage() {
   ]);
 
   const likedIds = new Set((myLikes || []).map(l => l.post_id));
+  const normalizedPosts = (posts || []).map(post => ({
+    ...post,
+    like_count: post.feed_likes?.[0]?.count || 0,
+    comment_count: post.feed_comments?.length || 0,
+  }));
 
   return (
     <AppShell>
       <FeedClient
-        posts={posts || []}
+        posts={normalizedPosts}
         likedIds={[...likedIds]}
         userId={user.id}
         profile={profile || {}}
