@@ -65,6 +65,13 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
     { href: `${shopUrl}/account`, label: 'Manage Protlys orders', desc: 'View orders and manage your store account.', icon: 'box', external: true },
   ];
 
+  const statCards = [
+    ['Protein streak', `${profile?.streak || 0}d`],
+    ['Step streak', `${profile?.step_streak || 0}d`],
+    ['Lifetime steps', (profile?.total_steps || 0).toLocaleString()],
+    ['Daily goal', (profile?.step_goal || 0).toLocaleString()],
+  ];
+
   return <>
     <div className="screen-pad">
       <span className="eyebrow">Dashboard</span>
@@ -88,10 +95,12 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
     <div className="screen-pad" style={{paddingTop:4}}>
       <div className="hub-grid" style={{marginBottom:20}}>
-        <div className="hub-card"><div className="t">Protein streak</div><div className="mono" style={{fontSize:22,fontWeight:800}}>{profile?.streak || 0}d</div></div>
-        <div className="hub-card"><div className="t">Step streak</div><div className="mono" style={{fontSize:22,fontWeight:800}}>{profile?.step_streak || 0}d</div></div>
-        <div className="hub-card"><div className="t">Lifetime steps</div><div className="mono" style={{fontSize:20,fontWeight:800}}>{(profile?.total_steps || 0).toLocaleString()}</div></div>
-        <div className="hub-card"><div className="t">Daily goal</div><div className="mono" style={{fontSize:20,fontWeight:800}}>{(profile?.step_goal || 0).toLocaleString()}</div></div>
+        {statCards.map(([label, value]) => (
+          <div className="hub-card" key={label} style={{minHeight:78,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'11px 12px'}}>
+            <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5,whiteSpace:'nowrap'}}>{label}</div>
+            <div className="mono" style={{fontSize:16,fontWeight:800,lineHeight:1.1,whiteSpace:'nowrap'}}>{value}</div>
+          </div>
+        ))}
       </div>
 
       {achievements.length > 0 && <div style={{marginBottom:20}}>
