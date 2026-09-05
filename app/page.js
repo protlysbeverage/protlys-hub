@@ -27,6 +27,7 @@ export default async function FeedPage() {
     ...post,
     like_count: post.feed_likes?.[0]?.count || 0,
     comment_count: post.feed_comments?.[0]?.count || 0,
+    profiles: post.profiles || { id: post.user_id, display_name: null, avatar_url: null },
   }));
 
   return (
