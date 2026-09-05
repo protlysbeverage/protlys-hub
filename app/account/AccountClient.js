@@ -16,15 +16,16 @@ function Icon({ name, size = 19 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function normalizeShopUrl(value) {
-  const raw = (value || '').trim();
-  if (!raw || raw.includes('yourstore.myshopify.com')) return 'https://protlys.com/collections/all';
-  const withProtocol = /^https?:\/\//i.test(raw) ? raw : `https://${raw}`;
-  const normalized = withProtocol.replace(/\/+$/, '');
-  return normalized.includes('/collections/all') ? normalized : `${normalized}/collections/all`;
+function ProgressBar({ value, target }) {
+  const pct = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0;
+  return (
+    <div style={{height:8,borderRadius:999,background:'var(--green-soft)',overflow:'hidden'}}>
+      <div style={{height:'100%',width:`${pct}%`,background:'var(--green-dark)',borderRadius:999,transition:'width .25s ease'}} />
+    </div>
+  );
 }
 
-export default function AccountClient({ profile, achievements = [], shopUrl, email }) {
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], todayProtein = 0, shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -34,7 +35,20 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
 
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
-  const storeUrl = normalizeShopUrl(shopUrl);
+  const storeUrl = shopUrl || 'https://protlys.com/collections/all';
+  const stepGoal = profile?.step_goal || 7500;
+  const proteinTarget = profile?.target_g || 120;
+
+  const activeDays = Array.from({ length: 7 }, (_, index) => {
+    const date = new Date();
+    date.setDate(date.getDate() - (6 - index));
+    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const row = weekSteps.find(item => item.step_date === key);
+    return { key, steps: Number(row?.steps || 0), active: Number(row?.steps || 0) >= stepGoal };
+  });
+  const activeDayCount = activeDays.filter(day => day.active).length;
+  const movementPct = stepGoal > 0 ? Math.min(100, Math.round((todaySteps / stepGoal) * 100)) : 0;
+  const proteinPct = proteinTarget > 0 ? Math.min(100, Math.round((todayProtein / proteinTarget) * 100)) : 0;
 
   async function handlePhoto(event) {
     const file = event.target.files?.[0];
@@ -76,13 +90,6 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
     { href: storeUrl, label: 'Shop Protlys', desc: 'Browse Protlys products and place an order.', icon: 'box', external: true },
   ];
 
-  const statCards = [
-    ['Protein streak', `${profile?.streak || 0}d`],
-    ['Lifetime steps', (profile?.total_steps || 0).toLocaleString()],
-    ['Step streak', `${profile?.step_streak || 0}d`],
-    ['Daily goal', (profile?.step_goal || 0).toLocaleString()],
-  ];
-
   return <>
     <div className="screen-pad">
       <span className="eyebrow">Dashboard</span>
@@ -105,13 +112,68 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
     </div>
 
     <div className="screen-pad" style={{paddingTop:4}}>
-      <div className="hub-grid" style={{marginBottom:20}}>
-        {statCards.map(([label, value]) => (
-          <div className="hub-card" key={label} style={{minHeight:78,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'11px 12px'}}>
-            <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5,whiteSpace:'nowrap'}}>{label}</div>
-            <div className="mono" style={{fontSize:16,fontWeight:800,lineHeight:1.1,whiteSpace:'nowrap'}}>{value}</div>
+      {/* Protlys performance summary: replaces the old streak/points stat grid without touching navigation below. */}
+      <div className="hub-card" style={{padding:16,marginBottom:10}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}>
+          <div>
+            <div className="t" style={{fontSize:10}}>Today's progress</div>
+            <div style={{fontSize:20,fontWeight:800,marginTop:3}}>Move + Fuel</div>
           </div>
-        ))}
+          <div className="mono" style={{fontSize:15,fontWeight:800,color:'var(--green-dark)'}}>{Math.round((movementPct + proteinPct) / 2)}%</div>
+        </div>
+
+        <div style={{marginBottom:14}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
+            <span style={{fontSize:12,fontWeight:800}}>Movement</span>
+            <span className="mono" style={{fontSize:12,color:'var(--ink-70)'}}>{todaySteps.toLocaleString()} / {stepGoal.toLocaleString()} steps</span>
+          </div>
+          <ProgressBar value={todaySteps} target={stepGoal} />
+        </div>
+
+        <div>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
+            <span style={{fontSize:12,fontWeight:800}}>Protein</span>
+            <span className="mono" style={{fontSize:12,color:'var(--ink-70)'}}>{todayProtein} / {proteinTarget}g</span>
+          </div>
+          <ProgressBar value={todayProtein} target={proteinTarget} />
+        </div>
+      </div>
+
+      <div className="hub-card" style={{padding:14,marginBottom:10}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}>
+          <div>
+            <div className="t" style={{fontSize:10}}>Weekly consistency</div>
+            <div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} / 7 active days</div>
+          </div>
+          <span style={{fontSize:11,color:'var(--ink-45)'}}>Goal days</span>
+        </div>
+        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:7}}>
+          {activeDays.map((day, index) => (
+            <div key={day.key} style={{textAlign:'center'}}>
+              <div style={{fontSize:9.5,color:'var(--ink-45)',marginBottom:5}}>{['M','T','W','T','F','S','S'][new Date(`${day.key}T12:00:00`).getDay() === 0 ? 6 : new Date(`${day.key}T12:00:00`).getDay() - 1]}</div>
+              <div style={{height:9,borderRadius:999,background:day.active?'var(--green-dark)':'var(--green-soft)',border:day.active?'0':'1px solid var(--line)'}} aria-label={`${day.steps.toLocaleString()} steps`} />
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <div className="hub-grid" style={{marginBottom:20}}>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
+          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div>
+          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todaySteps.toLocaleString()}</div>
+        </div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
+          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Protein today</div>
+          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todayProtein}g</div>
+        </div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
+          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Weekly active</div>
+          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}/7</div>
+        </div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
+          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div>
+          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{(profile?.total_steps || 0).toLocaleString()}</div>
+        </div>
       </div>
 
       {achievements.length > 0 && <div style={{marginBottom:20}}>
