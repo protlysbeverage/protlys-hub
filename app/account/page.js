@@ -14,7 +14,7 @@ export default async function AccountPage() {
 
   const [{ data: profile }, { data: achievements }] = await Promise.all([
     supabase.from('profiles')
-      .select('display_name, avatar_url, streak, target_g, step_streak, total_steps, step_goal')
+      .select('id, display_name, avatar_url, streak, target_g, step_streak, total_steps, step_goal')
       .eq('id', user.id)
       .single(),
     supabase.from('user_achievements')
