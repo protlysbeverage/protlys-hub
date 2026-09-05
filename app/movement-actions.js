@@ -61,7 +61,7 @@ async function awardAchievement(supabase, userId, slug) {
 }
 
 // ── LOG STEPS ────────────────────────────────────────────────
-export async function logStepsAction({ steps, source = 'manual', stepDate, stepTime }) {
+export async function logStepsAction({ steps, source = 'manual', stepDate, stepTime, stepTimestamp }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
@@ -76,15 +76,14 @@ export async function logStepsAction({ steps, source = 'manual', stepDate, stepT
   if (!isValidDateString(selectedDate)) return { error: 'Choose a valid date' };
   if (selectedDate > today) return { error: 'Steps cannot be logged for a future date' };
 
-  // Keep manual timestamps available without changing the daily_steps schema.
-  // synced_at is the precise date/time the entry was submitted/logged.
-  const now = new Date();
-  let syncedAt = now.toISOString();
-  if (selectedDate !== today) {
-    const safeTime = /^\d{2}:\d{2}$/.test(stepTime || '') ? stepTime : '12:00';
-    syncedAt = new Date(`${selectedDate}T${safeTime}:00`).toISOString();
-  } else if (/^\d{2}:\d{2}$/.test(stepTime || '')) {
-    syncedAt = new Date(`${selectedDate}T${stepTime}:00`).toISOString();
+  // Preserve the exact browser-local time supplied by the client as a UTC instant.
+  // This avoids interpreting a local clock value in the server's timezone.
+  let syncedAt = new Date().toISOString();
+  if (stepTimestamp) {
+    const parsedTimestamp = new Date(stepTimestamp);
+    if (!Number.isNaN(parsedTimestamp.getTime())) {
+      syncedAt = parsedTimestamp.toISOString();
+    }
   }
 
   const { data: existing } = await supabase
