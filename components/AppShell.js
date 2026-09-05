@@ -58,10 +58,20 @@ export default function AppShell({ children }) {
         .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
         .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
         .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
+        .protlys-app .bottom-nav { align-items:stretch!important; }
         .protlys-app .bottom-nav .nav-btn,
         .protlys-app .bottom-nav .nav-btn:link,
         .protlys-app .bottom-nav .nav-btn:visited,
         .protlys-app .bottom-nav .nav-btn:active {
+          box-sizing:border-box!important;
+          display:flex!important;
+          flex:1 1 0!important;
+          min-width:0!important;
+          height:52px!important;
+          padding:7px 2px 6px!important;
+          align-items:center!important;
+          justify-content:center!important;
+          gap:4px!important;
           font-family:'Manrope',sans-serif!important;
           font-size:10px!important;
           font-weight:700!important;
@@ -72,8 +82,11 @@ export default function AppShell({ children }) {
           white-space:nowrap!important;
           font-style:normal!important;
           font-variant:normal!important;
+          margin:0!important;
+          transform:none!important;
         }
-        .protlys-app .bottom-nav .nav-btn svg { flex:0 0 auto;width:20px;height:20px;display:block; }
+        .protlys-app .bottom-nav .nav-btn svg { flex:0 0 20px!important;width:20px!important;height:20px!important;display:block!important;margin:0!important; }
+        .protlys-app .disclaimer { display:none!important; }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
