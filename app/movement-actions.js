@@ -3,7 +3,6 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
-// ── helpers ──────────────────────────────────────────────────
 function localDateStr(date = new Date()) {
   const y = date.getFullYear();
   const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -17,50 +16,11 @@ function addDays(dateStr, delta) {
   return localDateStr(date);
 }
 function isValidDateString(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value || ''); }
-
 function todayStr() { return localDateStr(); }
 function yesterdayStr() { return addDays(todayStr(), -1); }
 
-// Smart step goals — based on activity level
-const GOAL_LADDER = {
-  low:      [3000, 4000, 5000, 7500, 10000],
-  moderate: [5000, 7500, 10000, 12500, 15000],
-  high:     [7500, 10000, 12500, 15000, 20000],
-};
-
-function nextGoal(activityLevel, currentTarget) {
-  const ladder = GOAL_LADDER[activityLevel] || GOAL_LADDER.moderate;
-  const idx = ladder.indexOf(currentTarget);
-  return idx >= 0 && idx < ladder.length - 1 ? ladder[idx + 1] : null;
-}
-
-// ── AWARD POINTS (internal) ──────────────────────────────────
-async function awardPoints(supabase, userId, points, reason, refId = null) {
-  await supabase.from('user_points').insert({ user_id: userId, points, reason, ref_id: refId });
-  const { data: p } = await supabase.from('profiles').select('points').eq('id', userId).single();
-  await supabase.from('profiles').update({ points: (p?.points || 0) + points }).eq('id', userId);
-}
-
-// ── AWARD ACHIEVEMENT (internal) ─────────────────────────────
-async function awardAchievement(supabase, userId, slug) {
-  const { data: ach } = await supabase.from('achievements').select('*').eq('slug', slug).single();
-  if (!ach) return;
-  const { error } = await supabase.from('user_achievements').insert({ user_id: userId, achievement_id: ach.id });
-  if (error) return; // already earned
-  await awardPoints(supabase, userId, ach.points, 'achievement', ach.id);
-  await supabase.from('notifications').insert({
-    user_id: userId, type: 'achievement',
-    title: `Achievement unlocked: ${ach.name}`,
-    body: ach.description, ref_id: ach.id,
-  });
-  await supabase.from('community_posts').insert({
-    user_id: userId, post_type: 'milestone',
-    body: `Just earned the "${ach.name}" achievement! ${ach.icon}`,
-    ref_id: ach.id,
-  });
-}
-
-// ── LOG STEPS ────────────────────────────────────────────────
+// Movement logging is intentionally descriptive. There are no step goals,
+// milestone ladders, point rewards, or achievement triggers here.
 export async function logStepsAction({ steps, source = 'manual', stepDate, stepTime, stepTimestamp }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -76,19 +36,13 @@ export async function logStepsAction({ steps, source = 'manual', stepDate, stepT
   if (!isValidDateString(selectedDate)) return { error: 'Choose a valid date' };
   if (selectedDate > today) return { error: 'Steps cannot be logged for a future date' };
 
-  // Prefer the exact browser-local timestamp when the client supplies it.
-  // The +03:00 fallback matches Kenya time for older clients until they refresh.
   let syncedAt = new Date().toISOString();
   if (stepTimestamp) {
     const parsedTimestamp = new Date(stepTimestamp);
-    if (!Number.isNaN(parsedTimestamp.getTime())) {
-      syncedAt = parsedTimestamp.toISOString();
-    }
+    if (!Number.isNaN(parsedTimestamp.getTime())) syncedAt = parsedTimestamp.toISOString();
   } else if (/^\d{2}:\d{2}$/.test(stepTime || '')) {
     const parsedLocalKenyaTime = new Date(`${selectedDate}T${stepTime}:00+03:00`);
-    if (!Number.isNaN(parsedLocalKenyaTime.getTime())) {
-      syncedAt = parsedLocalKenyaTime.toISOString();
-    }
+    if (!Number.isNaN(parsedLocalKenyaTime.getTime())) syncedAt = parsedLocalKenyaTime.toISOString();
   }
 
   const { data: existing } = await supabase
@@ -102,15 +56,14 @@ export async function logStepsAction({ steps, source = 'manual', stepDate, stepT
   if (upsertError) return { error: upsertError.message };
 
   const { data: profile } = await supabase
-    .from('profiles').select('step_streak, last_step_date, total_steps, step_goal, activity_level, points')
-    .eq('id', user.id).single();
+    .from('profiles').select('step_streak, last_step_date, total_steps').eq('id', user.id).single();
 
-  const goal = profile?.step_goal || 7500;
   const newTotal = (profile?.total_steps || 0) + numericSteps;
   let newStreak = profile?.step_streak || 0;
   const isToday = selectedDate === today;
 
-  // Historical entries contribute to lifetime totals but never rewrite today's streak.
+  // Keep the existing descriptive streak data, but do not use it to create
+  // milestones, goals, points, or notifications.
   if (isToday) {
     const last = profile?.last_step_date;
     if (last === today) {
@@ -130,64 +83,17 @@ export async function logStepsAction({ steps, source = 'manual', stepDate, stepT
     await supabase.from('profiles').update({ total_steps: newTotal }).eq('id', user.id);
   }
 
-  // Achievements are based on the selected day's accumulated steps, while streak achievements
-  // only react to current-day logging.
-  if (dailyTotal >= 1 && !existing) await awardAchievement(supabase, user.id, 'first_steps');
-  if (dailyTotal >= 5000)  await awardAchievement(supabase, user.id, 'steps_5k');
-  if (dailyTotal >= 10000) await awardAchievement(supabase, user.id, 'steps_10k');
-  if (dailyTotal >= 15000) await awardAchievement(supabase, user.id, 'steps_15k');
-  if (newTotal >= 1000000) await awardAchievement(supabase, user.id, 'steps_1m');
-  if (isToday && newStreak >= 3)  await awardAchievement(supabase, user.id, 'streak_3');
-  if (isToday && newStreak >= 7)  await awardAchievement(supabase, user.id, 'streak_7');
-  if (isToday && newStreak >= 30) await awardAchievement(supabase, user.id, 'streak_30');
-
-  const weekStart = addDays(today, -6);
-  const { data: weekRows } = await supabase.from('daily_steps')
-    .select('steps').eq('user_id', user.id).gte('step_date', weekStart).lte('step_date', today);
-  const weekTotal = (weekRows || []).reduce((s, r) => s + r.steps, 0);
-  if (weekTotal >= 50000)  await awardAchievement(supabase, user.id, 'steps_50k_week');
-  if (weekTotal >= 100000) await awardAchievement(supabase, user.id, 'steps_100k_week');
-
-  // Smart milestone advancement only happens when TODAY reaches the current daily goal.
-  let milestoneReached = false;
-  let next = null;
-  if (isToday && dailyTotal >= goal) {
-    const actLevel = profile?.activity_level || 'moderate';
-    next = nextGoal(actLevel, goal);
-    const { data: currentGoalRow } = await supabase.from('goals')
-      .select('id').eq('user_id', user.id).eq('is_current', true).eq('step_target', goal).single();
-
-    if (currentGoalRow) {
-      milestoneReached = true;
-      await supabase.from('goals').update({ achieved_at: today, is_current: false }).eq('id', currentGoalRow.id);
-      if (next) {
-        await supabase.from('goals').insert({ user_id: user.id, step_target: next, is_current: true });
-        await supabase.from('profiles').update({ step_goal: next }).eq('id', user.id);
-      }
-      await awardPoints(supabase, user.id, 25, 'step_milestone');
-      await supabase.from('notifications').insert({
-        user_id: user.id, type: 'achievement',
-        title: `Goal hit! ${goal.toLocaleString()} steps`,
-        body: next ? `New goal: ${next.toLocaleString()} steps` : 'You\'ve reached the top tier!',
-      });
-    }
-  }
-
   revalidatePath('/');
   revalidatePath('/movement');
   return {
     ok: true,
     totalSteps: dailyTotal,
-    goal,
-    streak: newStreak,
     stepDate: selectedDate,
     stepTime: stepTime || null,
-    milestoneReached,
-    nextGoal: next,
+    streak: newStreak,
   };
 }
 
-// ── CREATE CHALLENGE ─────────────────────────────────────────
 export async function createChallengeAction({ name, description, stepTarget, startDate, endDate, visibility, allowTeams }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -200,14 +106,11 @@ export async function createChallengeAction({ name, description, stepTarget, sta
 
   if (error) return { error: error.message };
   await supabase.from('challenge_members').insert({ challenge_id: data.id, user_id: user.id });
-  await awardAchievement(supabase, user.id, 'challenge_first');
-  await awardPoints(supabase, user.id, 10, 'challenge_create', data.id);
 
   revalidatePath('/challenges');
   return { ok: true, challenge: data };
 }
 
-// ── JOIN CHALLENGE ────────────────────────────────────────────
 export async function joinChallengeAction({ challengeId, teamName }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -218,14 +121,10 @@ export async function joinChallengeAction({ challengeId, teamName }) {
   });
   if (error) return { error: 'Already joined or challenge not found' };
 
-  await awardAchievement(supabase, user.id, 'challenge_first');
-  await awardPoints(supabase, user.id, 5, 'challenge_join', challengeId);
-
   revalidatePath('/challenges');
   return { ok: true };
 }
 
-// ── CREATE COMMUNITY POST ─────────────────────────────────────
 export async function createPostAction({ body, imageUrl, postType = 'post', refId }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -236,12 +135,10 @@ export async function createPostAction({ body, imageUrl, postType = 'post', refI
   }).select().single();
 
   if (error) return { error: error.message };
-  await awardPoints(supabase, user.id, 2, 'community', data.id);
   revalidatePath('/community');
-  return { ok: true };
+  return { ok: true, post: data };
 }
 
-// ── LIKE POST ────────────────────────────────────────────────
 export async function toggleLikeAction({ postId }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -259,7 +156,6 @@ export async function toggleLikeAction({ postId }) {
   return { ok: true, liked: !existing };
 }
 
-// ── ADD COMMENT ──────────────────────────────────────────────
 export async function addCommentAction({ postId, body }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
@@ -270,20 +166,14 @@ export async function addCommentAction({ postId, body }) {
   return { ok: true };
 }
 
-// ── UPDATE ACTIVITY LEVEL ────────────────────────────────────
+// Kept as a compatibility action for older clients. It no longer creates a
+// step goal or milestone because movement no longer uses prescribed targets.
 export async function setActivityLevelAction({ activityLevel }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
 
-  const ladder = GOAL_LADDER[activityLevel] || GOAL_LADDER.moderate;
-  const initialGoal = ladder[0];
-
-  await supabase.from('profiles').update({ activity_level: activityLevel, step_goal: initialGoal }).eq('id', user.id);
-  const { data: existing } = await supabase.from('goals').select('id').eq('user_id', user.id).eq('is_current', true).single();
-  if (!existing) {
-    await supabase.from('goals').insert({ user_id: user.id, step_target: initialGoal, is_current: true });
-  }
+  await supabase.from('profiles').update({ activity_level: activityLevel }).eq('id', user.id);
   revalidatePath('/movement');
-  return { ok: true, goal: initialGoal };
+  return { ok: true };
 }
