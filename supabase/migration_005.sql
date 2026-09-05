@@ -1,6 +1,6 @@
 -- ============================================================
 -- PROTLYS HUB — MIGRATION 005
--- Fix recursive challenge RLS policies
+-- Fix recursive challenge RLS policies + allow community profiles
 -- ============================================================
 
 create schema if not exists private;
@@ -61,3 +61,14 @@ on public.challenge_members
 for insert
 to authenticated
 with check (user_id = (select auth.uid()));
+
+-- Community member profiles must be readable by signed-in members.
+-- Without this policy, the member/[id] page receives no profile row
+-- under RLS and incorrectly renders a 404 for other members.
+drop policy if exists "profiles: community read" on public.profiles;
+
+create policy "profiles: community read"
+on public.profiles
+for select
+to authenticated
+using ((select auth.uid()) is not null);
