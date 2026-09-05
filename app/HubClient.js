@@ -18,13 +18,6 @@ export default function HubClient({ profile, todayG, logs }) {
   const [toast, setToast] = useState('');
   const [toastTimer, setToastTimer] = useState(null);
 
-  const targetG = profile?.target_g || 120;
-  const streak = profile?.streak || 0;
-  const points = profile?.points || 0;
-  const progressPct = Math.min(100, Math.round((todayG / targetG) * 100));
-  const chalProgress = Math.min(7, streak);
-  const chalPct = Math.round((chalProgress / 7) * 100);
-
   function showToast(msg) {
     setToast(msg);
     if (toastTimer) clearTimeout(toastTimer);
@@ -35,7 +28,7 @@ export default function HubClient({ profile, todayG, logs }) {
     startTransition(async () => {
       const result = await logProteinAction({ productId: product.id, productLabel: product.label, grams: product.proteinG });
       if (result?.error) { showToast(result.error); return; }
-      showToast(`Logged ${product.label} · +10 Protlys Points`);
+      showToast(`Logged ${product.label}`);
       setPanel(null);
       router.refresh();
     });
@@ -56,44 +49,35 @@ export default function HubClient({ profile, todayG, logs }) {
 
       <div className="screen-pad">
         <span className="eyebrow">Protlys Hub</span>
-        <h1 style={{ fontSize: 22 }}>Hi {name}. Let's hit your goals today.</h1>
+        <h1 style={{ fontSize: 22 }}>Hi {name}. Keep track of what you have.</h1>
+        <p className="subhead">Record your protein intake whenever you want. There is no daily target to hit.</p>
       </div>
 
       <div className="screen-pad" style={{ paddingTop: 6 }}>
-
-        {/* Protein progress */}
         <div className="hub-card">
-          <div className="t">Protein progress</div>
+          <div className="t">Protein logged today</div>
           <div style={{ display: 'flex', alignItems: 'baseline', gap: 6 }}>
-            <span className="mono" style={{ fontSize: 26, fontWeight: 600 }}>{todayG}</span>
-            <span className="mono" style={{ fontSize: 14, color: 'var(--ink-45)' }}>/ {targetG}g</span>
+            <span className="mono" style={{ fontSize: 30, fontWeight: 700 }}>{todayG}</span>
+            <span className="mono" style={{ fontSize: 14, color: 'var(--ink-45)' }}>g</span>
           </div>
-          <div className="pbar"><div className="pbar-fill" style={{ width: `${progressPct}%` }} /></div>
+          <div style={{ fontSize: 11.5, color: 'var(--ink-45)', marginTop: 4 }}>
+            {logs.length === 0 ? 'Nothing logged today yet.' : `${logs.length} ${logs.length === 1 ? 'entry' : 'entries'} recorded today.`}
+          </div>
         </div>
 
-        {/* Streak + Points */}
         <div className="hub-grid" style={{ marginTop: 10 }}>
           <div className="hub-card">
-            <div className="t">Streak</div>
-            <div className="mono" style={{ fontSize: 24, fontWeight: 600 }}>{streak} {streak === 1 ? 'day' : 'days'}</div>
+            <div className="t">Today’s entries</div>
+            <div className="mono" style={{ fontSize: 24, fontWeight: 600 }}>{logs.length}</div>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-45)', marginTop: 2 }}>recorded so far</div>
           </div>
           <div className="hub-card">
-            <div className="t">Protlys Points</div>
-            <div className="mono" style={{ fontSize: 24, fontWeight: 600 }}>{points}</div>
+            <div className="t">Protein today</div>
+            <div className="mono" style={{ fontSize: 24, fontWeight: 600 }}>{todayG}g</div>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-45)', marginTop: 2 }}>from your entries</div>
           </div>
         </div>
 
-        {/* 7-day challenge */}
-        <div className="hub-card" style={{ marginTop: 10 }}>
-          <div className="t">7-Day Protein Streak</div>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
-            <span className="mono" style={{ fontSize: 18, fontWeight: 600 }}>{chalProgress} / 7 days</span>
-            <span className="mono" style={{ fontSize: 12, color: 'var(--green-dark)', fontWeight: 700 }}>{chalPct}%</span>
-          </div>
-          <div className="pbar"><div className="pbar-fill" style={{ width: `${chalPct}%` }} /></div>
-        </div>
-
-        {/* Quick actions */}
         <h2 className="section-title" style={{ fontSize: 15, marginTop: 20 }}>Quick actions</h2>
         <div className="qa-grid">
           <button className="qa-btn" onClick={() => setPanel(panel === 'log' ? null : 'log')}>
@@ -118,7 +102,6 @@ export default function HubClient({ profile, todayG, logs }) {
           </Link>
         </div>
 
-        {/* Log panel */}
         {panel === 'log' && (
           <div style={{ marginTop: 16 }}>
             <div className="hr-tight" />
@@ -134,7 +117,6 @@ export default function HubClient({ profile, todayG, logs }) {
           </div>
         )}
 
-        {/* Today's log history panel */}
         {panel === 'history' && (
           <div style={{ marginTop: 16 }}>
             <div className="hr-tight" />
@@ -153,7 +135,7 @@ export default function HubClient({ profile, todayG, logs }) {
         )}
 
         <p className="disclaimer" style={{ marginTop: 14 }}>
-          Progress and points are saved to your account and sync across devices.
+          Your entries are saved to your account and sync across devices.
         </p>
       </div>
     </>
