@@ -26,15 +26,18 @@ export async function logProteinAction({ productId, productLabel, grams }) {
   return { ok: true };
 }
 
-// Called by the calculator page to save a protein target for the calculator/profile.
-// The target is not displayed as a goal on the dashboard or Hub.
+// Called by the calculator page to save a protein target for the member profile.
+// The saved target is displayed informationally on the member's dashboard.
 export async function saveTargetAction({ targetG }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
 
-  await supabase.from('profiles').upsert({ id: user.id, target_g: targetG });
+  const { error } = await supabase.from('profiles').upsert({ id: user.id, target_g: targetG });
+  if (error) return { error: error.message };
+
   revalidatePath('/');
   revalidatePath('/calculator');
+  revalidatePath('/account');
   return { ok: true };
 }
