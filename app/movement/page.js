@@ -3,14 +3,23 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import MovementPolish from './MovementPolish';
 
+function localDateStr(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
+}
+
 export default async function MovementPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const today = new Date().toISOString().slice(0, 10);
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
-  const weekAgoStr = weekAgo.toISOString().slice(0, 10);
+  const todayDate = new Date();
+  const today = localDateStr(todayDate);
+  const weekAgo = new Date(todayDate);
+  weekAgo.setDate(weekAgo.getDate() - 6);
+  const weekAgoStr = localDateStr(weekAgo);
 
   const [
     { data: profile },
@@ -23,7 +32,7 @@ export default async function MovementPage() {
       .select('display_name, step_goal, step_streak, total_steps, last_step_date, activity_level')
       .eq('id', user.id).single(),
     supabase.from('daily_steps').select('steps, source, synced_at').eq('user_id', user.id).eq('step_date', today).single(),
-    supabase.from('daily_steps').select('step_date, steps').eq('user_id', user.id).gte('step_date', weekAgoStr).order('step_date'),
+    supabase.from('daily_steps').select('step_date, steps').eq('user_id', user.id).gte('step_date', weekAgoStr).lte('step_date', today).order('step_date'),
     supabase.from('user_achievements')
       .select('earned_at, achievements(slug, name, icon, description)')
       .eq('user_id', user.id).order('earned_at', { ascending: false }).limit(5),
