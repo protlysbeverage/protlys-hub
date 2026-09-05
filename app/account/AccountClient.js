@@ -9,6 +9,7 @@ function Icon({ name, size = 19 }) {
     steps: <><path d="M8.5 4.5c1.4 2 1.8 4.2.8 6.2-.8 1.7-2.5 2.7-4.1 2.5-1.6-.2-2.5-1.7-1.9-3.1.6-1.4 2-2 3.3-2.7 1.1-.5 1.5-1.4 1.9-2.9Z"/><path d="M15.5 19.5c-1.4-2-1.8-4.2-.8-6.2.8-1.7 2.5-2.7 4.1-2.5 1.6.2 2.5 1.7 1.9 3.1-.6 1.4-2 2-3.3 2.7-1.1.5-1.5 1.4-1.9 2.9Z"/></>,
     challenge: <><path d="M8 4h8l-1 6a3 3 0 0 1-6 0L8 4Z"/><path d="M12 13v5M8 21h8M5 4h3M16 4h3"/></>,
     community: <><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c.5-3.2 2.5-5 6-5s5.5 1.8 6 5M14.5 15.5c2.5-.2 4.5 1.3 5 3.5"/></>,
+    profile: <><circle cx="12" cy="8" r="3.2"/><path d="M5 20c.6-3.6 2.9-5.5 7-5.5s6.4 1.9 7 5.5"/></>,
     box: <><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v9l8 4 8-4V8M12 12v9"/></>,
     camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z"/><circle cx="12" cy="12.5" r="3.2"/></>,
   };
@@ -68,6 +69,7 @@ export default function AccountClient({ profile, achievements = [], shopUrl, ema
   }
 
   const links = [
+    { href: `/member/${profile?.id}`, label: 'Profile', desc: 'View your public profile, stats and recent posts.', icon: 'profile' },
     { href: '/movement', label: 'Movement & steps', desc: 'Track movement, goals and progress.', icon: 'steps' },
     { href: '/challenges', label: 'Challenges', desc: 'Join challenges and track completion.', icon: 'challenge' },
     { href: '/', label: 'Community', desc: 'See the progress feed and share with the Hub.', icon: 'community' },
