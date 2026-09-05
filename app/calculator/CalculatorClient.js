@@ -68,14 +68,12 @@ export default function CalculatorClient({ savedTarget }) {
     letterSpacing: '0.07em',
   };
 
-  const saveButtonStyle = saved
-    ? {
-        marginTop: 12,
-        background: 'var(--green, #2E9E5B)',
-        borderColor: 'var(--green, #2E9E5B)',
-        color: '#fff',
-      }
-    : { marginTop: 12 };
+  const saveButtonStyle = {
+    marginTop: 12,
+    background: 'var(--green, #2E9E5B)',
+    borderColor: 'var(--green, #2E9E5B)',
+    color: '#fff',
+  };
 
   return (
     <div className="screen-pad" style={{ maxWidth: 520, margin: '0 auto' }}>
