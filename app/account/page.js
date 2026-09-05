@@ -24,7 +24,7 @@ export default async function AccountPage() {
   weekAgoDate.setDate(weekAgoDate.getDate() - 6);
   const weekAgo = localDateStr(weekAgoDate);
 
-  const [{ data: profile }, { data: achievements }, { data: todaySteps }, { data: weekSteps }, { data: proteinLogs }] = await Promise.all([
+  const [{ data: profile }, { data: achievements }, { data: todaySteps }, { data: weekSteps }] = await Promise.all([
     supabase.from('profiles')
       .select('id, display_name, avatar_url, streak, target_g, step_streak, total_steps, step_goal')
       .eq('id', user.id)
@@ -44,13 +44,7 @@ export default async function AccountPage() {
       .gte('step_date', weekAgo)
       .lte('step_date', today)
       .order('step_date'),
-    supabase.from('protein_logs')
-      .select('grams')
-      .eq('user_id', user.id)
-      .eq('log_date', today),
   ]);
-
-  const todayProtein = (proteinLogs || []).reduce((sum, row) => sum + (Number(row.grams) || 0), 0);
 
   return (
     <AppShell>
@@ -59,7 +53,6 @@ export default async function AccountPage() {
         achievements={achievements || []}
         todaySteps={todaySteps?.steps || 0}
         weekSteps={weekSteps || []}
-        todayProtein={todayProtein}
         shopUrl={getShopUrl()}
         email={user.email}
       />
