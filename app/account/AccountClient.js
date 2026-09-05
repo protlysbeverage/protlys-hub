@@ -16,7 +16,12 @@ function Icon({ name, size = 19 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], todayProtein = 0, shopUrl, email }) {
+function formatDistance(km) {
+  if (km < 1) return `${Math.round(km * 1000)} m`;
+  return `${km.toFixed(1)} km`;
+}
+
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -27,6 +32,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
+  const totalSteps = Number(profile?.total_steps || 0);
   const activeDays = Array.from({ length:7 }, (_, index) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - index));
@@ -35,6 +41,11 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     return { key, steps:Number(row?.steps || 0) };
   });
   const activeDayCount = activeDays.filter(day => day.steps > 0).length;
+
+  // Approximation using a 0.75 m average stride. It is deliberately labelled
+  // as estimated because actual distance varies with a person's stride length.
+  const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
+  const totalDistanceKm = (totalSteps * 0.75) / 1000;
 
   async function handlePhoto(event) {
     const file = event.target.files?.[0];
@@ -80,7 +91,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     <div className="screen-pad">
       <span className="eyebrow">Dashboard</span>
       <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
-      <p className="subhead">A simple view of what you have recorded and what you can do next.</p>
+      <p className="subhead">A simple view of your movement and what you have recorded.</p>
 
       <div style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:14}}>
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
@@ -100,12 +111,12 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     <div className="screen-pad" style={{paddingTop:4}}>
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}>
-          <div><div className="t" style={{fontSize:10}}>Today's activity</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Move + Fuel</div></div>
+          <div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div>
           <span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Movement</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div>
-          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Protein</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{todayProtein}g</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>logged today</div></div>
+          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div>
+          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div>
         </div>
       </div>
 
@@ -120,11 +131,13 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       </div>
 
       <div className="hub-grid" style={{marginBottom:20}}>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todaySteps.toLocaleString()}</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Protein today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todayProtein}g</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{(profile?.total_steps || 0).toLocaleString()}</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{Number(todaySteps).toLocaleString()}</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Estimated distance</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{formatDistance(totalDistanceKm)}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded steps</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>last 7 days</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Total steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{totalSteps.toLocaleString()}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded movement</div></div>
       </div>
+
+      <p className="disclaimer" style={{marginTop:-8,marginBottom:20}}>Distance is an estimate using an average 0.75 m stride. Your actual distance may vary.</p>
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
