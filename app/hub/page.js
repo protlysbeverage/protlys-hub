@@ -8,11 +8,10 @@ export default async function HubPage() {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  // Load today's protein log, streak and points from Supabase
   const today = new Date().toISOString().slice(0, 10);
 
   const [{ data: profile }, { data: logs }] = await Promise.all([
-    supabase.from('profiles').select('display_name, points, streak, last_log_date, target_g').eq('id', user.id).single(),
+    supabase.from('profiles').select('display_name').eq('id', user.id).single(),
     supabase.from('protein_logs').select('grams, product_label, logged_at').eq('user_id', user.id).eq('log_date', today).order('logged_at', { ascending: false }),
   ]);
 
@@ -21,7 +20,7 @@ export default async function HubPage() {
   return (
     <AppShell>
       <HubClient
-        profile={profile || { display_name: user.email, points: 0, streak: 0, target_g: 120 }}
+        profile={profile || { display_name: user.email }}
         todayG={todayG}
         logs={logs || []}
       />
