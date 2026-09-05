@@ -2,6 +2,7 @@ import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import AccountClient from './AccountClient';
+import ProteinTargetCard from './ProteinTargetCard';
 
 function localDateStr(date = new Date()) {
   const y = date.getFullYear();
@@ -48,6 +49,7 @@ export default async function AccountPage() {
 
   return (
     <AppShell>
+      <ProteinTargetCard targetG={profile?.target_g} />
       <AccountClient
         profile={profile || {}}
         achievements={achievements || []}
