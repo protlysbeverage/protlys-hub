@@ -5,6 +5,11 @@ const nextConfig = {
       bodySizeLimit: '6mb',
     },
   },
+  async rewrites() {
+    return [
+      { source: '/logo.png', destination: '/protlys-logo.svg' },
+    ];
+  },
 };
 
 export default nextConfig;
