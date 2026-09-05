@@ -2,6 +2,7 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { createPostAction, toggleLikeAction, addCommentAction } from '@/app/movement-actions';
 
 export default function CommunityClient({ posts, likedIds, userId, profile }) {
@@ -118,12 +119,14 @@ export default function CommunityClient({ posts, likedIds, userId, profile }) {
 
               {/* Header */}
               <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--green-soft)',
-                  display:'flex', alignItems:'center', justifyContent:'center',
-                  fontSize:14, fontWeight:700, color:'var(--green-dark)', flexShrink:0 }}>
-                  {(post.profiles?.display_name || '?')[0].toUpperCase()}
-                </div>
-                <div>
+                <Link href={`/member/${post.user_id}`} aria-label={`View ${post.profiles?.display_name || 'member'} profile`} style={{ flexShrink:0, textDecoration:'none', borderRadius:'50%' }}>
+                  <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--green-soft)',
+                    display:'flex', alignItems:'center', justifyContent:'center',
+                    fontSize:14, fontWeight:700, color:'var(--green-dark)', flexShrink:0 }}>
+                    {(post.profiles?.display_name || '?')[0].toUpperCase()}
+                  </div>
+                </Link>
+                <Link href={`/member/${post.user_id}`} style={{ textDecoration:'none', minWidth:0 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'var(--ink)' }}>
                     {post.profiles?.display_name || 'Member'}
                     {isAchievement && <span style={{ marginLeft:6, fontSize:11,
@@ -131,7 +134,7 @@ export default function CommunityClient({ posts, likedIds, userId, profile }) {
                       padding:'2px 7px', borderRadius:999, fontWeight:700 }}>Achievement</span>}
                   </div>
                   <div style={{ fontSize:11, color:'var(--ink-45)' }}>{timeAgo(post.created_at)}</div>
-                </div>
+                </Link>
               </div>
 
               {/* Body */}
