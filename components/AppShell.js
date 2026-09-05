@@ -62,7 +62,7 @@ export default function AppShell({ children }) {
       <div className="app-shell">
         <div className="app-header">
           <a href={shopUrl} style={{display:'flex',alignItems:'center',gap:8,textDecoration:'none'}} aria-label="Protlys store">
-            <img src="/logo.png" alt="Protlys" style={{height:36,width:'auto',objectFit:'contain'}} onError={e=>{e.target.style.display='none';}} />
+            <img src="/protlys-logo.svg" alt="Protlys" style={{height:36,width:'auto',objectFit:'contain'}} />
           </a>
           <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys"><CartIcon size={18}/><span>Shop Protlys</span></a>
         </div>
