@@ -30,6 +30,12 @@ function formatNairobiDate(value) {
   return new Intl.DateTimeFormat('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit', hour12: true }).format(date);
 }
 
+function formatJoinedDate(value) {
+  const date = parseProtlysDate(value);
+  if (!date) return 'Joined date unavailable';
+  return new Intl.DateTimeFormat('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
+}
+
 export default async function MemberProfilePage({ params }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -37,7 +43,7 @@ export default async function MemberProfilePage({ params }) {
   if (!user) redirect('/login');
 
   const [{ data: profile }, { data: posts }, { count: postCount }, { data: achievements }] = await Promise.all([
-    supabase.from('profiles').select('id, display_name, avatar_url, streak, step_streak, total_steps, step_goal, target_g').eq('id', id).maybeSingle(),
+    supabase.from('profiles').select('id, display_name, avatar_url, created_at, streak, step_streak, total_steps, step_goal, target_g').eq('id', id).maybeSingle(),
     supabase.from('feed_posts').select('id, body, image_url, post_type, stats, created_at, feed_likes(count)').eq('user_id', id).order('created_at', { ascending: false }).limit(12),
     supabase.from('feed_posts').select('id', { count: 'exact', head: true }).eq('user_id', id),
     supabase.from('user_achievements').select('earned_at, achievements(slug, name, icon, description)').eq('user_id', id).order('earned_at', { ascending: false }).limit(6),
@@ -45,10 +51,12 @@ export default async function MemberProfilePage({ params }) {
 
   if (!profile) notFound();
 
+  const displayName = profile.display_name?.trim() || 'Protlys Member';
+
   return <AppShell><div className="screen-pad" style={{ paddingTop: 18 }}>
     <Link href="/" style={{ display:'inline-flex', alignItems:'center', gap:7, color:'var(--ink-70)', textDecoration:'none', fontSize:12, fontWeight:800, marginBottom:18 }}><Icon name="arrow" size={16} /> Back to Feed</Link>
     <section style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:20, padding:20, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:16 }}><Avatar name={profile.display_name} url={profile.avatar_url} /><div style={{ minWidth:0 }}><div className="eyebrow">Protlys member</div><h1 style={{ fontSize:24, margin:'3px 0 4px' }}>{profile.display_name || 'Member'}</h1><p className="subhead" style={{ margin:0 }}>Progress shared with the Protlys community.</p></div></div>
+      <div style={{ display:'flex', alignItems:'center', gap:16 }}><Avatar name={displayName} url={profile.avatar_url} /><div style={{ minWidth:0 }}><div className="eyebrow">Protlys member</div><h1 style={{ fontSize:24, margin:'3px 0 4px' }}>{displayName}</h1><p className="subhead" style={{ margin:0 }}>Progress shared with the Protlys community.</p><div style={{ marginTop:8, fontSize:11.5, color:'var(--ink-45)', fontWeight:700 }}>Joined {formatJoinedDate(profile.created_at)}</div></div></div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginTop:20 }}>
         {[['Step streak', profile.step_streak || 0], ['Total steps', Number(profile.total_steps || 0).toLocaleString()], ['Posts', postCount || 0]].map(([label,value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{value}</div></div>)}
       </div>
