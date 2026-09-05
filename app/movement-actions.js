@@ -4,11 +4,22 @@ import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 
 // ── helpers ──────────────────────────────────────────────────
-function todayStr() { return new Date().toISOString().slice(0, 10); }
-function yesterdayStr() {
-  const d = new Date(); d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+function localDateStr(date = new Date()) {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 }
+function addDays(dateStr, delta) {
+  const [y, m, d] = dateStr.split('-').map(Number);
+  const date = new Date(y, m - 1, d);
+  date.setDate(date.getDate() + delta);
+  return localDateStr(date);
+}
+function isValidDateString(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value || ''); }
+
+function todayStr() { return localDateStr(); }
+function yesterdayStr() { return addDays(todayStr(), -1); }
 
 // Smart step goals — based on activity level
 const GOAL_LADDER = {
@@ -42,7 +53,6 @@ async function awardAchievement(supabase, userId, slug) {
     title: `Achievement unlocked: ${ach.name}`,
     body: ach.description, ref_id: ach.id,
   });
-  // Auto-share to community
   await supabase.from('community_posts').insert({
     user_id: userId, post_type: 'milestone',
     body: `Just earned the "${ach.name}" achievement! ${ach.icon}`,
@@ -51,88 +61,126 @@ async function awardAchievement(supabase, userId, slug) {
 }
 
 // ── LOG STEPS ────────────────────────────────────────────────
-export async function logStepsAction({ steps, source = 'manual' }) {
+export async function logStepsAction({ steps, source = 'manual', stepDate, stepTime }) {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error: 'Not signed in' };
 
+  const numericSteps = Number(steps);
+  if (!Number.isInteger(numericSteps) || numericSteps < 1 || numericSteps > 99999) {
+    return { error: 'Enter a number between 1 and 99,999' };
+  }
+
   const today = todayStr();
+  const selectedDate = stepDate || today;
+  if (!isValidDateString(selectedDate)) return { error: 'Choose a valid date' };
+  if (selectedDate > today) return { error: 'Steps cannot be logged for a future date' };
 
-  // Upsert today's steps (add to existing if already logged today)
+  // Keep manual timestamps available without changing the daily_steps schema.
+  // synced_at is the precise date/time the entry was submitted/logged.
+  const now = new Date();
+  let syncedAt = now.toISOString();
+  if (selectedDate !== today) {
+    const safeTime = /^\d{2}:\d{2}$/.test(stepTime || '') ? stepTime : '12:00';
+    syncedAt = new Date(`${selectedDate}T${safeTime}:00`).toISOString();
+  } else if (/^\d{2}:\d{2}$/.test(stepTime || '')) {
+    syncedAt = new Date(`${selectedDate}T${stepTime}:00`).toISOString();
+  }
+
   const { data: existing } = await supabase
-    .from('daily_steps').select('steps').eq('user_id', user.id).eq('step_date', today).single();
+    .from('daily_steps').select('steps').eq('user_id', user.id).eq('step_date', selectedDate).single();
 
-  const totalSteps = (existing?.steps || 0) + steps;
+  const dailyTotal = (existing?.steps || 0) + numericSteps;
 
-  await supabase.from('daily_steps').upsert({
-    user_id: user.id, step_date: today, steps: totalSteps, source, synced_at: new Date().toISOString(),
+  const { error: upsertError } = await supabase.from('daily_steps').upsert({
+    user_id: user.id, step_date: selectedDate, steps: dailyTotal, source, synced_at: syncedAt,
   }, { onConflict: 'user_id,step_date' });
+  if (upsertError) return { error: upsertError.message };
 
-  // Update profile step streak + total steps
   const { data: profile } = await supabase
     .from('profiles').select('step_streak, last_step_date, total_steps, step_goal, activity_level, points')
     .eq('id', user.id).single();
 
-  const last = profile?.last_step_date;
+  const goal = profile?.step_goal || 7500;
+  const newTotal = (profile?.total_steps || 0) + numericSteps;
   let newStreak = profile?.step_streak || 0;
-  if (last === today) {
-    // same day, no streak change
-  } else if (last === yesterdayStr()) {
-    newStreak += 1;
+  const isToday = selectedDate === today;
+
+  // Historical entries contribute to lifetime totals but never rewrite today's streak.
+  if (isToday) {
+    const last = profile?.last_step_date;
+    if (last === today) {
+      // same day, no streak change
+    } else if (last === yesterdayStr()) {
+      newStreak += 1;
+    } else {
+      newStreak = 1;
+    }
+
+    await supabase.from('profiles').update({
+      step_streak: newStreak,
+      last_step_date: today,
+      total_steps: newTotal,
+    }).eq('id', user.id);
   } else {
-    newStreak = 1;
+    await supabase.from('profiles').update({ total_steps: newTotal }).eq('id', user.id);
   }
 
-  const newTotal = (profile?.total_steps || 0) + steps;
-  const goal = profile?.step_goal || 7500;
-
-  await supabase.from('profiles').update({
-    step_streak: newStreak,
-    last_step_date: today,
-    total_steps: newTotal,
-  }).eq('id', user.id);
-
-  // ── Check achievements ──────────────────────────────────────
-  if (totalSteps >= 1 && !existing) await awardAchievement(supabase, user.id, 'first_steps');
-  if (totalSteps >= 5000)  await awardAchievement(supabase, user.id, 'steps_5k');
-  if (totalSteps >= 10000) await awardAchievement(supabase, user.id, 'steps_10k');
-  if (totalSteps >= 15000) await awardAchievement(supabase, user.id, 'steps_15k');
+  // Achievements are based on the selected day's accumulated steps, while streak achievements
+  // only react to current-day logging.
+  if (dailyTotal >= 1 && !existing) await awardAchievement(supabase, user.id, 'first_steps');
+  if (dailyTotal >= 5000)  await awardAchievement(supabase, user.id, 'steps_5k');
+  if (dailyTotal >= 10000) await awardAchievement(supabase, user.id, 'steps_10k');
+  if (dailyTotal >= 15000) await awardAchievement(supabase, user.id, 'steps_15k');
   if (newTotal >= 1000000) await awardAchievement(supabase, user.id, 'steps_1m');
-  if (newStreak >= 3)  await awardAchievement(supabase, user.id, 'streak_3');
-  if (newStreak >= 7)  await awardAchievement(supabase, user.id, 'streak_7');
-  if (newStreak >= 30) await awardAchievement(supabase, user.id, 'streak_30');
+  if (isToday && newStreak >= 3)  await awardAchievement(supabase, user.id, 'streak_3');
+  if (isToday && newStreak >= 7)  await awardAchievement(supabase, user.id, 'streak_7');
+  if (isToday && newStreak >= 30) await awardAchievement(supabase, user.id, 'streak_30');
 
-  // Weekly steps check (Mon–Sun)
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 7);
+  const weekStart = addDays(today, -6);
   const { data: weekRows } = await supabase.from('daily_steps')
-    .select('steps').eq('user_id', user.id).gte('step_date', weekAgo.toISOString().slice(0, 10));
+    .select('steps').eq('user_id', user.id).gte('step_date', weekStart).lte('step_date', today);
   const weekTotal = (weekRows || []).reduce((s, r) => s + r.steps, 0);
   if (weekTotal >= 50000)  await awardAchievement(supabase, user.id, 'steps_50k_week');
   if (weekTotal >= 100000) await awardAchievement(supabase, user.id, 'steps_100k_week');
 
-  // ── Check smart goal milestone ──────────────────────────────
-  if (totalSteps >= goal) {
+  // Smart milestone advancement only happens when TODAY reaches the current daily goal.
+  let milestoneReached = false;
+  let next = null;
+  if (isToday && dailyTotal >= goal) {
     const actLevel = profile?.activity_level || 'moderate';
-    const next = nextGoal(actLevel, goal);
-    // Mark current goal achieved
-    await supabase.from('goals').update({ achieved_at: today, is_current: false })
-      .eq('user_id', user.id).eq('is_current', true);
-    // Create next goal if exists
-    if (next) {
-      await supabase.from('goals').insert({ user_id: user.id, step_target: next, is_current: true });
-      await supabase.from('profiles').update({ step_goal: next }).eq('id', user.id);
+    next = nextGoal(actLevel, goal);
+    const { data: currentGoalRow } = await supabase.from('goals')
+      .select('id').eq('user_id', user.id).eq('is_current', true).eq('step_target', goal).single();
+
+    if (currentGoalRow) {
+      milestoneReached = true;
+      await supabase.from('goals').update({ achieved_at: today, is_current: false }).eq('id', currentGoalRow.id);
+      if (next) {
+        await supabase.from('goals').insert({ user_id: user.id, step_target: next, is_current: true });
+        await supabase.from('profiles').update({ step_goal: next }).eq('id', user.id);
+      }
+      await awardPoints(supabase, user.id, 25, 'step_milestone');
+      await supabase.from('notifications').insert({
+        user_id: user.id, type: 'achievement',
+        title: `Goal hit! ${goal.toLocaleString()} steps`,
+        body: next ? `New goal: ${next.toLocaleString()} steps` : 'You\'ve reached the top tier!',
+      });
     }
-    await awardPoints(supabase, user.id, 25, 'step_milestone');
-    await supabase.from('notifications').insert({
-      user_id: user.id, type: 'achievement',
-      title: `Goal hit! ${goal.toLocaleString()} steps 🎉`,
-      body: next ? `New goal: ${next.toLocaleString()} steps` : 'You\'ve reached the top tier!',
-    });
   }
 
   revalidatePath('/');
   revalidatePath('/movement');
-  return { ok: true, totalSteps, goal, streak: newStreak };
+  return {
+    ok: true,
+    totalSteps: dailyTotal,
+    goal,
+    streak: newStreak,
+    stepDate: selectedDate,
+    stepTime: stepTime || null,
+    milestoneReached,
+    nextGoal: next,
+  };
 }
 
 // ── CREATE CHALLENGE ─────────────────────────────────────────
@@ -147,8 +195,6 @@ export async function createChallengeAction({ name, description, stepTarget, sta
   }).select().single();
 
   if (error) return { error: error.message };
-
-  // Creator auto-joins
   await supabase.from('challenge_members').insert({ challenge_id: data.id, user_id: user.id });
   await awardAchievement(supabase, user.id, 'challenge_first');
   await awardPoints(supabase, user.id, 10, 'challenge_create', data.id);
@@ -230,7 +276,6 @@ export async function setActivityLevelAction({ activityLevel }) {
   const initialGoal = ladder[0];
 
   await supabase.from('profiles').update({ activity_level: activityLevel, step_goal: initialGoal }).eq('id', user.id);
-  // Set initial goal row if none exists
   const { data: existing } = await supabase.from('goals').select('id').eq('user_id', user.id).eq('is_current', true).single();
   if (!existing) {
     await supabase.from('goals').insert({ user_id: user.id, step_target: initialGoal, is_current: true });
