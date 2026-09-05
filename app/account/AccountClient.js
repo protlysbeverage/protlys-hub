@@ -16,15 +16,6 @@ function Icon({ name, size = 19 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function ProgressBar({ value, target }) {
-  const pct = target > 0 ? Math.min(100, Math.round((value / target) * 100)) : 0;
-  return (
-    <div style={{height:8,borderRadius:999,background:'var(--green-soft)',overflow:'hidden'}}>
-      <div style={{height:'100%',width:`${pct}%`,background:'var(--green-dark)',borderRadius:999,transition:'width .25s ease'}} />
-    </div>
-  );
-}
-
 export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], todayProtein = 0, shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
@@ -36,19 +27,14 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
-  const stepGoal = profile?.step_goal || 7500;
-  const proteinTarget = profile?.target_g || 120;
-
-  const activeDays = Array.from({ length: 7 }, (_, index) => {
+  const activeDays = Array.from({ length:7 }, (_, index) => {
     const date = new Date();
     date.setDate(date.getDate() - (6 - index));
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     const row = weekSteps.find(item => item.step_date === key);
-    return { key, steps: Number(row?.steps || 0), active: Number(row?.steps || 0) >= stepGoal };
+    return { key, steps:Number(row?.steps || 0) };
   });
-  const activeDayCount = activeDays.filter(day => day.active).length;
-  const movementPct = stepGoal > 0 ? Math.min(100, Math.round((todaySteps / stepGoal) * 100)) : 0;
-  const proteinPct = proteinTarget > 0 ? Math.min(100, Math.round((todayProtein / proteinTarget) * 100)) : 0;
+  const activeDayCount = activeDays.filter(day => day.steps > 0).length;
 
   async function handlePhoto(event) {
     const file = event.target.files?.[0];
@@ -63,10 +49,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       if (!user) throw new Error('Not signed in');
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
       const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('feed-images').upload(path, file, { cacheControl: '3600', upsert: false });
+      const { error } = await supabase.storage.from('feed-images').upload(path, file, { cacheControl:'3600', upsert:false });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
-      const { error: profileError } = await supabase.from('profiles').update({ avatar_url: urlData.publicUrl }).eq('id', user.id);
+      const { error: profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id);
       if (profileError) throw profileError;
       setMessage('Profile photo updated.');
       router.refresh();
@@ -83,18 +69,18 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   }
 
   const links = [
-    { href: `/member/${profile?.id}`, label: 'Profile', desc: 'View your public profile, stats and recent posts.', icon: 'profile' },
-    { href: '/movement', label: 'Movement & steps', desc: 'Track movement, goals and progress.', icon: 'steps' },
-    { href: '/challenges', label: 'Challenges', desc: 'Join challenges and track completion.', icon: 'challenge' },
-    { href: '/', label: 'Community', desc: 'See the progress feed and share with the Hub.', icon: 'community' },
-    { href: storeUrl, label: 'Shop Protlys', desc: 'Browse Protlys products and place an order.', icon: 'box', external: true },
+    { href:`/member/${profile?.id}`, label:'Profile', desc:'View your public profile, stats and recent posts.', icon:'profile' },
+    { href:'/movement', label:'Movement & steps', desc:'Record movement and see your activity history.', icon:'steps' },
+    { href:'/challenges', label:'Challenges', desc:'Join challenges if they are useful to you.', icon:'challenge' },
+    { href:'/', label:'Community', desc:'See the progress feed and share with the Hub.', icon:'community' },
+    { href:storeUrl, label:'Shop Protlys', desc:'Browse Protlys products and place an order.', icon:'box', external:true },
   ];
 
   return <>
     <div className="screen-pad">
       <span className="eyebrow">Dashboard</span>
       <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
-      <p className="subhead">Your progress, milestones and Hub shortcuts in one place.</p>
+      <p className="subhead">A simple view of what you have recorded and what you can do next.</p>
 
       <div style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:14}}>
         <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
@@ -112,82 +98,37 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     </div>
 
     <div className="screen-pad" style={{paddingTop:4}}>
-      {/* Protlys performance summary: replaces the old streak/points stat grid without touching navigation below. */}
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}>
-          <div>
-            <div className="t" style={{fontSize:10}}>Today's progress</div>
-            <div style={{fontSize:20,fontWeight:800,marginTop:3}}>Move + Fuel</div>
-          </div>
-          <div className="mono" style={{fontSize:15,fontWeight:800,color:'var(--green-dark)'}}>{Math.round((movementPct + proteinPct) / 2)}%</div>
+          <div><div className="t" style={{fontSize:10}}>Today's activity</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Move + Fuel</div></div>
+          <span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span>
         </div>
-
-        <div style={{marginBottom:14}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
-            <span style={{fontSize:12,fontWeight:800}}>Movement</span>
-            <span className="mono" style={{fontSize:12,color:'var(--ink-70)'}}>{todaySteps.toLocaleString()} / {stepGoal.toLocaleString()} steps</span>
-          </div>
-          <ProgressBar value={todaySteps} target={stepGoal} />
-        </div>
-
-        <div>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:6}}>
-            <span style={{fontSize:12,fontWeight:800}}>Protein</span>
-            <span className="mono" style={{fontSize:12,color:'var(--ink-70)'}}>{todayProtein} / {proteinTarget}g</span>
-          </div>
-          <ProgressBar value={todayProtein} target={proteinTarget} />
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Movement</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div>
+          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Protein</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{todayProtein}g</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>logged today</div></div>
         </div>
       </div>
 
       <div className="hub-card" style={{padding:14,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}>
-          <div>
-            <div className="t" style={{fontSize:10}}>Weekly consistency</div>
-            <div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} / 7 active days</div>
-          </div>
-          <span style={{fontSize:11,color:'var(--ink-45)'}}>Goal days</span>
+          <div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
+          <span style={{fontSize:11,color:'var(--ink-45)'}}>last 7 days</span>
         </div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:7}}>
-          {activeDays.map((day, index) => (
-            <div key={day.key} style={{textAlign:'center'}}>
-              <div style={{fontSize:9.5,color:'var(--ink-45)',marginBottom:5}}>{['M','T','W','T','F','S','S'][new Date(`${day.key}T12:00:00`).getDay() === 0 ? 6 : new Date(`${day.key}T12:00:00`).getDay() - 1]}</div>
-              <div style={{height:9,borderRadius:999,background:day.active?'var(--green-dark)':'var(--green-soft)',border:day.active?'0':'1px solid var(--line)'}} aria-label={`${day.steps.toLocaleString()} steps`} />
-            </div>
-          ))}
+          {activeDays.map(day => <div key={day.key} style={{textAlign:'center'}}><div style={{fontSize:9.5,color:'var(--ink-45)',marginBottom:5}}>{new Date(`${day.key}T12:00:00`).toLocaleDateString([], {weekday:'short'}).slice(0,1)}</div><div style={{height:9,borderRadius:999,background:day.steps > 0 ? 'var(--green-dark)' : 'var(--green-soft)',border:day.steps > 0 ? '0' : '1px solid var(--line)'}} aria-label={`${day.steps.toLocaleString()} steps`} /></div>)}
         </div>
       </div>
 
       <div className="hub-grid" style={{marginBottom:20}}>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
-          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div>
-          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todaySteps.toLocaleString()}</div>
-        </div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
-          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Protein today</div>
-          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todayProtein}g</div>
-        </div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
-          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Weekly active</div>
-          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}/7</div>
-        </div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}>
-          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div>
-          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{(profile?.total_steps || 0).toLocaleString()}</div>
-        </div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todaySteps.toLocaleString()}</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Protein today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{todayProtein}g</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div></div>
+        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{(profile?.total_steps || 0).toLocaleString()}</div></div>
       </div>
-
-      {achievements.length > 0 && <div style={{marginBottom:20}}>
-        <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Milestones</div>
-        <div style={{display:'flex',gap:9,overflowX:'auto',paddingBottom:4}}>
-          {achievements.slice(0,8).map((a,i) => <div key={a.id || i} style={{minWidth:112,background:'#fff',border:'1px solid var(--line)',borderRadius:14,padding:12}}><div style={{width:30,height:30,borderRadius:9,background:'var(--green-soft)',color:'var(--green-dark)',display:'flex',alignItems:'center',justifyContent:'center',fontWeight:900}}>{i+1}</div><div style={{fontSize:11,fontWeight:800,marginTop:8,lineHeight:1.3}}>{a?.achievements?.name || 'Milestone'}</div></div>)}
-        </div>
-      </div>}
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
-        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}>
-          <div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div>
-        </a>)}
+        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}
       </div>
 
       <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Shop Protlys products</a>
