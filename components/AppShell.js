@@ -58,6 +58,22 @@ export default function AppShell({ children }) {
         .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
         .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
         .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
+        .protlys-app .bottom-nav .nav-btn,
+        .protlys-app .bottom-nav .nav-btn:link,
+        .protlys-app .bottom-nav .nav-btn:visited,
+        .protlys-app .bottom-nav .nav-btn:active {
+          font-family:'Manrope',sans-serif!important;
+          font-size:10px!important;
+          font-weight:700!important;
+          line-height:1!important;
+          letter-spacing:0!important;
+          text-transform:none!important;
+          text-align:center!important;
+          white-space:nowrap!important;
+          font-style:normal!important;
+          font-variant:normal!important;
+        }
+        .protlys-app .bottom-nav .nav-btn svg { flex:0 0 auto;width:20px;height:20px;display:block; }
       `}</style>
       <div className="app-shell">
         <div className="app-header">
