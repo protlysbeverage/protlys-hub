@@ -76,13 +76,18 @@ export async function logStepsAction({ steps, source = 'manual', stepDate, stepT
   if (!isValidDateString(selectedDate)) return { error: 'Choose a valid date' };
   if (selectedDate > today) return { error: 'Steps cannot be logged for a future date' };
 
-  // Preserve the exact browser-local time supplied by the client as a UTC instant.
-  // This avoids interpreting a local clock value in the server's timezone.
+  // Prefer the exact browser-local timestamp when the client supplies it.
+  // The +03:00 fallback matches Kenya time for older clients until they refresh.
   let syncedAt = new Date().toISOString();
   if (stepTimestamp) {
     const parsedTimestamp = new Date(stepTimestamp);
     if (!Number.isNaN(parsedTimestamp.getTime())) {
       syncedAt = parsedTimestamp.toISOString();
+    }
+  } else if (/^\d{2}:\d{2}$/.test(stepTime || '')) {
+    const parsedLocalKenyaTime = new Date(`${selectedDate}T${stepTime}:00+03:00`);
+    if (!Number.isNaN(parsedLocalKenyaTime.getTime())) {
+      syncedAt = parsedLocalKenyaTime.toISOString();
     }
   }
 
