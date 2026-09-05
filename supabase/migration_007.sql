@@ -1,12 +1,19 @@
 -- ============================================================
 -- PROTLYS HUB — MIGRATION 007
--- Show real member names in community posts/comments
+-- Public member identity + real names + profile join dates
 -- ============================================================
 
--- Google OAuth commonly stores the user's name as full_name or name
--- rather than display_name. Keep profiles.display_name populated so
--- feed posts/comments show the actual member name instead of "Member".
+-- The feed joins posts/comments to profiles. The original profiles
+-- policy allowed each member to read only their own profile, which
+-- caused other users' names/avatar data to come back as null.
+-- Allow the community to read public profile fields.
+create policy "profiles: public community read"
+on public.profiles
+for select
+using (true);
 
+-- Google OAuth commonly stores the user's name as full_name or name
+-- rather than display_name. Backfill existing profiles.
 update public.profiles p
 set display_name = coalesce(
   nullif(trim(p.display_name), ''),
@@ -19,12 +26,13 @@ from auth.users u
 where p.id = u.id
   and (p.display_name is null or trim(p.display_name) = '');
 
+-- Keep names and avatars populated for future sign-ups.
 create or replace function public.handle_new_user()
 returns trigger
 language plpgsql
 security definer
 set search_path = public
-as $$
+aS $$
 begin
   insert into public.profiles (id, display_name, avatar_url)
   values (
@@ -52,3 +60,9 @@ begin
   return new;
 end;
 $$;
+
+-- Re-attach the existing auth trigger so the function is used for new users.
+drop trigger if exists on_auth_user_created on auth.users;
+create trigger on_auth_user_created
+after insert on auth.users
+for each row execute procedure public.handle_new_user();
