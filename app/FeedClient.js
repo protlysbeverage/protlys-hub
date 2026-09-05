@@ -31,12 +31,24 @@ function Avatar({ name, url, size = 40, href }) {
   return <Link href={href} aria-label={`View ${name || 'member'} profile`} style={{ display: 'block', lineHeight: 0 }}>{avatar}</Link>;
 }
 
+function parseProtlysDate(value) {
+  if (!value) return null;
+  const raw = String(value);
+  const normalized = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw) ? raw : `${raw}Z`;
+  const date = new Date(normalized);
+  return Number.isNaN(date.getTime()) ? null : date;
+}
+
 function timeAgo(ts) {
-  const seconds = Math.max(0, Math.round((Date.now() - new Date(ts)) / 1000));
+  const date = parseProtlysDate(ts);
+  if (!date) return '';
+  const seconds = Math.max(0, Math.round((Date.now() - date.getTime()) / 1000));
   if (seconds < 60) return 'Just now';
-  if (seconds < 3600) return `${Math.round(seconds / 60)}m`;
-  if (seconds < 86400) return `${Math.round(seconds / 3600)}h`;
-  return `${Math.round(seconds / 86400)}d`;
+  if (seconds < 3600) return `${Math.floor(seconds / 60)}m`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)}h`;
+  if (seconds < 172800) return 'Yesterday';
+  if (seconds < 604800) return `${Math.floor(seconds / 86400)}d`;
+  return new Intl.DateTimeFormat('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short' }).format(date);
 }
 
 function StatChip({ label, value }) { return <div style={{ border: '1px solid var(--line)', borderRadius: 10, padding: '7px 9px', background: 'var(--paper)', minWidth: 88 }}><div style={{ fontSize: 9, textTransform: 'uppercase', letterSpacing: '.06em', fontWeight: 800, color: 'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize: 12, fontWeight: 800, color: 'var(--ink)', marginTop: 2 }}>{value}</div></div>; }
