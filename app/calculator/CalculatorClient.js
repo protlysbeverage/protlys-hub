@@ -141,15 +141,6 @@ export default function CalculatorClient({ savedTarget }) {
             </div>
           </section>
 
-          <section className="section-card" style={{ marginTop: 14 }}>
-            <h2 className="section-title" style={{ fontSize: 16 }}>What that looks like per day</h2>
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: 10, marginTop: 14 }}>
-              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{Math.round(result.target / 3)}g</span><span className="label">PER MEAL</span></div>
-              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{Math.round(result.target / 5)}g</span><span className="label">PER SNACK</span></div>
-              <div className="data-chip" style={{ justifyContent: 'center', textAlign: 'center' }}><span className="value mono">{result.goal}g</span><span className="label">PER KG</span></div>
-            </div>
-          </section>
-
           <button className="btn-secondary" style={{ marginTop: 12 }} onClick={saveTarget} disabled={isPending || saved}>
             {saved ? 'Target saved to your Hub' : isPending ? 'Saving…' : 'Save this as my daily target'}
           </button>
