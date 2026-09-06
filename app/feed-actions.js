@@ -70,14 +70,27 @@ export async function deleteFeedPostAction({ postId }) {
 export async function getFeedCommentsAction({ postId }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
-  const { data, error } = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, parent_comment_id, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
+
+  let data;
+  let error;
+  const withReplies = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, parent_comment_id, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
+  data = withReplies.data;
+  error = withReplies.error;
+
+  // Keep existing comments working even before migration 011 is applied.
+  if (error && /parent_comment_id|column/i.test(error.message || '')) {
+    const fallback = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
+    data = (fallback.data || []).map(comment => ({ ...comment, parent_comment_id: null }));
+    error = fallback.error;
+  }
   if (error) return { error: error.message };
+
   const comments = await Promise.all((data || []).map(async comment => {
     let likeCount = 0;
     let liked = false;
-    const { count, error: countError } = await supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id));
-    if (!countError) {
-      likeCount = count || 0;
+    const likeQuery = await supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id));
+    if (!likeQuery.error) {
+      likeCount = likeQuery.count || 0;
       const { data: myLike } = await supabase.from('feed_comment_likes').select('id').eq('comment_id', String(comment.id)).eq('user_id', user.id).maybeSingle();
       liked = Boolean(myLike);
     }
@@ -115,8 +128,15 @@ export async function addFeedCommentAction({ postId, body, parentCommentId = nul
   if (!user) return { error: 'Not signed in' };
   const cleanBody = String(body || '').trim();
   if (!cleanBody) return { error: 'Comment cannot be empty.' };
-  const { error } = await supabase.from('feed_comments').insert({ post_id: postId, user_id: user.id, body: cleanBody, parent_comment_id: parentCommentId ? String(parentCommentId) : null });
-  if (error) return { error: error.message };
+
+  const payload = { post_id: postId, user_id: user.id, body: cleanBody };
+  if (parentCommentId) payload.parent_comment_id = String(parentCommentId);
+  let result = await supabase.from('feed_comments').insert(payload);
+  // Basic comments remain available if the reply column has not been migrated yet.
+  if (result.error && parentCommentId && /parent_comment_id|column/i.test(result.error.message || '')) {
+    result = await supabase.from('feed_comments').insert({ post_id: postId, user_id: user.id, body: cleanBody });
+  }
+  if (result.error) return { error: result.error.message };
   revalidatePath('/');
   return { ok: true };
 }
@@ -127,7 +147,7 @@ export async function toggleFeedCommentLikeAction({ commentId }) {
   const id = String(commentId || '').trim();
   if (!id) return { error: 'Comment not found.' };
   const { data: existing, error: lookupError } = await supabase.from('feed_comment_likes').select('id').eq('comment_id', id).eq('user_id', user.id).maybeSingle();
-  if (lookupError) return { error: lookupError.message };
+  if (lookupError) return { error: 'Comment likes are not enabled yet. Run migration 011 in Supabase.' };
   if (existing) {
     const { error } = await supabase.from('feed_comment_likes').delete().eq('id', existing.id);
     if (error) return { error: error.message };
