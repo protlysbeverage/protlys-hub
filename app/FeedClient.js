@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { useRef, useState, useCallback } from 'react';
+import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import {
   createFeedPostAction,
@@ -91,18 +91,37 @@ function CommentInput({ postId, onDone }) {
 }
 
 function CommentsPanel({ postId, initialCount, onCommented }) {
-  const [comments, setComments] = useState(null); const [loading, setLoading] = useState(false); const [error, setError] = useState('');
+  const [comments, setComments] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [expanded, setExpanded] = useState(false);
+
   async function loadComments() {
-    setLoading(true); setError(''); const result = await getFeedCommentsAction({ postId }); setLoading(false);
+    setLoading(true); setError('');
+    const result = await getFeedCommentsAction({ postId });
+    setLoading(false);
     if (result?.error) { setError(result.error); return; }
     setComments(result.comments || []);
   }
-  if (comments === null) return <button onClick={loadComments} className="btn-secondary" disabled={loading} style={{ width: 'auto', padding: '6px 0', border: 'none', background: 'transparent', color: 'var(--ink-60)', fontSize: 12, marginTop: 0 }}>{loading ? 'Loading comments…' : `${initialCount || 0} ${initialCount === 1 ? 'comment' : 'comments'}`}</button>;
+
+  useEffect(() => {
+    if ((initialCount || 0) > 0 && comments === null) loadComments();
+  }, [postId, initialCount]);
+
+  if (comments === null) {
+    return <button onClick={loadComments} className="btn-secondary" disabled={loading} style={{ width: 'auto', padding: '6px 0', border: 'none', background: 'transparent', color: 'var(--ink-60)', fontSize: 12, marginTop: 0 }}>{loading ? 'Loading comments…' : `${initialCount || 0} ${initialCount === 1 ? 'comment' : 'comments'}`}</button>;
+  }
+
+  const visibleComments = expanded ? comments : comments.slice(0, 3);
+  const hiddenCount = Math.max(0, comments.length - 3);
+
   return <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
-    <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 8 }}><strong style={{ fontSize: 13 }}>Comments</strong><button onClick={() => setComments(null)} aria-label="Hide comments" style={{ border: 0, background: 'transparent', cursor: 'pointer', color: 'var(--ink-45)' }}><Icon name="x" size={15} /></button></div>
     {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
     {!error && comments.length === 0 && <div style={{ fontSize: 13, color: 'var(--ink-45)', padding: '6px 0' }}>No comments yet. Start the conversation.</div>}
-    {comments.map(comment => <div key={comment.id} style={{ display: 'flex', gap: 9, marginBottom: 10 }}><Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={30} href={`/member/${comment.user_id}`} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12, fontWeight: 800 }}>{comment.profiles?.display_name || 'Member'} <span style={{ color: 'var(--ink-45)', fontWeight: 500, marginLeft: 5 }}>{timeAgo(comment.created_at)}</span></div><div style={{ fontSize: 13, lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div></div></div>)}
+    {!error && comments.length > 0 && <div style={{ display: 'grid', gap: 10 }}>
+      {visibleComments.map(comment => <div key={comment.id} style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}><Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={30} href={`/member/${comment.user_id}`} /><div style={{ flex: 1, minWidth: 0 }}><div style={{ fontSize: 12, lineHeight: 1.35 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link> <span style={{ color: 'var(--ink-45)', marginLeft: 5 }}>{timeAgo(comment.created_at)}</span></div><div style={{ fontSize: 13, lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div></div></div>)}
+      {hiddenCount > 0 && <button onClick={() => setExpanded(value => !value)} style={{ border: 0, background: 'transparent', padding: '2px 0', textAlign: 'left', color: 'var(--ink-60)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{expanded ? 'Show fewer comments' : `View ${hiddenCount} more comment${hiddenCount === 1 ? '' : 's'}`}</button>}
+    </div>}
     <CommentInput postId={postId} onDone={async () => { await loadComments(); onCommented?.(); }} />
   </div>;
 }
