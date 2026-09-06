@@ -59,10 +59,7 @@ export async function deleteFeedPostAction({ postId }) {
   if (post.user_id !== user.id) return { error: 'You can only delete your own posts.' };
   if (post.image_url) {
     const marker = '/feed-images/'; const index = post.image_url.indexOf(marker);
-    if (index >= 0) {
-      const storagePath = decodeURIComponent(post.image_url.slice(index + marker.length).split('?')[0]);
-      await supabase.storage.from('feed-images').remove([storagePath]);
-    }
+    if (index >= 0) await supabase.storage.from('feed-images').remove([decodeURIComponent(post.image_url.slice(index + marker.length).split('?')[0])]);
   }
   const { error } = await supabase.from('feed_posts').delete().eq('id', postId).eq('user_id', user.id);
   if (error) return { error: error.message };
@@ -76,11 +73,15 @@ export async function getFeedCommentsAction({ postId }) {
   const { data, error } = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, parent_comment_id, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
   if (error) return { error: error.message };
   const comments = await Promise.all((data || []).map(async comment => {
-    const [{ count: likeCount }, { data: myLike }] = await Promise.all([
-      supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id)),
-      supabase.from('feed_comment_likes').select('id').eq('comment_id', String(comment.id)).eq('user_id', user.id).maybeSingle(),
-    ]);
-    return { ...comment, like_count: likeCount || 0, liked: Boolean(myLike) };
+    let likeCount = 0;
+    let liked = false;
+    const { count, error: countError } = await supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id));
+    if (!countError) {
+      likeCount = count || 0;
+      const { data: myLike } = await supabase.from('feed_comment_likes').select('id').eq('comment_id', String(comment.id)).eq('user_id', user.id).maybeSingle();
+      liked = Boolean(myLike);
+    }
+    return { ...comment, like_count: likeCount, liked };
   }));
   return { comments };
 }
