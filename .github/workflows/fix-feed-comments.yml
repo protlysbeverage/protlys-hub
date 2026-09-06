@@ -1,0 +1,170 @@
+name: Fix feed comment UI
+
+on:
+  push:
+    branches: [main]
+
+permissions:
+  contents: write
+
+jobs:
+  patch:
+    if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Patch Progress Feed comments
+        shell: python
+        run: |
+          from pathlib import Path
+          import re
+
+          path = Path('app/FeedClient.js')
+          text = path.read_text()
+
+          if 'toggleFeedCommentLikeAction' not in text:
+              text = text.replace('  toggleFeedLikeAction,\n  addFeedCommentAction,', '  toggleFeedLikeAction,\n  toggleFeedCommentLikeAction,\n  addFeedCommentAction,')
+
+          new_panel = r'''function FeedCommentRow({ comment, onLike, onReply }) {
+  const [replyOpen, setReplyOpen] = useState(false);
+  const [reply, setReply] = useState('');
+  const [posting, setPosting] = useState(false);
+
+  async function submitReply() {
+    const clean = reply.trim();
+    if (!clean || posting) return;
+    setPosting(true);
+    const ok = await onReply(comment.id, clean);
+    setPosting(false);
+    if (ok) { setReply(''); setReplyOpen(false); }
+  }
+
+  return <div style={{ display: 'flex', gap: 9, alignItems: 'flex-start' }}>
+    <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={30} href={`/member/${comment.user_id}`} />
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 12, lineHeight: 1.35 }}>
+        <Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link>
+        <span style={{ color: 'var(--ink-45)', marginLeft: 6, fontSize: 10.5 }}>{timeAgo(comment.created_at)}</span>
+      </div>
+      <div style={{ fontSize: 13, lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 5 }}>
+        <button type="button" onClick={() => onLike(comment.id)} style={{ border: 0, background: 'transparent', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4, color: comment.liked ? '#E1306C' : 'var(--ink-45)', fontSize: 10.5, fontWeight: 700, cursor: 'pointer' }}>
+          <Icon name="heart" size={14} strokeWidth={1.8} /> {comment.like_count || 0}
+        </button>
+        <button type="button" onClick={() => setReplyOpen(v => !v)} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 10.5, fontWeight: 700, cursor: 'pointer' }}>{replyOpen ? 'Cancel' : 'Reply'}</button>
+      </div>
+      {replyOpen && <div style={{ display: 'flex', gap: 7, marginTop: 7 }}>
+        <input className="field-input" value={reply} onChange={e => setReply(e.target.value)} onKeyDown={e => e.key === 'Enter' && submitReply()} placeholder="Reply…" style={{ flex: 1, minWidth: 0, padding: '7px 10px', fontSize: 12 }} />
+        <button type="button" className="btn-secondary" onClick={submitReply} disabled={posting || !reply.trim()} style={{ width: 'auto', padding: '7px 10px', marginTop: 0, fontSize: 11 }}>{posting ? 'Posting…' : 'Reply'}</button>
+      </div>}
+    </div>
+  </div>;
+}
+
+function CommentsPanel({ postId, initialCount, onCommented }) {
+  const [comments, setComments] = useState(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState('');
+  const [expanded, setExpanded] = useState(false);
+
+  async function loadComments() {
+    if (loading) return;
+    setLoading(true); setError('');
+    const result = await getFeedCommentsAction({ postId });
+    setLoading(false);
+    if (result?.error) { setError(result.error); return; }
+    setComments(result.comments || []);
+  }
+
+  useEffect(() => {
+    if (comments === null && (initialCount || 0) > 0) loadComments();
+  }, [postId, initialCount]);
+
+  async function toggleCommentLike(commentId) {
+    setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, (comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
+    const result = await toggleFeedCommentLikeAction({ commentId });
+    if (result?.error) { setError(result.error); await loadComments(); }
+  }
+
+  async function replyTo(commentId, body) {
+    const result = await addFeedCommentAction({ postId, body, parentCommentId: commentId });
+    if (result?.error) { setError(result.error); return false; }
+    await loadComments();
+    setExpanded(true);
+    onCommented?.();
+    return true;
+  }
+
+  const submitComment = async (event) => {
+    event.preventDefault();
+    const input = event.currentTarget.elements.comment;
+    const body = input?.value?.trim();
+    if (!body) return;
+    const result = await addFeedCommentAction({ postId, body });
+    if (result?.error) { setError(result.error); return; }
+    input.value = '';
+    await loadComments();
+    setExpanded(true);
+    onCommented?.();
+  };
+
+  const list = comments || [];
+  const roots = list.filter(comment => !comment.parent_comment_id);
+  const replies = list.filter(comment => comment.parent_comment_id);
+  const visibleRoots = expanded ? roots : roots.slice(0, 3);
+  const hiddenCount = Math.max(0, roots.length - 3);
+
+  return <div style={{ marginTop: 12, paddingTop: 12, borderTop: '1px solid var(--line)' }}>
+    {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
+    {comments === null && initialCount > 0 && <div style={{ fontSize: 12, color: 'var(--ink-45)' }}>{loading ? 'Loading comments…' : 'Comments'}</div>}
+    {comments !== null && <>
+      {roots.length > 0 && <div style={{ display: 'grid', gap: 11 }}>
+        {visibleRoots.map(comment => <div key={comment.id}>
+          <FeedCommentRow comment={comment} onLike={toggleCommentLike} onReply={replyTo} />
+          {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 39, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><FeedCommentRow comment={reply} onLike={toggleCommentLike} onReply={replyTo} /></div>)}
+        </div>)}
+        {hiddenCount > 0 && <button type="button" onClick={() => setExpanded(true)} style={{ border: 0, background: 'transparent', padding: '2px 0', color: 'var(--ink-60)', textAlign: 'left', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>View {hiddenCount} more {hiddenCount === 1 ? 'comment' : 'comments'}</button>}
+      </div>}
+      {expanded && hiddenCount > 0 && <button type="button" onClick={() => setExpanded(false)} style={{ border: 0, background: 'transparent', padding: '6px 0 0', color: 'var(--ink-60)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Show less</button>}
+      {roots.length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-45)', paddingBottom: 4 }}>No comments yet.</div>}
+      <form onSubmit={submitComment} style={{ display: 'flex', gap: 8, marginTop: 9 }}>
+        <input name="comment" className="field-input" type="text" placeholder="Add a comment…" style={{ flex: 1, minWidth: 0, padding: '8px 11px', fontSize: 12.5 }} />
+        <button type="submit" className="btn-secondary" style={{ width: 'auto', padding: '8px 12px', marginTop: 0, fontSize: 12 }}>Post</button>
+      </form>
+    </>}
+  </div>;
+}
+'''
+
+          text, n = re.subn(r'function CommentsPanel\(\{ postId, initialCount, onCommented \}\) \{.*?\n\}\n\nfunction EditPost', new_panel + '\nfunction EditPost', text, count=1, flags=re.S)
+          if n != 1:
+              raise SystemExit('Could not replace CommentsPanel')
+
+          old_row = re.compile(r'<div style=\{\{ display: \'flex\', alignItems: \'center\', gap: 14, marginTop: 12, paddingTop: 10, borderTop: \'1px solid var\(--line\)\' \}\}>.*?<\\/div>\}\}</article>', re.S)
+          m = old_row.search(text)
+          if not m:
+              raise SystemExit('Could not locate feed engagement row')
+
+          replacement = '''<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}><button onClick={() => handleLike(post.id)} className="btn-secondary" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: liked.has(post.id) ? '#E1306C' : 'var(--ink-60)' }}><Icon name="heart" size={17} /> {post.like_count || 0}</button><button onClick={() => handleShare(post)} className="btn-secondary" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-60)' }}><Icon name="share" size={17} /> Share</button></div><CommentsPanel postId={post.id} initialCount={post.comment_count || 0} onCommented={() => router.refresh()} /></>\n
+          text = text[:m.start()] + replacement + text[m.end()-len('</article>'):] if False else text
+          # More reliable targeted replacement of just the known row + closing fragment.
+          row_start = text.find("<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}>")
+          if row_start < 0:
+              raise SystemExit('Could not find engagement row start')
+          row_end = text.find('</div></>}</article>', row_start)
+          if row_end < 0:
+              raise SystemExit('Could not find engagement row end')
+          row_end += len('</div>')}</article>
+          text = text[:row_start] + replacement + text[row_end:]
+
+          path.write_text(text)
+
+      - name: Commit patched source and remove one-shot workflow
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add app/FeedClient.js .github/workflows/fix-feed-comments.yml
+          git commit -m "Fix Instagram-style feed comments" || exit 0
+          git rm .github/workflows/fix-feed-comments.yml
+          git commit -m "Remove one-shot feed comment patch workflow"
+          git push
