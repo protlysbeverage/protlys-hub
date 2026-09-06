@@ -2,365 +2,45 @@
 
 import { useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { createChallengeAction, joinChallengeAction } from '@/app/movement-actions';
+import { createChallengeAction, joinChallengeAction, updateChallengeAction } from '@/app/movement-actions';
 
-const TABS = ['Discover', 'My Challenges', 'Create'];
+const TABS=['Discover','My Challenges','Create'];
+function Icon({name,size=18}){const paths={target:<><circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="12" r="3"/><path d="M12 2v3M22 12h-3M12 22v-3M2 12h3"/></>,share:<><circle cx="18" cy="5" r="2.5"/><circle cx="6" cy="12" r="2.5"/><circle cx="18" cy="19" r="2.5"/><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5"/></>,link:<><path d="M10 13.5 14 9.5"/><path d="M7.5 17.5H6a4 4 0 0 1 0-8h3"/><path d="M16.5 6.5H18a4 4 0 0 1 0 8h-3"/></>};return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>}
+function formatDate(v){return new Date(`${v}T00:00:00`).toLocaleDateString(undefined,{day:'numeric',month:'short',year:'numeric'});}
 
-function Icon({ name, size = 18 }) {
-  const paths = {
-    target: <><circle cx="12" cy="12" r="7.5" /><circle cx="12" cy="12" r="3" /><path d="M12 2v3M22 12h-3M12 22v-3M2 12h3" /></>,
-    share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
-    link: <><path d="M10 13.5 14 9.5" /><path d="M7.5 17.5H6a4 4 0 0 1 0-8h3" /><path d="M16.5 6.5H18a4 4 0 0 1 0 8h-3" /></>,
-  };
-  return (
-    <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor"
-      strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
-      {paths[name]}
-    </svg>
-  );
-}
+function ChallengeCard({challenge,joined,isCreator,onJoin,onShare,onDetails}){const daysLeft=Math.max(0,Math.ceil((new Date(`${challenge.end_date}T23:59:59`)-new Date())/86400000));const members=challenge.challenge_members?.length||0;return <div style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:18,padding:16,marginBottom:12,boxShadow:'0 2px 8px rgba(0,0,0,.04)'}}>
+  <button type="button" onClick={()=>onDetails(challenge)} style={{display:'block',width:'100%',textAlign:'left',border:0,background:'transparent',padding:0,cursor:'pointer'}}>
+    <div style={{display:'flex',gap:12,alignItems:'flex-start'}}><div style={{width:42,height:42,borderRadius:12,background:'var(--green-soft)',color:'var(--green-dark)',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}><Icon name="target" size={20}/></div><div style={{flex:1,minWidth:0}}><div style={{fontWeight:800,fontSize:15,color:'var(--ink)'}}>{challenge.name}</div><div style={{fontSize:11,color:'var(--ink-45)',marginTop:4}}>{Number(challenge.step_target).toLocaleString()} steps · {formatDate(challenge.start_date)} – {formatDate(challenge.end_date)} · {members} members</div></div></div>
+    {challenge.description&&<p style={{fontSize:13,color:'var(--ink-70)',lineHeight:1.5,margin:'12px 0 0 54px'}}>{challenge.description}</p>}
+  </button>
+  <div style={{marginTop:12,paddingTop:10,borderTop:'1px solid var(--line)',display:'flex',justifyContent:'space-between',alignItems:'center',gap:8}}><span style={{fontSize:11,fontWeight:700,color:daysLeft>0?'var(--green-dark)':'var(--ink-45)'}}>{daysLeft>0?`${daysLeft} days left`:'Challenge ended'}</span><div style={{display:'flex',alignItems:'center',gap:10}}><button className="link-btn" onClick={()=>onDetails(challenge)} style={{fontWeight:800}}>Details</button>{(joined||isCreator)&&<button className="link-btn" onClick={()=>onShare(challenge)} style={{display:'inline-flex',alignItems:'center',gap:5}}><Icon name="share" size={14}/> Invite</button>}</div></div>
+  {isCreator&&<div style={{marginTop:7,fontSize:10,color:'var(--ink-45)'}}>Created by you</div>}
+</div>}
 
-function formatDate(value) {
-  return new Date(`${value}T00:00:00`).toLocaleDateString(undefined, { day: 'numeric', month: 'short' });
-}
-
-function ChallengeCard({ challenge, joined, isCreator, onJoin, onShare }) {
-  const daysLeft = Math.max(0, Math.ceil((new Date(`${challenge.end_date}T23:59:59`) - new Date()) / 86400000));
-  const members = challenge.challenge_members?.[0]?.count || 0;
-
-  return (
-    <div style={{
-      background: '#fff', border: '1.5px solid var(--line)', borderRadius: 18,
-      padding: 16, marginBottom: 12, boxShadow: '0 2px 8px rgba(0,0,0,.04)'
-    }}>
-      <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start' }}>
-        <div style={{
-          width: 42, height: 42, borderRadius: 12, background: 'var(--green-soft)',
-          color: 'var(--green-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0
-        }}>
-          <Icon name="target" size={20} />
-        </div>
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontWeight: 800, fontSize: 15, color: 'var(--ink)' }}>{challenge.name}</div>
-          <div style={{ fontSize: 11, color: 'var(--ink-45)', marginTop: 4 }}>
-            {challenge.step_target.toLocaleString()} steps · {formatDate(challenge.start_date)} – {formatDate(challenge.end_date)} · {members} members
-          </div>
-        </div>
-        {joined ? (
-          <span className="tag tag-mvp">Joined</span>
-        ) : (
-          <button className="btn-secondary" onClick={() => onJoin(challenge.id)}
-            style={{ width: 'auto', padding: '8px 13px', marginTop: 0 }}>Join</button>
-        )}
-      </div>
-
-      {challenge.description && (
-        <p style={{ fontSize: 13, color: 'var(--ink-70)', lineHeight: 1.5, margin: '12px 0 0 54px' }}>
-          {challenge.description}
-        </p>
-      )}
-
-      <div style={{
-        marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)',
-        display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8
-      }}>
-        <span style={{ fontSize: 11, fontWeight: 700, color: daysLeft > 0 ? 'var(--green-dark)' : 'var(--ink-45)' }}>
-          {daysLeft > 0 ? `${daysLeft} days left` : 'Challenge ended'}
-        </span>
-        {(joined || isCreator) && (
-          <button className="link-btn" onClick={() => onShare(challenge)}
-            style={{ display: 'inline-flex', alignItems: 'center', gap: 5 }}>
-            <Icon name="share" size={14} /> Invite
-          </button>
-        )}
-      </div>
-
-      {isCreator && <div style={{ marginTop: 7, fontSize: 10, color: 'var(--ink-45)' }}>Created by you</div>}
-    </div>
-  );
-}
-
-export default function ChallengesClient({ publicChallenges, myChallenges, myIds, userId }) {
-  const router = useRouter();
-  const [isPending, start] = useTransition();
-  const [tab, setTab] = useState('Discover');
-  const [toast, setToast] = useState('');
-  const [createdChallenge, setCreatedChallenge] = useState(null);
-  const [sharePanel, setSharePanel] = useState(null);
-  const [form, setForm] = useState({
-    name: '',
-    description: '',
-    stepTarget: 10000,
-    startDate: new Date().toISOString().slice(0, 10),
-    endDate: '',
-    visibility: 'public',
-  });
-
-  function showToast(message) {
-    setToast(message);
-    window.clearTimeout(showToast.timer);
-    showToast.timer = window.setTimeout(() => setToast(''), 2600);
-  }
-
-  function upd(key, value) {
-    setForm(current => ({ ...current, [key]: value }));
-  }
-
-  function join(challengeId) {
-    start(async () => {
-      const result = await joinChallengeAction({ challengeId });
-      if (result?.error) {
-        showToast(result.error);
-        return;
-      }
-      showToast('Challenge joined.');
-      router.refresh();
-    });
-  }
-
-  function create() {
-    if (!form.name.trim()) {
-      showToast('Give the challenge a name.');
-      return;
-    }
-    if (!form.endDate) {
-      showToast('Choose an end date.');
-      return;
-    }
-    if (form.endDate < form.startDate) {
-      showToast('End date must be after the start date.');
-      return;
-    }
-
-    start(async () => {
-      const result = await createChallengeAction({
-        name: form.name.trim(),
-        description: form.description.trim(),
-        stepTarget: Number(form.stepTarget),
-        startDate: form.startDate,
-        endDate: form.endDate,
-        visibility: form.visibility,
-        allowTeams: false,
-      });
-
-      if (result?.error) {
-        showToast(result.error);
-        return;
-      }
-
-      setCreatedChallenge(result.challenge);
-      setSharePanel(result.challenge);
-      setTab('My Challenges');
-      setForm(current => ({ ...current, name: '', description: '', endDate: '' }));
-      showToast('Challenge created.');
-    });
-  }
-
-  const hubBase = typeof window !== 'undefined' ? window.location.origin : 'https://protlys-hub-pj68.vercel.app';
-
-  function shareLink(challenge) {
-    return `${hubBase}/challenges?invite=${challenge.invite_token}`;
-  }
-
-  function share(challenge) {
-    const link = shareLink(challenge);
-    setSharePanel(challenge);
-
-    if (typeof navigator !== 'undefined' && navigator.share) {
-      navigator.share({
-        title: challenge.name,
-        text: `Join my Protlys challenge: ${challenge.name}`,
-        url: link,
-      }).catch(() => {});
-    }
-  }
-
-  async function copyLink(challenge) {
-    await navigator.clipboard.writeText(shareLink(challenge));
-    showToast('Invite link copied.');
-  }
-
-  function whatsapp(challenge) {
-    const link = shareLink(challenge);
-    window.open(`https://wa.me/?text=${encodeURIComponent(`Join my Protlys challenge: ${challenge.name} — ${link}`)}`);
-  }
-
-  const combinedMine = [
-    ...(createdChallenge ? [createdChallenge] : []),
-    ...myChallenges.filter(c => c && c.id !== createdChallenge?.id),
-  ];
-
-  return (
-    <>
-      {toast && (
-        <div style={{
-          position: 'fixed', bottom: 82, left: '50%', transform: 'translateX(-50%)',
-          background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px',
-          fontSize: 13, fontWeight: 700, zIndex: 999, whiteSpace: 'nowrap'
-        }}>{toast}</div>
-      )}
-
-      <div className="screen-pad">
-        <span className="eyebrow">Challenges</span>
-        <h1 style={{ fontSize: 22, marginBottom: 4 }}>Train together</h1>
-        <p className="subhead">Create a goal, invite people and track the challenge as a group.</p>
-      </div>
-
-      <div style={{ display: 'flex', gap: 6, padding: '4px 18px 14px', overflowX: 'auto' }}>
-        {TABS.map(value => (
-          <button key={value} onClick={() => setTab(value)} style={{
-            border: tab === value ? '1.5px solid var(--green)' : '1.5px solid var(--line)',
-            background: tab === value ? 'var(--green)' : '#fff',
-            color: tab === value ? '#fff' : 'var(--ink-70)',
-            borderRadius: 999, padding: '8px 15px', fontSize: 13, fontWeight: 800,
-            cursor: 'pointer', whiteSpace: 'nowrap'
-          }}>{value}</button>
-        ))}
-      </div>
-
-      <div className="screen-pad" style={{ paddingTop: 2 }}>
-        {tab === 'Discover' && (
-          <>
-            {publicChallenges.length === 0 ? (
-              <div className="hub-card" style={{ padding: 20 }}>
-                <div style={{ fontWeight: 800, marginBottom: 5 }}>No public challenges yet</div>
-                <p className="subhead" style={{ margin: 0 }}>Create the first one and invite your community.</p>
-              </div>
-            ) : (
-              publicChallenges.map(challenge => (
-                <ChallengeCard key={challenge.id} challenge={challenge}
-                  joined={myIds.includes(challenge.id)}
-                  isCreator={challenge.creator_id === userId}
-                  onJoin={join}
-                  onShare={share} />
-              ))
-            )}
-          </>
-        )}
-
-        {tab === 'My Challenges' && (
-          <>
-            {combinedMine.length === 0 ? (
-              <div className="hub-card" style={{ padding: 20 }}>
-                <div style={{ fontWeight: 800, marginBottom: 5 }}>You have no challenges yet</div>
-                <p className="subhead" style={{ margin: 0 }}>Join one from Discover or create your own.</p>
-              </div>
-            ) : (
-              combinedMine.map(challenge => (
-                <ChallengeCard key={challenge.id} challenge={challenge}
-                  joined={true}
-                  isCreator={challenge.creator_id === userId}
-                  onJoin={join}
-                  onShare={share} />
-              ))
-            )}
-
-            {sharePanel && (
-              <div style={{
-                background: 'var(--green-soft)', border: '1.5px solid rgba(46,158,91,.2)',
-                borderRadius: 16, padding: 16, marginTop: 4, marginBottom: 14
-              }}>
-                <div style={{ fontWeight: 800, fontSize: 14 }}>Invite people to {sharePanel.name}</div>
-                <p className="subhead" style={{ margin: '5px 0 12px' }}>
-                  Send the link. When someone opens it, Protlys automatically adds them to the challenge.
-                </p>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  <button className="btn-secondary" onClick={() => copyLink(sharePanel)}
-                    style={{ width: 'auto', padding: '8px 12px', marginTop: 0 }}>
-                    <Icon name="link" size={14} /> Copy invite link
-                  </button>
-                  <button className="btn-secondary" onClick={() => whatsapp(sharePanel)}
-                    style={{ width: 'auto', padding: '8px 12px', marginTop: 0 }}>
-                    WhatsApp
-                  </button>
-                  {typeof navigator !== 'undefined' && navigator.share && (
-                    <button className="btn-secondary" onClick={() => share(sharePanel)}
-                      style={{ width: 'auto', padding: '8px 12px', marginTop: 0 }}>
-                      <Icon name="share" size={14} /> Share
-                    </button>
-                  )}
-                </div>
-                <div style={{ fontSize: 11, color: 'var(--ink-45)', marginTop: 10, wordBreak: 'break-all' }}>
-                  {shareLink(sharePanel)}
-                </div>
-              </div>
-            )}
-          </>
-        )}
-
-        {tab === 'Create' && (
-          <div className="hub-card" style={{ padding: 16 }}>
-            <div style={{ fontWeight: 800, marginBottom: 4 }}>Create a challenge</div>
-            <p className="subhead" style={{ marginBottom: 16 }}>
-              Set the target and dates. You will get an invite link immediately after creation.
-            </p>
-
-            <div className="field-group">
-              <label className="field-label">CHALLENGE NAME</label>
-              <input className="field-input" value={form.name}
-                onChange={e => upd('name', e.target.value)} placeholder="e.g. 7-Day 50K Steps" />
-            </div>
-
-            <div className="field-group">
-              <label className="field-label">DESCRIPTION</label>
-              <textarea className="field-input" value={form.description}
-                onChange={e => upd('description', e.target.value)}
-                placeholder="What are you challenging the group to do?"
-                style={{ minHeight: 80, resize: 'vertical', paddingTop: 11 }} />
-            </div>
-
-            <div className="field-group">
-              <label className="field-label">STEP TARGET</label>
-              <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginTop: 6 }}>
-                {[5000, 10000, 25000, 50000, 100000].map(target => (
-                  <button key={target} onClick={() => upd('stepTarget', target)} style={{
-                    border: form.stepTarget === target ? '1.5px solid var(--green)' : '1.5px solid var(--line)',
-                    background: form.stepTarget === target ? 'var(--green)' : '#fff',
-                    color: form.stepTarget === target ? '#fff' : 'var(--ink-70)',
-                    borderRadius: 10, padding: '8px 11px', fontSize: 12, fontWeight: 800, cursor: 'pointer'
-                  }}>{target.toLocaleString()}</button>
-                ))}
-              </div>
-            </div>
-
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
-              <div className="field-group">
-                <label className="field-label">START DATE</label>
-                <input className="field-input" type="date" value={form.startDate}
-                  onChange={e => upd('startDate', e.target.value)} />
-              </div>
-              <div className="field-group">
-                <label className="field-label">END DATE</label>
-                <input className="field-input" type="date" value={form.endDate}
-                  onChange={e => upd('endDate', e.target.value)} />
-              </div>
-            </div>
-
-            <div className="field-group">
-              <label className="field-label">WHO CAN JOIN</label>
-              <div style={{ display: 'flex', gap: 7, marginTop: 6 }}>
-                {[
-                  ['public', 'Everyone'],
-                  ['invite', 'Invite link'],
-                  ['private', 'Private'],
-                ].map(([value, label]) => (
-                  <button key={value} onClick={() => upd('visibility', value)} style={{
-                    border: form.visibility === value ? '1.5px solid var(--green)' : '1.5px solid var(--line)',
-                    background: form.visibility === value ? 'var(--green)' : '#fff',
-                    color: form.visibility === value ? '#fff' : 'var(--ink-70)',
-                    borderRadius: 10, padding: '8px 11px', fontSize: 12, fontWeight: 800,
-                    cursor: 'pointer'
-                  }}>{label}</button>
-                ))}
-              </div>
-            </div>
-
-            <button className="btn-primary" onClick={create} disabled={isPending}>
-              {isPending ? 'Creating…' : 'Create challenge'}
-            </button>
-          </div>
-        )}
-      </div>
-    </>
-  );
+export default function ChallengesClient({publicChallenges,myChallenges,myIds,userId}){
+ const router=useRouter();const [isPending,start]=useTransition();const [tab,setTab]=useState('Discover');const [toast,setToast]=useState('');const [createdChallenge,setCreatedChallenge]=useState(null);const [sharePanel,setSharePanel]=useState(null);const [selected,setSelected]=useState(null);const [editing,setEditing]=useState(false);
+ const [form,setForm]=useState({name:'',description:'',stepTarget:10000,startDate:new Date().toISOString().slice(0,10),endDate:'',visibility:'public'});const [editForm,setEditForm]=useState(null);
+ function showToast(m){setToast(m);window.clearTimeout(showToast.timer);showToast.timer=window.setTimeout(()=>setToast(''),2600)}
+ function upd(k,v){setForm(c=>({...c,[k]:v}))}
+ function join(id){start(async()=>{const r=await joinChallengeAction({challengeId:id});if(r?.error){showToast(r.error);return;}showToast('Challenge joined.');router.refresh();setSelected(null);})}
+ function create(){if(!form.name.trim()){showToast('Give the challenge a name.');return;}if(!form.endDate){showToast('Choose an end date.');return;}if(form.endDate<form.startDate){showToast('End date must be after the start date.');return;}start(async()=>{const r=await createChallengeAction({...form,name:form.name.trim(),description:form.description.trim(),stepTarget:Number(form.stepTarget),allowTeams:false});if(r?.error){showToast(r.error);return;}setCreatedChallenge(r.challenge);setSharePanel(r.challenge);setTab('My Challenges');setForm(c=>({...c,name:'',description:'',endDate:''}));showToast('Challenge created.');})}
+ function openDetails(c){setSelected(c);setEditing(false);setEditForm({name:c.name,description:c.description||'',stepTarget:c.step_target,startDate:c.start_date,endDate:c.end_date,visibility:c.visibility})}
+ function saveEdit(){if(!editForm)return;start(async()=>{const r=await updateChallengeAction({challengeId:selected.id,...editForm,stepTarget:Number(editForm.stepTarget)});if(r?.error){showToast(r.error);return;}showToast('Challenge updated.');setSelected(r.challenge);setEditing(false);router.refresh();})}
+ const hubBase=typeof window!=='undefined'?window.location.origin:'https://protlys-hub-pj68.vercel.app';function shareLink(c){return `${hubBase}/challenges?invite=${c.invite_token}`};function share(c){setSharePanel(c);if(typeof navigator!=='undefined'&&navigator.share)navigator.share({title:c.name,text:`Join my Protlys challenge: ${c.name}`,url:shareLink(c)}).catch(()=>{})};async function copyLink(c){await navigator.clipboard.writeText(shareLink(c));showToast('Invite link copied.')};function whatsapp(c){window.open(`https://wa.me/?text=${encodeURIComponent(`Join my Protlys challenge: ${c.name} — ${shareLink(c)}`)}`)}
+ const combinedMine=[...(createdChallenge?[createdChallenge]:[]),...myChallenges.filter(c=>c&&c.id!==createdChallenge?.id)];
+ const renderCards=list=>list.length?list.map(c=><ChallengeCard key={c.id} challenge={c} joined={myIds.includes(c.id)||tab==='My Challenges'} isCreator={c.creator_id===userId} onJoin={join} onShare={share} onDetails={openDetails}/>):<div className="hub-card" style={{padding:20}}><div style={{fontWeight:800,marginBottom:5}}>{tab==='Discover'?'No public challenges yet':'You have no challenges yet'}</div><p className="subhead" style={{margin:0}}>Join one from Discover or create your own.</p></div>;
+ return <>
+  {toast&&<div style={{position:'fixed',bottom:82,left:'50%',transform:'translateX(-50%)',background:'var(--ink)',color:'#fff',borderRadius:999,padding:'10px 16px',fontSize:13,fontWeight:700,zIndex:999,whiteSpace:'nowrap'}}>{toast}</div>}
+  {selected&&<div role="dialog" aria-modal="true" style={{position:'fixed',inset:0,zIndex:1000,background:'rgba(15,42,74,.32)',display:'flex',alignItems:'flex-end',justifyContent:'center'}} onClick={()=>setSelected(null)}><div onClick={e=>e.stopPropagation()} style={{background:'#fff',width:'100%',maxWidth:620,maxHeight:'88vh',overflowY:'auto',borderRadius:'22px 22px 0 0',padding:20,boxShadow:'0 -10px 40px rgba(0,0,0,.15)'}}>
+    {!editing?<><div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-start'}}><div><div className="eyebrow">Challenge details</div><h2 style={{fontSize:22,margin:'4px 0'}}>{selected.name}</h2><div style={{fontSize:12,color:'var(--ink-45)'}}>{formatDate(selected.start_date)} – {formatDate(selected.end_date)}</div></div><button className="btn-secondary" onClick={()=>setSelected(null)} style={{width:'auto',padding:'7px 10px',marginTop:0}}>Close</button></div>
+      {selected.description&&<p style={{fontSize:14,lineHeight:1.55,color:'var(--ink-70)',margin:'16px 0'}}>{selected.description}</p>}
+      <div style={{display:'grid',gridTemplateColumns:'repeat(2,1fr)',gap:8,marginTop:14}}>{[['Step target',Number(selected.step_target).toLocaleString()],['Visibility',selected.visibility],['Members',selected.challenge_members?.length||0],['Created',selected.creator?.display_name||'Protlys Member']].map(([l,v])=><div key={l} style={{border:'1px solid var(--line)',borderRadius:12,padding:'11px 12px',background:'var(--paper)'}}><div style={{fontSize:9,textTransform:'uppercase',letterSpacing:'.06em',fontWeight:800,color:'var(--ink-45)'}}>{l}</div><div style={{fontSize:13,fontWeight:800,marginTop:3}}>{v}</div></div>)}</div>
+      <div style={{marginTop:18}}><div className="eyebrow" style={{marginBottom:8}}>Members</div>{selected.challenge_members?.length?<div style={{display:'grid',gap:8}}>{selected.challenge_members.map((m,i)=><div key={`${m.user_id}-${i}`} style={{display:'flex',alignItems:'center',gap:9}}><div style={{width:30,height:30,borderRadius:'50%',overflow:'hidden',background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'var(--green-dark)'}}>{m.profiles?.avatar_url?<img src={m.profiles.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(m.profiles?.display_name||'?')[0].toUpperCase()}</div><span style={{fontSize:12,fontWeight:700}}>{m.profiles?.display_name||'Protlys Member'}</span></div>)}</div>:<div style={{fontSize:12,color:'var(--ink-45)'}}>No members yet.</div>}</div>
+      <div style={{display:'flex',gap:8,marginTop:18}}>{!myIds.includes(selected.id)&&<button className="btn-primary" onClick={()=>join(selected.id)} disabled={isPending} style={{width:'auto',padding:'9px 14px',marginTop:0}}>Join challenge</button>}{selected.creator_id===userId&&<button className="btn-secondary" onClick={()=>setEditing(true)} style={{width:'auto',padding:'9px 14px',marginTop:0}}>Edit challenge</button>}</div>
+    </>:<><div className="eyebrow">Edit challenge</div><h2 style={{fontSize:21,margin:'4px 0 16px'}}>Update your challenge</h2>{[['name','CHALLENGE NAME'],['description','DESCRIPTION']].map(([k,l])=><div className="field-group" key={k}><label className="field-label">{l}</label>{k==='description'?<textarea className="field-input" value={editForm[k]} onChange={e=>setEditForm(x=>({...x,[k]:e.target.value}))} style={{minHeight:80,paddingTop:10}}/>:<input className="field-input" value={editForm[k]} onChange={e=>setEditForm(x=>({...x,[k]:e.target.value}))}/>}</div>)}<div className="field-group"><label className="field-label">STEP TARGET</label><input className="field-input" type="number" value={editForm.stepTarget} onChange={e=>setEditForm(x=>({...x,stepTarget:e.target.value}))}/></div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}>{[['startDate','START DATE'],['endDate','END DATE']].map(([k,l])=><div className="field-group" key={k}><label className="field-label">{l}</label><input className="field-input" type="date" value={editForm[k]} onChange={e=>setEditForm(x=>({...x,[k]:e.target.value}))}/></div>)}</div><div style={{display:'flex',gap:8,justifyContent:'flex-end'}}><button className="btn-secondary" onClick={()=>setEditing(false)} style={{width:'auto',padding:'8px 13px',marginTop:0}}>Cancel</button><button className="btn-primary" onClick={saveEdit} disabled={isPending} style={{width:'auto',padding:'8px 15px',marginTop:0}}>Save changes</button></div></>}
+  </div></div>}
+  <div className="screen-pad"><span className="eyebrow">Challenges</span><h1 style={{fontSize:22,marginBottom:4}}>Train together</h1><p className="subhead">Create a goal, invite people and track the challenge as a group.</p></div>
+  <div style={{display:'flex',gap:6,padding:'4px 18px 14px',overflowX:'auto'}}>{TABS.map(v=><button key={v} onClick={()=>setTab(v)} style={{border:tab===v?'1.5px solid var(--green)':'1.5px solid var(--line)',background:tab===v?'var(--green)':'#fff',color:tab===v?'#fff':'var(--ink-70)',borderRadius:999,padding:'8px 15px',fontSize:13,fontWeight:800,cursor:'pointer',whiteSpace:'nowrap'}}>{v}</button>)}</div>
+  <div className="screen-pad" style={{paddingTop:2}}>{tab==='Discover'&&renderCards(publicChallenges)}{tab==='My Challenges'&&<>{renderCards(combinedMine)}{sharePanel&&<div style={{background:'var(--green-soft)',border:'1.5px solid rgba(46,158,91,.2)',borderRadius:16,padding:16,marginTop:4,marginBottom:14}}><div style={{fontWeight:800,fontSize:14}}>Invite people to {sharePanel.name}</div><p className="subhead" style={{margin:'5px 0 12px'}}>Send the link. When someone opens it, Protlys automatically adds them to the challenge.</p><div style={{display:'flex',gap:8,flexWrap:'wrap'}}><button className="btn-secondary" onClick={()=>copyLink(sharePanel)} style={{width:'auto',padding:'8px 12px',marginTop:0}}><Icon name="link" size={14}/> Copy invite link</button><button className="btn-secondary" onClick={()=>whatsapp(sharePanel)} style={{width:'auto',padding:'8px 12px',marginTop:0}}>WhatsApp</button></div></div>}</>}{tab==='Create'&&<div className="hub-card" style={{padding:16}}><div style={{fontWeight:800,marginBottom:4}}>Create a challenge</div><p className="subhead" style={{marginBottom:16}}>Set the target and dates. You will get an invite link immediately after creation.</p><div className="field-group"><label className="field-label">CHALLENGE NAME</label><input className="field-input" value={form.name} onChange={e=>upd('name',e.target.value)} placeholder="e.g. 7-Day 50K Steps"/></div><div className="field-group"><label className="field-label">DESCRIPTION</label><textarea className="field-input" value={form.description} onChange={e=>upd('description',e.target.value)} placeholder="What are you challenging the group to do?" style={{minHeight:80,paddingTop:11}}/></div><div className="field-group"><label className="field-label">STEP TARGET</label><div style={{display:'flex',gap:7,flexWrap:'wrap',marginTop:6}}>{[5000,10000,25000,50000,100000].map(t=><button key={t} onClick={()=>upd('stepTarget',t)} style={{border:form.stepTarget===t?'1.5px solid var(--green)':'1.5px solid var(--line)',background:form.stepTarget===t?'var(--green)':'#fff',color:form.stepTarget===t?'#fff':'var(--ink-70)',borderRadius:10,padding:'8px 11px',fontSize:12,fontWeight:800,cursor:'pointer'}}>{t.toLocaleString()}</button>)}</div></div><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10}}><div className="field-group"><label className="field-label">START DATE</label><input className="field-input" type="date" value={form.startDate} onChange={e=>upd('startDate',e.target.value)}/></div><div className="field-group"><label className="field-label">END DATE</label><input className="field-input" type="date" value={form.endDate} onChange={e=>upd('endDate',e.target.value)}/></div></div><div className="field-group"><label className="field-label">WHO CAN JOIN</label><div style={{display:'flex',gap:7,marginTop:6}}>{[['public','Everyone'],['invite','Invite link'],['private','Private']].map(([v,l])=><button key={v} onClick={()=>upd('visibility',v)} style={{border:form.visibility===v?'1.5px solid var(--green)':'1.5px solid var(--line)',background:form.visibility===v?'var(--green)':'#fff',color:form.visibility===v?'#fff':'var(--ink-70)',borderRadius:10,padding:'8px 11px',fontSize:12,fontWeight:800,cursor:'pointer'}}>{l}</button>)}</div></div><button className="btn-primary" onClick={create} disabled={isPending} style={{marginTop:4}}>{isPending?'Creating…':'Create challenge'}</button></div>}</div>
+ </>;
 }
