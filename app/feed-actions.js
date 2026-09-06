@@ -73,9 +73,16 @@ export async function deleteFeedPostAction({ postId }) {
 export async function getFeedCommentsAction({ postId }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
-  const { data, error } = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
+  const { data, error } = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, parent_comment_id, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
   if (error) return { error: error.message };
-  return { comments: data || [] };
+  const comments = await Promise.all((data || []).map(async comment => {
+    const [{ count: likeCount }, { data: myLike }] = await Promise.all([
+      supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id)),
+      supabase.from('feed_comment_likes').select('id').eq('comment_id', String(comment.id)).eq('user_id', user.id).maybeSingle(),
+    ]);
+    return { ...comment, like_count: likeCount || 0, liked: Boolean(myLike) };
+  }));
+  return { comments };
 }
 
 export async function getFeedLikeStateAction({ postId }) {
@@ -102,13 +109,30 @@ export async function toggleFeedLikeAction({ postId }) {
   return { ok: true };
 }
 
-export async function addFeedCommentAction({ postId, body }) {
+export async function addFeedCommentAction({ postId, body, parentCommentId = null }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
   const cleanBody = String(body || '').trim();
   if (!cleanBody) return { error: 'Comment cannot be empty.' };
-  const { error } = await supabase.from('feed_comments').insert({ post_id: postId, user_id: user.id, body: cleanBody });
+  const { error } = await supabase.from('feed_comments').insert({ post_id: postId, user_id: user.id, body: cleanBody, parent_comment_id: parentCommentId ? String(parentCommentId) : null });
   if (error) return { error: error.message };
   revalidatePath('/');
   return { ok: true };
+}
+
+export async function toggleFeedCommentLikeAction({ commentId }) {
+  const { supabase, user } = await getAuthedClient();
+  if (!user) return { error: 'Not signed in' };
+  const id = String(commentId || '').trim();
+  if (!id) return { error: 'Comment not found.' };
+  const { data: existing, error: lookupError } = await supabase.from('feed_comment_likes').select('id').eq('comment_id', id).eq('user_id', user.id).maybeSingle();
+  if (lookupError) return { error: lookupError.message };
+  if (existing) {
+    const { error } = await supabase.from('feed_comment_likes').delete().eq('id', existing.id);
+    if (error) return { error: error.message };
+    return { ok: true, liked: false };
+  }
+  const { error } = await supabase.from('feed_comment_likes').insert({ comment_id: id, user_id: user.id });
+  if (error) return { error: error.message };
+  return { ok: true, liked: true };
 }
