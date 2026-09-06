@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
-import { addFeedCommentAction, getFeedCommentsAction } from './feed-actions';
+import { addFeedCommentAction, getFeedCommentsAction, getFeedLikeStateAction, toggleFeedLikeAction } from './feed-actions';
 
 function Avatar({ name, url, userId }) {
   const content = url
@@ -24,13 +24,24 @@ function timeAgo(value) {
   return new Intl.DateTimeFormat('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'short' }).format(date);
 }
 
-export default function MemberPostComments({ postId, initialCount = 0 }) {
+function HeartIcon({ liked }) {
+  return <svg viewBox="0 0 24 24" width="18" height="18" fill={liked ? '#E1306C' : 'none'} stroke={liked ? '#E1306C' : 'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" /></svg>;
+}
+
+function CommentIcon() {
+  return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.7 7.5 8.5 8.5 0 0 1-3.4-.7L4 20l1.3-3.7A7.2 7.2 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5h.5A7.5 7.5 0 0 1 20 11.5Z" /></svg>;
+}
+
+export default function MemberPostComments({ postId, initialCount = 0, initialLikeCount = 0 }) {
   const [comments, setComments] = useState(null);
   const [expanded, setExpanded] = useState(false);
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState('');
   const [body, setBody] = useState('');
+  const [likeCount, setLikeCount] = useState(Number(initialLikeCount || 0));
+  const [liked, setLiked] = useState(false);
+  const [likeLoading, setLikeLoading] = useState(false);
 
   async function load() {
     if (loading) return;
@@ -43,7 +54,23 @@ export default function MemberPostComments({ postId, initialCount = 0 }) {
 
   useEffect(() => {
     if (initialCount > 0) load();
+    getFeedLikeStateAction({ postId }).then(result => { if (!result?.error) setLiked(Boolean(result.liked)); });
   }, [postId, initialCount]);
+
+  async function toggleLike() {
+    if (likeLoading) return;
+    const nextLiked = !liked;
+    setLiked(nextLiked);
+    setLikeCount(count => Math.max(0, count + (nextLiked ? 1 : -1)));
+    setLikeLoading(true);
+    const result = await toggleFeedLikeAction({ postId });
+    setLikeLoading(false);
+    if (result?.error) {
+      setLiked(!nextLiked);
+      setLikeCount(count => Math.max(0, count + (nextLiked ? -1 : 1)));
+      setError(result.error);
+    }
+  }
 
   async function submit() {
     const clean = body.trim();
@@ -62,18 +89,23 @@ export default function MemberPostComments({ postId, initialCount = 0 }) {
   const visible = expanded ? (comments || []) : (comments || []).slice(0, 3);
   const hiddenCount = Math.max(0, (comments || []).length - 3);
 
-  return <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
+  return <div className="profile-post-engagement" style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--line)' }}>
+    <div className="profile-post-actions" style={{ display: 'flex', alignItems: 'center', gap: 14 }}>
+      <button type="button" onClick={toggleLike} disabled={likeLoading} aria-label={liked ? 'Unlike post' : 'Like post'} style={{ border: 0, background: 'transparent', padding: 2, display: 'inline-flex', alignItems: 'center', gap: 6, color: liked ? '#E1306C' : 'var(--ink-60)', fontSize: 12, fontWeight: 700, cursor: likeLoading ? 'default' : 'pointer' }}><HeartIcon liked={liked} /><span>{likeCount}</span></button>
+      <button type="button" onClick={() => { if (comments === null) load(); setTimeout(() => document.getElementById(`comment-input-${postId}`)?.focus(), 0); }} aria-label="Comment on post" style={{ border: 0, background: 'transparent', padding: 2, display: 'inline-flex', alignItems: 'center', gap: 6, color: 'var(--ink-60)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}><CommentIcon /><span>{initialCount + ((comments?.length || 0) - initialCount > 0 ? (comments?.length || 0) - initialCount : 0)}</span></button>
+    </div>
+    {likeCount > 0 && <div style={{ marginTop: 7, fontSize: 11.5, fontWeight: 800, color: 'var(--ink)' }}>{likeCount} {likeCount === 1 ? 'like' : 'likes'}</div>}
     {comments === null ? (
       initialCount > 0
-        ? <div style={{ fontSize: 12, color: 'var(--ink-45)' }}>{loading ? 'Loading comments…' : 'Comments'}</div>
-        : <button onClick={load} disabled={loading} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-60)', font: 'inherit', fontSize: 12, cursor: 'pointer' }}>{loading ? 'Loading comments…' : 'Be the first to comment'}</button>
+        ? <div style={{ marginTop: 8, fontSize: 12, color: 'var(--ink-45)' }}>{loading ? 'Loading comments…' : 'Comments'}</div>
+        : <button onClick={load} disabled={loading} style={{ border: 0, background: 'transparent', padding: '7px 0 0', color: 'var(--ink-60)', font: 'inherit', fontSize: 12, cursor: 'pointer' }}>{loading ? 'Loading comments…' : 'Be the first to comment'}</button>
     ) : <>
-      {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
-      {!error && comments.length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-45)', padding: '2px 0 5px' }}>No comments yet.</div>}
-      {visible.map(comment => <div key={comment.id} style={{ display: 'flex', gap: 8, marginBottom: 9 }}><Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} userId={comment.user_id} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 12, lineHeight: 1.35 }}><strong>{comment.profiles?.display_name || 'Member'}</strong><span style={{ color: 'var(--ink-45)', marginLeft: 6, fontSize: 10.5 }}>{timeAgo(comment.created_at)}</span></div><div style={{ fontSize: 12.5, lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div></div></div>)}
-      {!expanded && hiddenCount > 0 && <button onClick={() => setExpanded(true)} style={{ border: 0, background: 'transparent', padding: '1px 0 6px', color: 'var(--ink-60)', font: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>View {hiddenCount} more {hiddenCount === 1 ? 'comment' : 'comments'}</button>}
-      {expanded && comments.length > 3 && <button onClick={() => setExpanded(false)} style={{ border: 0, background: 'transparent', padding: '1px 0 6px', color: 'var(--ink-60)', font: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Show less</button>}
-      <div style={{ display: 'flex', gap: 8, marginTop: 5 }}><input value={body} onChange={e => setBody(e.target.value)} onFocus={() => comments === null && load()} onKeyDown={e => e.key === 'Enter' && submit()} className="field-input" placeholder="Add a comment…" style={{ flex: 1, minWidth: 0, padding: '8px 11px', fontSize: 12.5 }} /><button onClick={submit} disabled={posting || !body.trim()} className="btn-secondary" style={{ width: 'auto', padding: '8px 12px', marginTop: 0, fontSize: 12 }}>{posting ? 'Posting…' : 'Post'}</button></div>
+      {error && <div style={{ color: '#B3261E', fontSize: 12, marginTop: 8 }}>{error}</div>}
+      {!error && comments.length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-45)', padding: '7px 0 3px' }}>No comments yet.</div>}
+      {visible.map(comment => <div key={comment.id} style={{ display: 'flex', gap: 8, marginTop: 9, alignItems: 'flex-start' }}><Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} userId={comment.user_id} /><div style={{ minWidth: 0, flex: 1 }}><div style={{ fontSize: 12, lineHeight: 1.35 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link><span style={{ color: 'var(--ink-45)', marginLeft: 6, fontSize: 10.5 }}>{timeAgo(comment.created_at)}</span></div><div style={{ fontSize: 12.5, lineHeight: 1.45, marginTop: 2, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div></div></div>)}
+      {!expanded && hiddenCount > 0 && <button onClick={() => setExpanded(true)} style={{ border: 0, background: 'transparent', padding: '7px 0 2px', color: 'var(--ink-60)', font: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>View {hiddenCount} more {hiddenCount === 1 ? 'comment' : 'comments'}</button>}
+      {expanded && comments.length > 3 && <button onClick={() => setExpanded(false)} style={{ border: 0, background: 'transparent', padding: '7px 0 2px', color: 'var(--ink-60)', font: 'inherit', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>Show less</button>}
+      <div style={{ display: 'flex', gap: 8, marginTop: 8 }}><input id={`comment-input-${postId}`} value={body} onChange={e => setBody(e.target.value)} onFocus={() => comments === null && load()} onKeyDown={e => e.key === 'Enter' && submit()} className="field-input" placeholder="Add a comment…" style={{ flex: 1, minWidth: 0, padding: '8px 11px', fontSize: 12.5 }} /><button onClick={submit} disabled={posting || !body.trim()} className="btn-secondary" style={{ width: 'auto', padding: '8px 12px', marginTop: 0, fontSize: 12 }}>{posting ? 'Posting…' : 'Post'}</button></div>
     </>}
   </div>;
 }
