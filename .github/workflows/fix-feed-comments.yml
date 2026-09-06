@@ -140,23 +140,16 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
           if n != 1:
               raise SystemExit('Could not replace CommentsPanel')
 
-          old_row = re.compile(r'<div style=\{\{ display: \'flex\', alignItems: \'center\', gap: 14, marginTop: 12, paddingTop: 10, borderTop: \'1px solid var\(--line\)\' \}\}>.*?<\\/div>\}\}</article>', re.S)
-          m = old_row.search(text)
-          if not m:
-              raise SystemExit('Could not locate feed engagement row')
-
-          replacement = '''<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}><button onClick={() => handleLike(post.id)} className="btn-secondary" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: liked.has(post.id) ? '#E1306C' : 'var(--ink-60)' }}><Icon name="heart" size={17} /> {post.like_count || 0}</button><button onClick={() => handleShare(post)} className="btn-secondary" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-60)' }}><Icon name="share" size={17} /> Share</button></div><CommentsPanel postId={post.id} initialCount={post.comment_count || 0} onCommented={() => router.refresh()} /></>\n
-          text = text[:m.start()] + replacement + text[m.end()-len('</article>'):] if False else text
-          # More reliable targeted replacement of just the known row + closing fragment.
           row_start = text.find("<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}>")
           if row_start < 0:
               raise SystemExit('Could not find engagement row start')
           row_end = text.find('</div></>}</article>', row_start)
           if row_end < 0:
               raise SystemExit('Could not find engagement row end')
-          row_end += len('</div>')}</article>
-          text = text[:row_start] + replacement + text[row_end:]
+          row_end += len('</div></>}</article>')
 
+          new_row = """<div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 12, paddingTop: 10, borderTop: '1px solid var(--line)' }}><button onClick={() => handleLike(post.id)} className=\"btn-secondary\" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: liked.has(post.id) ? '#E1306C' : 'var(--ink-60)' }}><Icon name=\"heart\" size={17} /> {post.like_count || 0}</button><button onClick={() => handleShare(post)} className=\"btn-secondary\" style={{ width: 'auto', padding: '5px 0', border: 'none', background: 'transparent', marginTop: 0, display: 'flex', alignItems: 'center', gap: 6, color: 'var(--ink-60)' }}><Icon name=\"share\" size={17} /> Share</button></div><CommentsPanel postId={post.id} initialCount={post.comment_count || 0} onCommented={() => router.refresh()} /></></article>"""
+          text = text[:row_start] + new_row + text[row_end:]
           path.write_text(text)
 
       - name: Commit patched source and remove one-shot workflow
