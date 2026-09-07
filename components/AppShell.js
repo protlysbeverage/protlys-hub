@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { useState } from 'react';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
-  { href: '/movement', label: 'Movement', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8"/></svg> },
+  { href: '/movement', label: 'Movement', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1 8"/></svg> },
   { href: '/challenges', label: 'Challenges', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2.5 4L17 12H4"/></svg> },
   { href: '/calculator', label: 'Protein', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h2"/></svg> },
-  { href: '/library', label: 'Library', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8"/></svg> },
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
@@ -22,9 +22,18 @@ function AiIcon() {
   return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><rect x="4" y="5" width="16" height="14" rx="4"/><path d="M8 12h.01M12 12h.01M16 12h.01M9 19v2M15 19v2"/></svg>;
 }
 
+function BookIcon() {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8"/></svg>;
+}
+
+function ChevronIcon({ open }) {
+  return <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d={open ? 'm6 15 6-6 6 6' : 'm6 9 6 6 6-6'} /></svg>;
+}
+
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const shopUrl = getShopUrl();
+  const [libraryOpen, setLibraryOpen] = useState(pathname === '/library');
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
@@ -70,12 +79,10 @@ export default function AppShell({ children }) {
     .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:52px!important;padding:7px 2px 6px!important;align-items:center!important;justify-content:center!important;gap:4px!important;font-family:'Manrope',sans-serif!important;font-size:10px!important;font-weight:700!important;line-height:1!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important; }
     .protlys-app .bottom-nav .nav-btn svg { flex:0 0 20px!important;width:20px!important;height:20px!important;display:block!important;margin:0!important; }
     .protlys-app .disclaimer { display:none!important; }
-
     .protlys-app .desktop-sidebar { display:none; }
     .protlys-app .desktop-ai { display:none; }
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
     .protlys-app .brand-link img { height:36px;width:auto;object-fit:contain;display:block; }
-
     @media (min-width:900px) {
       .protlys-app { min-height:100vh!important;background:#E4E3D6!important;display:flex!important;justify-content:center!important;align-items:flex-start!important;padding:28px!important; }
       .protlys-app .app-shell { width:min(1180px,100%)!important;max-width:none!important;min-height:calc(100vh - 56px)!important;height:auto!important;border-radius:28px!important;overflow:hidden!important;box-shadow:0 30px 70px -28px rgba(15,42,74,.35)!important;background:var(--paper)!important;display:grid!important;grid-template-columns:220px minmax(0,1fr)!important;grid-template-rows:auto 1fr!important; }
@@ -102,8 +109,17 @@ export default function AppShell({ children }) {
       .protlys-app .brand-link img { height:42px!important; }
       .protlys-app .screen { grid-column:2;grid-row:2;display:block!important;width:100%;max-width:760px;margin:0 auto;overflow-y:auto;padding:0 24px 40px!important; }
       .protlys-app .bottom-nav { display:none!important; }
+      .protlys-app .library-dropdown-wrap { width:100%; }
+      .protlys-app .library-dropdown-trigger { justify-content:flex-start!important;cursor:pointer;background:none;border:0;text-align:left;font-family:inherit; }
+      .protlys-app .library-dropdown-trigger .library-chevron { margin-left:auto;width:15px!important;height:15px!important;flex:0 0 15px!important; }
+      .protlys-app .library-dropdown { margin:0 0 4px 44px;padding:3px 0 3px 11px;border-left:1px solid var(--line);display:flex;flex-direction:column;gap:2px; }
+      .protlys-app .library-dropdown-link { display:flex;align-items:center;gap:8px;padding:8px 10px;border-radius:8px;color:var(--ink-70);font-size:11px;font-weight:750;text-decoration:none; }
+      .protlys-app .library-dropdown-link:hover { background:var(--green-soft);color:var(--green-dark); }
+      .protlys-app .library-dropdown-link.active { color:var(--green-dark);font-weight:850;background:var(--green-soft); }
+      .protlys-app .library-dropdown-link.coming { cursor:default;color:var(--ink-45); }
+      .protlys-app .library-dropdown-link.coming:hover { background:var(--paper);color:var(--ink-45); }
+      .protlys-app .library-dropdown-link .coming-label { margin-left:auto;font-size:7.5px;text-transform:uppercase;letter-spacing:.5px;padding:3px 4px;border:1px solid var(--line);border-radius:4px;font-weight:800; }
     }
-
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
       .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important; }
@@ -118,7 +134,16 @@ export default function AppShell({ children }) {
       <div className="sidebar-brand"><Link href="/" aria-label="Protlys Hub home"><img src="/protlys-logo.svg" alt="Protlys" /></Link></div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map(item => <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
-        <div className="nav-btn ai-coming" aria-label="Prot AI coming soon"><AiIcon /><span>Prot AI</span><span className="nav-coming">Soon</span></div>
+        <div className="library-dropdown-wrap">
+          <button type="button" className={`nav-btn library-dropdown-trigger${pathname === '/library' ? ' active' : ''}`} onClick={() => setLibraryOpen(open => !open)} aria-expanded={libraryOpen} aria-controls="protlys-library-menu">
+            <BookIcon /><span>Library</span><ChevronIcon open={libraryOpen} />
+          </button>
+          {libraryOpen && <div id="protlys-library-menu" className="library-dropdown">
+            <Link href="/library" className={`library-dropdown-link${pathname === '/library' ? ' active' : ''}`}><span>Library</span></Link>
+            <div className="library-dropdown-link coming"><span>Coming Soon</span><span className="coming-label">Soon</span></div>
+            <div className="library-dropdown-link coming"><AiIcon /><span>Prot AI</span><span className="coming-label">Coming Soon</span></div>
+          </div>}
+        </div>
       </nav>
       <div className="sidebar-spacer" />
       <div className="desktop-ai" aria-label="Prot AI coming soon">
@@ -139,4 +164,3 @@ export default function AppShell({ children }) {
     </div>
   </div>
 </div>;
-}
