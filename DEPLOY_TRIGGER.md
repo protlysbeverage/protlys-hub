@@ -1,0 +1,1 @@
+Deployment trigger for Vercel Git integration. Safe to remove after deployment.
