@@ -87,6 +87,9 @@ export default function AppShell({ children }) {
       .protlys-app .sidebar-nav .nav-btn svg { width:19px;height:19px;flex:0 0 19px; }
       .protlys-app .sidebar-nav .nav-btn:hover { background:var(--green-soft);color:var(--green-dark); }
       .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft);color:var(--green-dark);font-weight:850; }
+      .protlys-app .sidebar-nav .nav-btn.ai-coming { cursor:default;color:var(--ink-45); }
+      .protlys-app .sidebar-nav .nav-btn.ai-coming:hover { background:var(--paper);color:var(--ink-45); }
+      .protlys-app .sidebar-nav .nav-btn.ai-coming .nav-coming { margin-left:auto;font-size:8px;line-height:1;text-transform:uppercase;letter-spacing:.5px;padding:4px 5px;border:1px solid var(--line);border-radius:5px;font-weight:800; }
       .protlys-app .sidebar-spacer { flex:1; }
       .protlys-app .desktop-ai { display:flex;align-items:center;gap:10px;padding:12px;border:1px dashed var(--line);border-radius:13px;background:var(--paper);color:var(--ink-70); }
       .protlys-app .desktop-ai .ai-icon { width:34px;height:34px;display:flex;align-items:center;justify-content:center;border-radius:10px;background:#fff;color:var(--green-dark);border:1px solid var(--line);flex:0 0 34px; }
@@ -96,16 +99,13 @@ export default function AppShell({ children }) {
       .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:78px!important;padding:14px 28px!important;background:var(--paper)!important;display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;border-bottom:1px solid var(--line)!important; }
       .protlys-app .app-header > .brand-link { grid-column:2; }
       .protlys-app .app-header > .shop-header-link { grid-column:3;justify-self:end; }
-      .protlys-app .app-header > a:first-child:not(.brand-link) { grid-column:2; }
       .protlys-app .brand-link img { height:42px!important; }
       .protlys-app .screen { grid-column:2;grid-row:2;display:block!important;width:100%;max-width:760px;margin:0 auto;overflow-y:auto;padding:0 24px 40px!important; }
       .protlys-app .bottom-nav { display:none!important; }
-      .protlys-app .desktop-shop-note { display:block; }
     }
 
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
-      .protlys-app .app-header > a:first-child:not(.brand-link) { display:none!important; }
       .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important; }
       .protlys-app .app-header .brand-link { grid-column:2; }
       .protlys-app .app-header .shop-header-link { grid-column:3;justify-self:end; }
@@ -115,16 +115,15 @@ export default function AppShell({ children }) {
 
   <div className="app-shell">
     <aside className="desktop-sidebar" aria-label="Protlys Hub navigation">
-      <div className="sidebar-brand">
-        <Link href="/" aria-label="Protlys Hub home"><img src="/protlys-logo.svg" alt="Protlys" /></Link>
-      </div>
+      <div className="sidebar-brand"><Link href="/" aria-label="Protlys Hub home"><img src="/protlys-logo.svg" alt="Protlys" /></Link></div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map(item => <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
+        <div className="nav-btn ai-coming" aria-label="Prot AI coming soon"><AiIcon /><span>Prot AI</span><span className="nav-coming">Soon</span></div>
       </nav>
       <div className="sidebar-spacer" />
       <div className="desktop-ai" aria-label="Prot AI coming soon">
         <div className="ai-icon"><AiIcon /></div>
-        <div><div className="ai-title">Prot AI</div><div className="ai-meta">Coming soon</div></div>
+        <div><div className="ai-title">Prot AI</div><div className="ai-meta">Your nutrition companion · Coming soon</div></div>
       </div>
     </aside>
 
