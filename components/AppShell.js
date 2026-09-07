@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { href: '/movement', label: 'Movement', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1 8"/></svg> },
   { href: '/challenges', label: 'Challenges', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2.5 4L17 12H4"/></svg> },
   { href: '/calculator', label: 'Protein', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h2"/></svg> },
+  { href: '/library', label: 'Library', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 5.5A2.5 2.5 0 0 1 6.5 3H20v16H6.5A2.5 2.5 0 0 0 4 21.5z"/><path d="M4 5.5v16M8 7h8M8 11h8"/></svg> },
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
@@ -50,6 +51,16 @@ export default function AppShell({ children }) {
     .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
     .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
     .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
+    .protlys-app .library-feature-card { display:flex;gap:18px;align-items:flex-start;background:#fff;border:1px solid var(--line);border-radius:18px;padding:20px;box-shadow:0 2px 8px rgba(15,42,74,.035); }
+    .protlys-app .library-icon { width:46px;height:46px;min-width:46px;border-radius:13px;display:flex;align-items:center;justify-content:center;background:var(--green-soft);color:var(--green-dark); }
+    .protlys-app .library-icon svg { width:23px;height:23px; }
+    .protlys-app .library-kicker { font-size:10px;line-height:1.2;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-45);font-weight:800; }
+    .protlys-app .library-feature-copy h2 { margin:4px 0 6px;font-family:'Space Grotesk',sans-serif;font-size:20px;line-height:1.15;letter-spacing:-.02em; }
+    .protlys-app .library-feature-copy p,.protlys-app .library-coming-card p { margin:0;color:var(--ink-70);font-size:13px;line-height:1.55; }
+    .protlys-app .library-primary-link { display:inline-flex;align-items:center;gap:7px;margin-top:16px;color:var(--green-dark);font-size:12px;font-weight:800;text-decoration:none; }
+    .protlys-app .library-primary-link:hover { text-decoration:underline; }
+    .protlys-app .library-coming-card { margin-top:12px;background:var(--paper);border:1px solid var(--line);border-radius:16px;padding:17px; }
+    .protlys-app .library-coming-card h3 { margin:4px 0 5px;font-family:'Space Grotesk',sans-serif;font-size:15px; }
     .protlys-app .bottom-nav { align-items:stretch!important; }
     .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:52px!important;padding:7px 2px 6px!important;align-items:center!important;justify-content:center!important;gap:4px!important;font-family:'Manrope',sans-serif!important;font-size:10px!important;font-weight:700!important;line-height:1!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important; }
     .protlys-app .bottom-nav .nav-btn svg { flex:0 0 20px!important;width:20px!important;height:20px!important;display:block!important;margin:0!important; }
