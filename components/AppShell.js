@@ -7,7 +7,7 @@ const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
   { href: '/movement', label: 'Movement', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1 8"/></svg> },
   { href: '/challenges', label: 'Challenges', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 22V4h13l-2.5 4L17 12H4"/></svg> },
-  { href: '/calculator', label: 'Protein Calculator', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h2"/></svg> },
+  { href: '/calculator', label: 'Protein', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="5" y="3" width="14" height="18" rx="2"/><path d="M9 8h6M9 12h6M9 16h2"/></svg> },
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
@@ -35,14 +35,18 @@ export default function AppShell({ children }) {
     .protlys-app button:has(svg[stroke-width="2.3"]) { color:#E1306C!important; }
     .protlys-app button:has(svg[stroke-width="2.3"]) svg { color:#E1306C; }
     .protlys-app button:has(svg[stroke-width="2.3"]) svg path { fill:#E1306C;stroke:#E1306C; }
-    .protlys-app .feed-card { width:100%;margin:0 0 14px;padding:16px;background:#fff;border:1px solid var(--line);border-radius:18px;box-shadow:0 2px 8px rgba(15,42,74,.035);overflow:hidden; }
-    .protlys-app .feed-card-head { display:flex;align-items:center;gap:10px;min-height:40px;padding:0 0 12px;margin:0;border-bottom:1px solid var(--line); }
+
+    /* Feed cards: match the cleaner member-profile post treatment. */
+    .protlys-app .feed-card { width:100%;margin:0 0 14px;padding:16px;background:#fff;border:1.5px solid var(--line);border-radius:18px;box-shadow:0 2px 8px rgba(15,42,74,.035);overflow:hidden; }
+    .protlys-app .feed-card.profile-post-card { padding:18px!important;border-radius:20px!important;margin-bottom:14px!important;box-shadow:0 2px 10px rgba(15,42,74,.045)!important; }
+    .protlys-app .feed-card-head { display:flex;align-items:center;gap:11px;min-height:44px;padding:0 0 13px;margin:0;border-bottom:0; }
     .protlys-app .feed-card-head>a { flex-shrink:0; }
-    .protlys-app .feed-author { display:block;font-size:13px;line-height:1.25;font-weight:800;color:var(--ink); }
-    .protlys-app .feed-meta { margin-top:3px;font-size:10.5px;line-height:1.2;color:var(--ink-45); }
-    .protlys-app .feed-body { padding:12px 0 0;font-size:13.5px;line-height:1.55;white-space:pre-wrap;overflow-wrap:anywhere; }
-    .protlys-app .feed-image { display:block;width:100%;height:auto;max-height:280px;margin:12px 0 0;border-radius:12px;object-fit:cover;background:var(--paper); }
-    .protlys-app .feed-card .feed-actions { display:flex;align-items:center;gap:18px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line); }
+    .protlys-app .feed-author { display:block;font-size:14px;line-height:1.25;font-weight:800;color:var(--ink); }
+    .protlys-app .feed-meta { margin-top:4px;font-size:11px;line-height:1.2;color:var(--ink-45); }
+    .protlys-app .feed-card-body { padding:0!important;font-size:15px;line-height:1.5; }
+    .protlys-app .feed-card-body p { margin:0!important; }
+    .protlys-app .feed-card-body img { display:block;width:100%;height:auto;max-height:520px;margin:12px 0 0;border-radius:14px;object-fit:cover;background:var(--paper); }
+    .protlys-app .feed-card .feed-actions { display:flex;align-items:center;gap:20px;margin-top:14px;padding-top:11px;border-top:1px solid var(--line); }
     .protlys-app .feed-card .feed-actions button { display:inline-flex;align-items:center;gap:6px; }
     .protlys-app .feed-card .feed-comments { margin-top:8px;padding-top:8px;border-top:0; }
     .protlys-app .profile-post-card { overflow:hidden; }
@@ -51,9 +55,12 @@ export default function AppShell({ children }) {
     .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
     .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
     .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
+
+    /* Restore the original five-tab mobile navigation: icon above label. */
     .protlys-app .bottom-nav { align-items:stretch!important; }
-    .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:52px!important;padding:7px 2px 6px!important;align-items:center!important;justify-content:center!important;gap:4px!important;font-family:'Manrope',sans-serif!important;font-size:10px!important;font-weight:700!important;line-height:1!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important; }
-    .protlys-app .bottom-nav .nav-btn svg { flex:0 0 20px!important;width:20px!important;height:20px!important;display:block!important;margin:0!important; }
+    .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:68px!important;padding:8px 2px 7px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-family:'Manrope',sans-serif!important;font-size:10.5px!important;font-weight:700!important;line-height:1.05!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important;color:var(--ink-45);text-decoration:none; }
+    .protlys-app .bottom-nav .nav-btn.active { color:var(--green-dark)!important;font-weight:800!important; }
+    .protlys-app .bottom-nav .nav-btn svg { flex:0 0 22px!important;width:22px!important;height:22px!important;display:block!important;margin:0!important; }
     .protlys-app .disclaimer { display:none!important; }
 
     .protlys-app .desktop-sidebar { display:none; }
@@ -110,7 +117,7 @@ export default function AppShell({ children }) {
     <section className="screen active">{children}</section>
 
     <div className="bottom-nav">
-      {NAV_ITEMS.map(item=><Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}{item.label}</Link>)}
+      {NAV_ITEMS.map(item=><Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
     </div>
   </div>
 </div>;
