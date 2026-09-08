@@ -3,6 +3,7 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import FeedClient from './FeedClient';
 import FeedVisualPatch from '@/components/FeedVisualPatch';
+import FeedInteractionEnhancer from './FeedInteractionEnhancer';
 
 export default async function FeedPage() {
   const supabase = await createClient();
@@ -40,6 +41,7 @@ export default async function FeedPage() {
         userId={user.id}
         profile={profile || {}}
       />
+      <FeedInteractionEnhancer posts={normalizedPosts} />
     </AppShell>
   );
 }
