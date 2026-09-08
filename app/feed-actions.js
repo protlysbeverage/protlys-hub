@@ -77,7 +77,6 @@ export async function getFeedCommentsAction({ postId }) {
   data = withReplies.data;
   error = withReplies.error;
 
-  // Keep existing comments working even before migration 011 is applied.
   if (error && /parent_comment_id|column/i.test(error.message || '')) {
     const fallback = await supabase.from('feed_comments').select('id, post_id, user_id, body, created_at, profiles(display_name, avatar_url)').eq('post_id', postId).order('created_at', { ascending: true });
     data = (fallback.data || []).map(comment => ({ ...comment, parent_comment_id: null }));
@@ -85,18 +84,35 @@ export async function getFeedCommentsAction({ postId }) {
   }
   if (error) return { error: error.message };
 
-  const comments = await Promise.all((data || []).map(async comment => {
-    let likeCount = 0;
-    let liked = false;
-    const likeQuery = await supabase.from('feed_comment_likes').select('id', { count: 'exact', head: true }).eq('comment_id', String(comment.id));
-    if (!likeQuery.error) {
-      likeCount = likeQuery.count || 0;
-      const { data: myLike } = await supabase.from('feed_comment_likes').select('id').eq('comment_id', String(comment.id)).eq('user_id', user.id).maybeSingle();
-      liked = Boolean(myLike);
-    }
-    return { ...comment, like_count: likeCount, liked };
-  }));
-  return { comments };
+  const comments = data || [];
+  if (!comments.length) return { comments: [] };
+
+  // Batch comment likes instead of making two database requests per comment.
+  // This is a major reduction in database round-trips when a post has many comments.
+  const commentIds = comments.map(comment => String(comment.id));
+  const { data: likeRows, error: likesError } = await supabase
+    .from('feed_comment_likes')
+    .select('id, comment_id, user_id')
+    .in('comment_id', commentIds);
+
+  // Keep comments readable even if the optional comment-like table has not been migrated yet.
+  if (likesError) return { comments: comments.map(comment => ({ ...comment, like_count: 0, liked: false })) };
+
+  const counts = new Map();
+  const likedIds = new Set();
+  for (const like of likeRows || []) {
+    const id = String(like.comment_id);
+    counts.set(id, (counts.get(id) || 0) + 1);
+    if (String(like.user_id) === String(user.id)) likedIds.add(id);
+  }
+
+  return {
+    comments: comments.map(comment => ({
+      ...comment,
+      like_count: counts.get(String(comment.id)) || 0,
+      liked: likedIds.has(String(comment.id)),
+    })),
+  };
 }
 
 export async function getFeedLikeStateAction({ postId }) {
@@ -132,7 +148,6 @@ export async function addFeedCommentAction({ postId, body, parentCommentId = nul
   const payload = { post_id: postId, user_id: user.id, body: cleanBody };
   if (parentCommentId) payload.parent_comment_id = String(parentCommentId);
   let result = await supabase.from('feed_comments').insert(payload);
-  // Basic comments remain available if the reply column has not been migrated yet.
   if (result.error && parentCommentId && /parent_comment_id|column/i.test(result.error.message || '')) {
     result = await supabase.from('feed_comments').insert({ post_id: postId, user_id: user.id, body: cleanBody });
   }
