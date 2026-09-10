@@ -26,7 +26,7 @@ export default function ThemeToggle() {
       if (!header) return;
       const rect = header.getBoundingClientRect();
       setPosition({
-        left: rect.left + 18 + 18,
+        left: rect.left + 36,
         top: rect.top + rect.height / 2,
       });
     };
@@ -52,12 +52,26 @@ export default function ThemeToggle() {
     : undefined;
 
   return (
-    <button className="theme-toggle" style={positionStyle} type="button" onClick={toggle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} title={dark ? 'Light mode' : 'Dark mode'}>
-      {dark ? (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
-      ) : (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15.5A9 9 0 1 0 8.5 3 9 9 0 0 0 21 15.5Z"/></svg>
-      )}
+    <button
+      className={`theme-toggle${dark ? ' is-dark' : ' is-light'}`}
+      style={positionStyle}
+      type="button"
+      onClick={toggle}
+      aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
+      title={dark ? 'Light mode' : 'Dark mode'}
+    >
+      <span className="theme-toggle-icon" aria-hidden="true">
+        {dark ? (
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+            <circle cx="12" cy="12" r="4" />
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+          </svg>
+        ) : (
+          <svg viewBox="0 0 24 24" fill="currentColor">
+            <path d="M21 15.5A9 9 0 0 1 8.5 3 9 9 0 1 0 21 15.5Z" />
+          </svg>
+        )}
+      </span>
     </button>
   );
 }
