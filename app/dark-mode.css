@@ -54,7 +54,7 @@ html.protlys-dark .protlys-app .profile-card {
   border-color:var(--line)!important;
 }
 
-/* Catch component-specific inline white surfaces so dark mode is actually dark. */
+/* Catch component-specific inline white surfaces. Browsers normalize JSX #fff/white to rgb(). */
 html.protlys-dark .protlys-app [style*="background:#fff"],
 html.protlys-dark .protlys-app [style*="background: #fff"],
 html.protlys-dark .protlys-app [style*="background:'#fff'"],
@@ -62,7 +62,13 @@ html.protlys-dark .protlys-app [style*="background: '#fff'"],
 html.protlys-dark .protlys-app [style*="background:#FFFFFF"],
 html.protlys-dark .protlys-app [style*="background: #FFFFFF"],
 html.protlys-dark .protlys-app [style*="background:'white'"],
-html.protlys-dark .protlys-app [style*="background: 'white'"] {
+html.protlys-dark .protlys-app [style*="background: 'white'"],
+html.protlys-dark .protlys-app [style*="background: rgb(255, 255, 255)"],
+html.protlys-dark .protlys-app [style*="background-color: rgb(255, 255, 255)"],
+html.protlys-dark .protlys-app [style*="background-color:#fff"],
+html.protlys-dark .protlys-app [style*="background-color: #fff"],
+html.protlys-dark .protlys-app [style*="background-color:white"],
+html.protlys-dark .protlys-app [style*="background-color: white"] {
   background:#171D19!important;
   color:var(--ink)!important;
   border-color:var(--line)!important;
@@ -84,7 +90,6 @@ html.protlys-dark .protlys-app input,
 html.protlys-dark .protlys-app textarea,
 html.protlys-dark .protlys-app select { background:#171D19!important;color:var(--ink)!important;border-color:var(--line)!important; }
 
-/* Calculator and other segmented controls: selected = green, unselected = dark surface. */
 html.protlys-dark .protlys-app .pill-opt:not(.active):not([aria-pressed='true']) {
   background:#171D19!important;
   color:var(--ink-70)!important;
@@ -100,9 +105,9 @@ html.protlys-dark .protlys-app .pill-opt[aria-pressed='true'] {
 html.protlys-dark .protlys-app .pill-opt.active small,
 html.protlys-dark .protlys-app .pill-opt[aria-pressed='true'] small { color:#08110C!important;opacity:.72!important; }
 
-/* Challenge tabs and other inline segmented buttons. */
 html.protlys-dark .protlys-app button[style*="background:'white'"],
-html.protlys-dark .protlys-app button[style*="background: 'white'"] {
+html.protlys-dark .protlys-app button[style*="background: 'white'"],
+html.protlys-dark .protlys-app button[style*="background: rgb(255, 255, 255)"] {
   background:#171D19!important;
   color:var(--ink-70)!important;
   border-color:var(--line)!important;
