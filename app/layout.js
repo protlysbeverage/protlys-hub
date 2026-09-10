@@ -1,4 +1,6 @@
 import './globals.css';
+import './dark-mode.css';
+import ThemeToggle from '@/components/ThemeToggle';
 
 export const metadata = {
   title: 'Protlys Hub',
@@ -33,7 +35,7 @@ export default function RootLayout({ children }) {
           rel="stylesheet"
         />
       </head>
-      <body>{children}</body>
+      <body><ThemeToggle />{children}</body>
     </html>
   );
 }
