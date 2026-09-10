@@ -27,8 +27,13 @@ html.protlys-dark .protlys-app .screen,
 html.protlys-dark .protlys-app .desktop-sidebar,
 html.protlys-dark .protlys-app .sidebar-brand,
 html.protlys-dark .protlys-app .card,
+html.protlys-dark .protlys-app .section-card,
 html.protlys-dark .protlys-app .hub-card,
 html.protlys-dark .protlys-app .feed-card,
+html.protlys-dark .protlys-app .feed-card-body,
+html.protlys-dark .protlys-app .feed-composer,
+html.protlys-dark .protlys-app .progress-card,
+html.protlys-dark .protlys-app .progress-section,
 html.protlys-dark .protlys-app .prod-card,
 html.protlys-dark .protlys-app .chal-card,
 html.protlys-dark .protlys-app .comm-card,
@@ -41,7 +46,23 @@ html.protlys-dark .protlys-app .pill-opt,
 html.protlys-dark .protlys-app .qty-btn,
 html.protlys-dark .protlys-app .shop-header-link,
 html.protlys-dark .protlys-app .post-menu,
-html.protlys-dark .protlys-app .movement-setting-card {
+html.protlys-dark .protlys-app .movement-setting-card,
+html.protlys-dark .protlys-app .your-hub-card,
+html.protlys-dark .protlys-app .profile-card {
+  background:#171D19!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+
+/* Catch component-specific inline white surfaces so dark mode is actually dark. */
+html.protlys-dark .protlys-app [style*="background:#fff"],
+html.protlys-dark .protlys-app [style*="background: #fff"],
+html.protlys-dark .protlys-app [style*="background:'#fff'"],
+html.protlys-dark .protlys-app [style*="background: '#fff'"],
+html.protlys-dark .protlys-app [style*="background:#FFFFFF"],
+html.protlys-dark .protlys-app [style*="background: #FFFFFF"],
+html.protlys-dark .protlys-app [style*="background:'white'"],
+html.protlys-dark .protlys-app [style*="background: 'white'"] {
   background:#171D19!important;
   color:var(--ink)!important;
   border-color:var(--line)!important;
@@ -62,8 +83,37 @@ html.protlys-dark .protlys-app .tag-next { border-color:var(--ink)!important;col
 html.protlys-dark .protlys-app input,
 html.protlys-dark .protlys-app textarea,
 html.protlys-dark .protlys-app select { background:#171D19!important;color:var(--ink)!important;border-color:var(--line)!important; }
+
+/* Calculator and other segmented controls: selected = green, unselected = dark surface. */
+html.protlys-dark .protlys-app .pill-opt:not(.active):not([aria-pressed='true']) {
+  background:#171D19!important;
+  color:var(--ink-70)!important;
+  border-color:var(--line)!important;
+}
+html.protlys-dark .protlys-app .pill-opt.active,
+html.protlys-dark .protlys-app .pill-opt[aria-pressed='true'] {
+  background:var(--green)!important;
+  color:#08110C!important;
+  border-color:var(--green)!important;
+  box-shadow:0 0 0 1px rgba(85,201,125,.22),0 4px 14px rgba(85,201,125,.16)!important;
+}
+html.protlys-dark .protlys-app .pill-opt.active small,
+html.protlys-dark .protlys-app .pill-opt[aria-pressed='true'] small { color:#08110C!important;opacity:.72!important; }
+
+/* Challenge tabs and other inline segmented buttons. */
+html.protlys-dark .protlys-app button[style*="background:'white'"],
+html.protlys-dark .protlys-app button[style*="background: 'white'"] {
+  background:#171D19!important;
+  color:var(--ink-70)!important;
+  border-color:var(--line)!important;
+}
+
 html.protlys-dark .protlys-app .app-header { box-shadow:none!important; }
 html.protlys-dark .protlys-app .bottom-nav { background:#171D19!important;border-color:var(--line)!important; }
+html.protlys-dark .protlys-app .bottom-nav a,
+html.protlys-dark .protlys-app .bottom-nav button { color:var(--ink-45)!important; }
+html.protlys-dark .protlys-app .bottom-nav a.active,
+html.protlys-dark .protlys-app .bottom-nav button.active { color:var(--green)!important; }
 html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
 
 .theme-toggle {
