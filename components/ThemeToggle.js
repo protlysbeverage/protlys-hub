@@ -13,12 +13,31 @@ function applyTheme(theme) {
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
+  const [position, setPosition] = useState(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
     const preferred = saved === 'dark' || (!saved && window.matchMedia('(prefers-color-scheme: dark)').matches) ? 'dark' : 'light';
     setDark(preferred === 'dark');
     applyTheme(preferred);
+
+    const alignWithHeader = () => {
+      const header = document.querySelector('.protlys-app .app-header');
+      if (!header) return;
+      const rect = header.getBoundingClientRect();
+      setPosition({
+        left: rect.left + 18 + 18,
+        top: rect.top + rect.height / 2,
+      });
+    };
+
+    alignWithHeader();
+    window.addEventListener('resize', alignWithHeader);
+    window.addEventListener('scroll', alignWithHeader, { passive: true });
+    return () => {
+      window.removeEventListener('resize', alignWithHeader);
+      window.removeEventListener('scroll', alignWithHeader);
+    };
   }, []);
 
   function toggle() {
@@ -28,12 +47,16 @@ export default function ThemeToggle() {
     applyTheme(next);
   }
 
+  const positionStyle = position
+    ? { left: position.left, top: position.top, transform: 'translate(-50%, -50%)' }
+    : undefined;
+
   return (
-    <button className="theme-toggle" type="button" onClick={toggle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} title={dark ? 'Light mode' : 'Dark mode'}>
+    <button className="theme-toggle" style={positionStyle} type="button" onClick={toggle} aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'} title={dark ? 'Light mode' : 'Dark mode'}>
       {dark ? (
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41"/></svg>
       ) : (
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15.5A9 9 0 0 1 8.5 3a9 9 0 1 0 12.5 12.5Z"/></svg>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M21 15.5A9 9 0 1 0 8.5 3 9 9 0 0 0 21 15.5Z"/></svg>
       )}
     </button>
   );
