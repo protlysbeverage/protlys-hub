@@ -35,7 +35,7 @@ function streaks(keys) {
   const yesterday = new Date(today);
   yesterday.setDate(yesterday.getDate() - 1);
   const yesterdayKey = dateKey(yesterday);
-  const endKey = sorted[sorted.length - 1];
+  let endKey = sorted[sorted.length - 1];
   if (endKey !== todayKey && endKey !== yesterdayKey) return { current: 0, best };
 
   let current = 1;
@@ -47,6 +47,7 @@ function streaks(keys) {
 }
 
 function caloriesForSteps(steps) {
+  // Simple active-calorie estimate until user-specific weight is available.
   return Math.round(Number(steps || 0) * 0.04);
 }
 
@@ -69,6 +70,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     const key = dateKey(d);
     return { key, date: d, steps: byDate.get(key) || 0, isToday: key === todayKey };
   });
+  const max = Math.max(...recent.map(d => d.steps), 1);
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
@@ -98,20 +100,19 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
       {!expanded ? (
         <>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:7, marginTop:14 }}>
+          <div style={{ display:'flex', alignItems:'flex-end', gap:7, height:105, marginTop:12 }}>
             {recent.map(d => {
-              const active = d.steps > 0;
+              const h = d.steps > 0 ? Math.max(8, Math.round((d.steps / max) * 70)) : 5;
               return (
-                <div key={d.key} style={{ minWidth:0, textAlign:'center' }}>
-                  <div style={{ fontSize:9, color:d.isToday ? 'var(--green-dark)' : 'var(--ink-45)', fontWeight:d.isToday ? 800 : 500, marginBottom:7 }}>
-                    {d.date.toLocaleDateString([], { weekday:'short' })}
-                  </div>
-                  <div title={active ? `${d.steps.toLocaleString()} steps` : 'No movement logged'} style={{ width:14, height:14, margin:'0 auto', borderRadius:'50%', background:active ? (d.isToday ? 'var(--green)' : 'var(--green-soft)') : 'var(--line)', border:d.isToday ? '2px solid var(--green)' : '1px solid transparent', boxSizing:'border-box' }} />
+                <div key={d.key} style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', gap:5 }}>
+                  <span className="mono" style={{ fontSize:8, color:'var(--ink-45)', minHeight:10 }}>{d.steps ? (d.steps >= 1000 ? `${Math.round(d.steps / 100) / 10}K` : d.steps) : ''}</span>
+                  <div style={{ width:'100%', height:h, background:d.steps ? (d.isToday ? 'var(--green)' : 'var(--green-soft)') : 'var(--line)', borderRadius:6 }} />
+                  <span style={{ fontSize:9, color:d.isToday ? 'var(--green-dark)' : 'var(--ink-45)', fontWeight:d.isToday ? 800 : 500 }}>{d.date.toLocaleDateString([], { weekday:'short' })}</span>
                 </div>
               );
             })}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginTop:14 }}>
+          <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:8, marginTop:10 }}>
             <div style={{ padding:'9px 10px', background:'var(--green-soft)', borderRadius:11 }}><div className="t">Days active</div><div className="mono" style={{ fontSize:17, fontWeight:800 }}>{recent.filter(d => d.steps > 0).length}/7</div></div>
             <div style={{ padding:'9px 10px', background:'var(--green-soft)', borderRadius:11 }}><div className="t">Distance</div><div className="mono" style={{ fontSize:17, fontWeight:800 }}>{distanceForSteps(recentTotal).toFixed(1)} km</div></div>
             <div style={{ padding:'9px 10px', background:'var(--green-soft)', borderRadius:11 }}><div className="t">Calories</div><div className="mono" style={{ fontSize:17, fontWeight:800 }}>≈ {recentCalories}</div></div>

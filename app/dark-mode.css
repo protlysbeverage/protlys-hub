@@ -1,0 +1,95 @@
+html.protlys-dark,
+html.protlys-dark body {
+  background:#111713!important;
+}
+
+html.protlys-dark .protlys-app {
+  --ink:#F2F6F2;
+  --ink-70:rgba(242,246,242,.72);
+  --ink-45:rgba(242,246,242,.48);
+  --ink-20:rgba(242,246,242,.14);
+  --paper:#111713;
+  --white:#171D19;
+  --green:#55C97D;
+  --green-dark:#76D89A;
+  --green-soft:#193A27;
+  --blue-soft:#202C45;
+  --berry-soft:#43242D;
+  --drink-soft:#193A2B;
+  --line:rgba(242,246,242,.13);
+  color:var(--ink)!important;
+  background:var(--paper)!important;
+}
+
+html.protlys-dark .protlys-app .app-shell,
+html.protlys-dark .protlys-app .app-header,
+html.protlys-dark .protlys-app .screen,
+html.protlys-dark .protlys-app .desktop-sidebar,
+html.protlys-dark .protlys-app .sidebar-brand,
+html.protlys-dark .protlys-app .card,
+html.protlys-dark .protlys-app .hub-card,
+html.protlys-dark .protlys-app .feed-card,
+html.protlys-dark .protlys-app .prod-card,
+html.protlys-dark .protlys-app .chal-card,
+html.protlys-dark .protlys-app .comm-card,
+html.protlys-dark .protlys-app .why-item,
+html.protlys-dark .protlys-app .find-item,
+html.protlys-dark .protlys-app .qa-btn,
+html.protlys-dark .protlys-app .data-chip,
+html.protlys-dark .protlys-app .field-input,
+html.protlys-dark .protlys-app .pill-opt,
+html.protlys-dark .protlys-app .qty-btn,
+html.protlys-dark .protlys-app .shop-header-link,
+html.protlys-dark .protlys-app .post-menu,
+html.protlys-dark .protlys-app .movement-setting-card {
+  background:#171D19!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+
+html.protlys-dark .protlys-app .section-dark { background:#0B0F0D!important; }
+html.protlys-dark .protlys-app .section,
+html.protlys-dark .protlys-app .list-row,
+html.protlys-dark .protlys-app .learn-card { border-color:var(--line)!important; }
+html.protlys-dark .protlys-app .feed-card-body img { background:#111713!important; }
+html.protlys-dark .protlys-app .post-menu button:hover,
+html.protlys-dark .protlys-app .post-more-btn:hover { background:#202822!important; }
+html.protlys-dark .protlys-app .sidebar-nav .nav-btn:hover,
+html.protlys-dark .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft)!important;color:var(--green-dark)!important; }
+html.protlys-dark .protlys-app .shop-header-link:hover { background:var(--green-soft)!important;border-color:var(--green)!important; }
+html.protlys-dark .protlys-app .btn-secondary { border-color:var(--ink)!important;color:var(--ink)!important; }
+html.protlys-dark .protlys-app .tag-next { border-color:var(--ink)!important;color:var(--ink)!important; }
+html.protlys-dark .protlys-app input,
+html.protlys-dark .protlys-app textarea,
+html.protlys-dark .protlys-app select { background:#171D19!important;color:var(--ink)!important;border-color:var(--line)!important; }
+html.protlys-dark .protlys-app .app-header { box-shadow:none!important; }
+html.protlys-dark .protlys-app .bottom-nav { background:#171D19!important;border-color:var(--line)!important; }
+html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
+
+.theme-toggle {
+  position:fixed;
+  top:12px;
+  right:132px;
+  z-index:100;
+  width:36px;
+  height:36px;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  padding:0;
+  border:1px solid var(--line, rgba(15,42,74,.12));
+  border-radius:50%;
+  background:var(--paper,#F5F6F1);
+  color:var(--ink,#0F2A4A);
+  box-shadow:0 3px 12px rgba(0,0,0,.08);
+  cursor:pointer;
+  transition:transform .15s ease,background .15s ease,border-color .15s ease;
+}
+.theme-toggle:hover { transform:translateY(-1px); }
+.theme-toggle svg { width:18px;height:18px;display:block; }
+html.protlys-dark .theme-toggle { background:#171D19;color:#F2F6F2;border-color:rgba(242,246,242,.16); }
+
+@media (min-width:900px) {
+  html.protlys-dark .protlys-app { background:#090C0A!important; }
+  .theme-toggle { top:21px;right:176px; }
+}
