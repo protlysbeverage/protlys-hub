@@ -25,17 +25,15 @@ export default async function MovementPage() {
     { data: profile },
     { data: todaySteps },
     { data: weekSteps },
+    { data: movementDays },
     { data: achievements },
     { data: currentGoal },
   ] = await Promise.all([
-    supabase.from('profiles')
-      .select('display_name, step_goal, step_streak, total_steps, last_step_date, activity_level')
-      .eq('id', user.id).single(),
+    supabase.from('profiles').select('display_name, step_goal, step_streak, total_steps, last_step_date, activity_level').eq('id', user.id).single(),
     supabase.from('daily_steps').select('steps, source, synced_at').eq('user_id', user.id).eq('step_date', today).single(),
     supabase.from('daily_steps').select('step_date, steps').eq('user_id', user.id).gte('step_date', weekAgoStr).lte('step_date', today).order('step_date'),
-    supabase.from('user_achievements')
-      .select('earned_at, achievements(slug, name, icon, description)')
-      .eq('user_id', user.id).order('earned_at', { ascending: false }).limit(5),
+    supabase.from('daily_steps').select('step_date, steps').eq('user_id', user.id).gt('steps', 0).order('step_date', { ascending: true }),
+    supabase.from('user_achievements').select('earned_at, achievements(slug, name, icon, description)').eq('user_id', user.id).order('earned_at', { ascending: false }).limit(5),
     supabase.from('goals').select('step_target, started_at').eq('user_id', user.id).eq('is_current', true).single(),
   ]);
 
@@ -47,6 +45,7 @@ export default async function MovementPage() {
         lastSync={todaySteps?.synced_at || null}
         source={todaySteps?.source || null}
         weekSteps={weekSteps || []}
+        movementDays={movementDays || []}
         recentAchievements={(achievements || []).map(a => ({ ...a.achievements, earned_at: a.earned_at }))}
         currentGoal={currentGoal?.step_target || profile?.step_goal || 7500}
         activityLevel={profile?.activity_level || null}
