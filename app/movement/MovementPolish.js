@@ -36,13 +36,19 @@ export default function MovementPolish(props) {
       <style>{`
         .movement-polish .hub-card .mono,.movement-polish .metric-number,.movement-polish .stat-number{font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em;}
         .movement-polish .phone-card{background:var(--green-soft);border-radius:16px;padding:16px;margin:10px 18px 0;}
-        .movement-polish .phone-coming-soon{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:var(--white,#fff);border:1px solid var(--line);font-size:9.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--green-dark);margin-bottom:8px;}
+        .movement-polish .phone-coming-soon{display:inline-flex;align-items:center;padding:4px 8px;border-radius:999px;background:#fff;border:1px solid var(--line);font-size:9.5px;font-weight:900;letter-spacing:1px;text-transform:uppercase;color:var(--green-dark);margin-bottom:8px;}
         .movement-polish .phone-title{font-family:'Space Grotesk',sans-serif;font-size:15px;font-weight:750;color:var(--ink);}
         .movement-polish .phone-copy{font-size:12px;line-height:1.5;color:var(--ink-70);margin-top:5px;}
         .movement-polish .phone-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;}
-        .movement-polish .phone-option{background:var(--white,#fff);border:1px solid var(--line);border-radius:12px;padding:11px;display:flex;align-items:flex-start;gap:8px;color:var(--ink);}
+        .movement-polish .phone-option{background:#fff;border:1px solid var(--line);border-radius:12px;padding:11px;display:flex;align-items:flex-start;gap:8px;color:var(--ink);}
         .movement-polish .phone-option strong{display:block;font-size:11.5px;color:var(--ink);}
         .movement-polish .phone-option span{display:block;font-size:10px;color:var(--ink-45);margin-top:3px;line-height:1.35;}
+        html.protlys-dark .movement-polish .phone-option,
+        html.protlys-dark .movement-polish .phone-option[style],
+        html.protlys-dark .movement-polish .phone-option * { color:var(--ink); }
+        html.protlys-dark .movement-polish .phone-option,
+        html.protlys-dark .movement-polish .phone-option[style] { background:#171D19 !important; border-color:rgba(242,246,242,.12) !important; }
+        html.protlys-dark .movement-polish .phone-coming-soon { background:#171D19 !important; color:var(--green-dark) !important; border-color:rgba(242,246,242,.12) !important; }
       `}</style>
 
       <MovementClient {...props} />
