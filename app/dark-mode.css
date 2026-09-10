@@ -122,9 +122,10 @@ html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
 
 .theme-toggle {
   position:fixed;
-  top:12px;
+  top:50%;
   left:18px;
   right:auto;
+  transform:translateY(-50%);
   z-index:100;
   width:36px;
   height:36px;
@@ -140,11 +141,11 @@ html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
   cursor:pointer;
   transition:transform .15s ease,background .15s ease,border-color .15s ease;
 }
-.theme-toggle:hover { transform:translateY(-1px); }
+.theme-toggle:hover { transform:translateY(-50%); }
 .theme-toggle svg { width:18px;height:18px;display:block; }
 html.protlys-dark .theme-toggle { background:#171D19;color:#F2F6F2;border-color:rgba(242,246,242,.16); }
 
 @media (min-width:900px) {
   html.protlys-dark .protlys-app { background:#090C0A!important; }
-  .theme-toggle { top:21px;left:18px;right:auto; }
+  .theme-toggle { top:50%;left:18px;right:auto; }
 }
