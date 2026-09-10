@@ -54,7 +54,6 @@ html.protlys-dark .protlys-app .profile-card {
   border-color:var(--line)!important;
 }
 
-/* Catch component-specific inline white surfaces. Browsers normalize JSX #fff/white to rgb(). */
 html.protlys-dark .protlys-app [style*="background:#fff"],
 html.protlys-dark .protlys-app [style*="background: #fff"],
 html.protlys-dark .protlys-app [style*="background:'#fff'"],
@@ -124,7 +123,8 @@ html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
 .theme-toggle {
   position:fixed;
   top:12px;
-  right:132px;
+  left:18px;
+  right:auto;
   z-index:100;
   width:36px;
   height:36px;
@@ -146,5 +146,5 @@ html.protlys-dark .theme-toggle { background:#171D19;color:#F2F6F2;border-color:
 
 @media (min-width:900px) {
   html.protlys-dark .protlys-app { background:#090C0A!important; }
-  .theme-toggle { top:21px;right:176px; }
+  .theme-toggle { top:21px;left:18px;right:auto; }
 }
