@@ -5,59 +5,19 @@ import AccountClient from './AccountClient';
 import ProteinTargetCard from './ProteinTargetCard';
 
 function localDateStr(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
+  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
   return `${y}-${m}-${d}`;
 }
+function getShopUrl(){return 'https://protlys.com/collections/all';}
 
-function getShopUrl() {
-  return 'https://protlys.com/collections/all';
-}
-
-export default async function AccountPage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect('/login');
-
-  const today = localDateStr();
-  const weekAgoDate = new Date();
-  weekAgoDate.setDate(weekAgoDate.getDate() - 6);
-  const weekAgo = localDateStr(weekAgoDate);
-
-  const [{ data: profile }, { data: achievements }, { data: todaySteps }, { data: weekSteps }] = await Promise.all([
-    supabase.from('profiles')
-      .select('id, display_name, avatar_url, streak, target_g, step_streak, total_steps, step_goal')
-      .eq('id', user.id)
-      .single(),
-    supabase.from('user_achievements')
-      .select('earned_at, achievements(slug, name, icon, description)')
-      .eq('user_id', user.id)
-      .order('earned_at', { ascending: false }),
-    supabase.from('daily_steps')
-      .select('steps, source, synced_at')
-      .eq('user_id', user.id)
-      .eq('step_date', today)
-      .single(),
-    supabase.from('daily_steps')
-      .select('step_date, steps')
-      .eq('user_id', user.id)
-      .gte('step_date', weekAgo)
-      .lte('step_date', today)
-      .order('step_date'),
+export default async function AccountPage(){
+  const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
+  const today=localDateStr(); const weekAgoDate=new Date(); weekAgoDate.setDate(weekAgoDate.getDate()-6); const weekAgo=localDateStr(weekAgoDate);
+  const [{data:profile},{data:achievements},{data:todaySteps},{data:weekSteps}]=await Promise.all([
+    supabase.from('profiles').select('id,display_name,avatar_url,streak,target_g,step_streak,total_steps,step_goal').eq('id',user.id).single(),
+    supabase.from('user_achievements').select('earned_at,achievements(slug,name,icon,description)').eq('user_id',user.id).order('earned_at',{ascending:false}),
+    supabase.from('daily_steps').select('steps,source,synced_at').eq('user_id',user.id).eq('step_date',today).single(),
+    supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).gte('step_date',weekAgo).lte('step_date',today).order('step_date'),
   ]);
-
-  return (
-    <AppShell>
-      <ProteinTargetCard targetG={profile?.target_g} />
-      <AccountClient
-        profile={profile || {}}
-        achievements={achievements || []}
-        todaySteps={todaySteps?.steps || 0}
-        weekSteps={weekSteps || []}
-        shopUrl={getShopUrl()}
-        email={user.email}
-      />
-    </AppShell>
-  );
+  return <AppShell><div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div><ProteinTargetCard targetG={profile?.target_g}/><AccountClient profile={profile||{}} achievements={achievements||[]} todaySteps={todaySteps?.steps||0} weekSteps={weekSteps||[]} shopUrl={getShopUrl()} email={user.email}/></AppShell>;
 }
