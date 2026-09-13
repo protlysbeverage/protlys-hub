@@ -1,62 +1,125 @@
-# Setting Up Google Sign-In for Protlys Hub
+# Protlys Hub — Google Sign-In setup
 
-Follow these steps exactly. Takes about 10 minutes.
+Protlys Hub uses Supabase Auth with Google's OAuth flow and Next.js PKCE callbacks.
 
----
+## 1. Google Cloud / Google Auth Platform
 
-## Step 1 — Create a Google OAuth App
+Open Google Auth Platform and use the existing **Protlys Hub** web OAuth client.
 
-1. Go to: https://console.cloud.google.com
-2. Click **Select a project** at the top → **New Project**
-3. Name it `Protlys Hub` → click **Create**
-4. In the left menu, go to **APIs & Services → OAuth consent screen**
-5. Choose **External** → click **Create**
-6. Fill in:
-   - App name: `Protlys Hub`
-   - User support email: your email
-   - Developer contact email: your email
-7. Click **Save and Continue** through all steps (you can skip optional fields)
-8. Click **Back to Dashboard**
+### Authorized JavaScript origins
 
----
+Add:
 
-## Step 2 — Create OAuth Credentials
+```text
+https://protlys.com
+```
 
-1. In the left menu, go to **APIs & Services → Credentials**
-2. Click **+ Create Credentials → OAuth 2.0 Client IDs**
-3. Application type: **Web application**
-4. Name: `Protlys Hub`
-5. Under **Authorised redirect URIs**, click **Add URI** and paste:
-   ```
-   https://YOUR_SUPABASE_PROJECT_REF.supabase.co/auth/v1/callback
-   ```
-   *(Replace YOUR_SUPABASE_PROJECT_REF with the ref from your Supabase project URL)*
-6. Click **Create**
-7. Copy the **Client ID** and **Client Secret** — you'll need these next
+For local development also add:
 
----
+```text
+http://localhost:3000
+```
 
-## Step 3 — Add to Supabase
+### Authorized redirect URI
 
-1. Go to **supabase.com** → your project
-2. Click **Authentication** in the left sidebar
-3. Click **Providers**
-4. Find **Google** and toggle it **on**
-5. Paste your **Client ID** and **Client Secret**
-6. Click **Save**
+Google must redirect back to the **Supabase Auth callback**, not directly to the Next.js callback:
 
----
+```text
+https://sulricjcirnpncwaiblg.supabase.co/auth/v1/callback
+```
 
-## Step 4 — Done!
+This is the callback Google authorizes. Supabase then sends the user to the Protlys Hub callback.
 
-The "Continue with Google" button on your login and signup pages will now work.
+## 2. Supabase Auth
 
-Users click it → Google sign-in popup → automatically redirected to the Hub.
+In the Hub Supabase project:
 
----
+**Authentication → Providers → Google**
 
-## Finding your Supabase Project Ref
+Make sure Google is enabled and the same Google **Client ID** and **Client Secret** are entered there.
 
-Go to supabase.com → your project → Settings → General.
-The Project Ref is the string under "Reference ID" (looks like `abcdefghijklmnop`).
-Your callback URL is: `https://abcdefghijklmnop.supabase.co/auth/v1/callback`
+Then go to:
+
+**Authentication → URL Configuration**
+
+Set the production **Site URL** to:
+
+```text
+https://protlys.com
+```
+
+Add these Redirect URLs:
+
+```text
+https://protlys.com/auth/callback
+http://localhost:3000/auth/callback
+```
+
+If Vercel preview deployments need OAuth testing, add a suitable Vercel wildcard redirect URL as permitted by Supabase's redirect URL rules.
+
+## 3. Google OAuth consent / audience
+
+If the Google app is still in **Testing**, the Google account being used to test must be included as a test user in Google Auth Platform.
+
+For a public launch, complete Google's required audience/branding/verification setup as applicable. Supabase's current Google setup requires the `openid`, email and profile scopes for normal Google authentication.
+
+## 4. How Protlys Hub handles the flow
+
+The application uses authorization-code + PKCE:
+
+```text
+Protlys Hub
+   ↓
+Supabase Auth /authorize
+   ↓
+Google
+   ↓
+Supabase /auth/v1/callback
+   ↓
+Protlys /auth/callback
+   ↓
+Hub
+```
+
+The Next.js callback exchanges the authorization code for the Supabase session. The callback also validates the optional `next` destination so OAuth cannot be used as an open redirect.
+
+The login and signup buttons both use `prompt=select_account`, so users can choose the Google account they want instead of being silently pushed into whichever Google account is already active in the browser.
+
+## 5. Important distinction
+
+Do **not** put this in Google's Authorized redirect URIs:
+
+```text
+https://protlys.com/auth/callback
+```
+
+Google's redirect URI is the Supabase callback:
+
+```text
+https://sulricjcirnpncwaiblg.supabase.co/auth/v1/callback
+```
+
+The Protlys `/auth/callback` URL belongs in **Supabase's Redirect URLs** list.
+
+## 6. Troubleshooting
+
+### Google says “Access blocked” or “invalid request”
+
+Check these in order:
+
+1. Google OAuth client is a **Web application**.
+2. Google Authorized redirect URI exactly matches the Supabase callback above.
+3. Supabase Google provider is enabled.
+4. The Google Client ID and Secret in Supabase match the Google web client.
+5. Supabase Site URL is `https://protlys.com`.
+6. Supabase Redirect URLs include `https://protlys.com/auth/callback`.
+7. If Google is in Testing mode, the Google account is listed as a test user.
+8. Google OAuth consent/audience configuration is complete.
+
+### Protlys redirects to `/login` with an OAuth error
+
+The app now surfaces the OAuth error on the login screen. Check the error text first; it normally identifies whether the problem is the provider, redirect configuration, or code exchange.
+
+### OAuth reaches `/auth/callback` but the session is not created
+
+Protlys Hub uses PKCE. The browser client and server callback must retain the PKCE verifier cookies. The auth proxy intentionally skips session refresh for `/auth/callback` so it does not interfere with the one-time code exchange.
