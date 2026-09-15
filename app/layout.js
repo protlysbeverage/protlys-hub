@@ -5,12 +5,29 @@ import ThemeToggle from '@/components/ThemeToggle';
 const EXACT_LOGO = '/protlys-logo-exact.png';
 
 export const metadata = {
+  metadataBase: new URL('https://hub.protlys.com'),
   title: 'Protlys Hub',
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: EXACT_LOGO,
+    shortcut: EXACT_LOGO,
     apple: EXACT_LOGO,
+  },
+  openGraph: {
+    title: 'Protlys Hub',
+    description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
+    url: 'https://hub.protlys.com',
+    siteName: 'Protlys Hub',
+    images: [{ url: EXACT_LOGO, alt: 'Protlys' }],
+    locale: 'en_KE',
+    type: 'website',
+  },
+  twitter: {
+    card: 'summary',
+    title: 'Protlys Hub',
+    description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
+    images: [EXACT_LOGO],
   },
   appleWebApp: {
     capable: true,
