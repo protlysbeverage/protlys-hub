@@ -4,6 +4,7 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import MemberPostComments from '@/app/MemberPostComments';
 import MovementActivity from '@/components/MovementActivity';
+import ProfileSectionNav from '@/components/ProfileSectionNav';
 
 function Avatar({ name, url, size = 92 }) {
   const style = { width: size, height: size, minWidth: size, minHeight: size, aspectRatio: '1 / 1', borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0 };
@@ -78,11 +79,7 @@ export default async function MemberProfilePage({ params }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginTop:20 }}>{[['Posts', postCount || 0], ['Steps', Number(profile.total_steps || 0).toLocaleString()], ['Step streak', profile.step_streak || 0]].map(([label,value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{value}</div></div>)}</div>
     </section>
 
-    <nav aria-label="Profile sections" style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, margin:'16px 0 4px', padding:4, background:'var(--green-soft)', borderRadius:14, position:'sticky', top:76, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
-      <a href="#posts" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, background:'#fff', color:'var(--ink)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Posts</a>
-      <a href="#stats" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, color:'var(--green-dark)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Stats</a>
-      <a href="#photos" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, color:'var(--green-dark)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Photos</a>
-    </nav>
+    <ProfileSectionNav />
 
     <div className="profile-section-slider" aria-label="Profile sections content" style={{ display:'flex', overflowX:'auto', overscrollBehaviorX:'contain', scrollSnapType:'x mandatory', scrollBehavior:'smooth', scrollbarWidth:'none', margin:'0 -1px', paddingBottom:8 }}>
       <section id="posts" style={{ flex:'0 0 100%', minWidth:0, scrollSnapAlign:'start', scrollMarginTop:140, paddingTop:10, paddingBottom:6 }}>
