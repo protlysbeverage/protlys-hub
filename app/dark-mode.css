@@ -120,6 +120,14 @@ html.protlys-dark .protlys-app .bottom-nav a.active,
 html.protlys-dark .protlys-app .bottom-nav button.active { color:var(--green)!important; }
 html.protlys-dark .protlys-app .screen { scrollbar-color:#3A493F #111713; }
 
+/* Protlys logo: the logo artwork stays unchanged; only its white canvas is removed in the asset. */
+html.protlys-dark .protlys-app .brand-link img,
+html.protlys-dark .protlys-app .sidebar-brand img {
+  background:transparent!important;
+  box-shadow:none!important;
+  mix-blend-mode:normal!important;
+}
+
 /* Theme control: high-contrast, compact, and aligned with the top bar. */
 .theme-toggle {
   position:fixed;
