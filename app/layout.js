@@ -2,13 +2,15 @@ import './globals.css';
 import './dark-mode.css';
 import ThemeToggle from '@/components/ThemeToggle';
 
+const EXACT_LOGO = '/protlys-logo-exact.png';
+
 export const metadata = {
   title: 'Protlys Hub',
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/logo.png',
-    apple: '/logo.png',
+    icon: EXACT_LOGO,
+    apple: EXACT_LOGO,
   },
   appleWebApp: {
     capable: true,
