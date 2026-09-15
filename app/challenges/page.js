@@ -2,8 +2,6 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import ChallengesClient from './ChallengesClient';
 
-const HUB_CHALLENGES = ['Founding 250', '5-Day Protein Week'];
-
 export default async function ChallengesPage() {
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
@@ -11,10 +9,9 @@ export default async function ChallengesPage() {
 
   const { data:challengeRows } = await supabase
     .from('challenges')
-    .select('id,name,description,start_date,end_date')
-    .in('name', HUB_CHALLENGES)
-    .eq('visibility','public')
-    .order('id');
+    .select('id,creator_id,name,description,step_target,start_date,end_date,visibility,allow_teams,invite_token,created_at')
+    .or(`visibility.eq.public,creator_id.eq.${user.id}`)
+    .order('created_at',{ascending:false});
 
   const challenges = challengeRows || [];
   const ids = challenges.map(c => c.id);
@@ -26,5 +23,5 @@ export default async function ChallengesPage() {
   const joinedIds = [...new Set((members || []).map(row => Number(row.challenge_id)))];
   const memberCounts = Object.fromEntries((counts || []).map(row => [Number(row.challenge_id), Number(row.member_count || 0)]));
 
-  return <AppShell><ChallengesClient challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} /></AppShell>;
+  return <AppShell><ChallengesClient challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} userId={user.id} /></AppShell>;
 }
