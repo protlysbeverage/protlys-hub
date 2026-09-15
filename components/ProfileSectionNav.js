@@ -12,6 +12,9 @@ export default function ProfileSectionNav() {
   const [active, setActive] = useState('posts');
 
   useEffect(() => {
+    const slider = document.querySelector('.profile-section-slider');
+    if (!slider) return;
+
     const targets = sections
       .map(([id]) => document.getElementById(id))
       .filter(Boolean);
@@ -23,7 +26,7 @@ export default function ProfileSectionNav() {
           .sort((a, b) => b.intersectionRatio - a.intersectionRatio)[0];
         if (visible) setActive(visible.target.id);
       },
-      { threshold: [0.15, 0.35, 0.6], rootMargin: '-105px 0px -35% 0px' }
+      { root: slider, threshold: [0.55, 0.75, 0.9] }
     );
 
     targets.forEach((target) => observer.observe(target));
