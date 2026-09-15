@@ -1,5 +1,6 @@
 import { redirect } from 'next/navigation';
 import { createClient } from '@/lib/supabase/server';
+import AppShell from '@/components/AppShell';
 import ChallengeInviteClient from '@/components/ChallengeInviteClient';
 
 export default async function ChallengeInvitePage({ searchParams }) {
@@ -30,11 +31,13 @@ export default async function ChallengeInvitePage({ searchParams }) {
   const returnPath = `/hub/challenges?challenge=${encodeURIComponent(challenge.id)}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ''}`;
 
   return (
-    <ChallengeInviteClient
-      challenge={challenge}
-      isJoined={!!membership}
-      isAuthenticated={!!user}
-      returnPath={returnPath}
-    />
+    <AppShell>
+      <ChallengeInviteClient
+        challenge={challenge}
+        isJoined={!!membership}
+        isAuthenticated={!!user}
+        returnPath={returnPath}
+      />
+    </AppShell>
   );
 }
