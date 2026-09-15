@@ -9,6 +9,7 @@ import {
   deleteFeedPostAction,
   getFeedCommentsAction,
   toggleFeedLikeAction,
+  toggleFeedCommentLikeAction,
   addFeedCommentAction,
 } from './feed-actions';
 
@@ -37,8 +38,8 @@ function HeartIcon({ liked, size = 18 }) {
   return <svg viewBox="0 0 24 24" width={size} height={size} fill={liked ? '#E1306C' : 'none'} stroke={liked ? '#E1306C' : 'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" /></svg>;
 }
 
-function CommentHeartIcon({ size = 17 }) {
-  return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" /></svg>;
+function CommentHeartIcon({ liked, size = 17 }) {
+  return <svg viewBox="0 0 24 24" width={size} height={size} fill={liked ? '#E1306C' : 'none'} stroke={liked ? '#E1306C' : 'currentColor'} strokeWidth="1.7" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" /></svg>;
 }
 
 function CommentIcon({ size = 19 }) {
@@ -101,7 +102,7 @@ async function prepareImage(file) {
   return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.jpg`, type: 'image/jpeg' };
 }
 
-function CommentInput({ postId, onDone }) {
+function CommentInput({ postId, parentCommentId = null, onDone, compact = false }) {
   const ref = useRef(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -109,13 +110,34 @@ function CommentInput({ postId, onDone }) {
     const body = ref.current?.value?.trim();
     if (!body || loading) return;
     setLoading(true); setError('');
-    const result = await addFeedCommentAction({ postId, body });
+    const result = await addFeedCommentAction({ postId, body, parentCommentId });
     setLoading(false);
     if (result?.error) { setError(result.error); return; }
     ref.current.value = '';
     await onDone?.();
   }
-  return <div className="profile-comment-input" style={{ marginTop: 14, display: 'flex', gap: 10, alignItems: 'center' }}><input ref={ref} className="field-input" type="text" placeholder="Add a comment…" style={{ flex: 1, minWidth: 0, padding: '12px 15px', borderRadius: 999, fontSize: 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} /><button className="btn-secondary" onClick={submit} disabled={loading} style={{ width: 'auto', minWidth: 82, padding: '11px 18px', marginTop: 0, fontSize: 14 }}>{loading ? 'Posting…' : 'Post'}</button>{error && <span style={{ position: 'absolute', marginTop: 62, color: '#B3261E', fontSize: 12 }}>{error}</span>}</div>;
+  return <div className="profile-comment-input" style={{ marginTop: compact ? 7 : 14, display: 'flex', gap: compact ? 7 : 10, alignItems: 'center' }}>
+    <input ref={ref} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
+    <button className="btn-secondary" onClick={submit} disabled={loading} style={{ width: 'auto', minWidth: compact ? 62 : 82, padding: compact ? '7px 10px' : '11px 18px', marginTop: 0, fontSize: compact ? 11 : 14 }}>{loading ? 'Posting…' : parentCommentId ? 'Reply' : 'Post'}</button>
+    {error && <span style={{ position: 'absolute', marginTop: compact ? 52 : 62, color: '#B3261E', fontSize: 12 }}>{error}</span>}
+  </div>;
+}
+
+function CommentRow({ comment, onLike, onReply, postId, depth = 0 }) {
+  const [replyOpen, setReplyOpen] = useState(false);
+  const likeCount = Number(comment.like_count || 0);
+  return <div className="profile-comment" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
+    <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={34} href={`/member/${comment.user_id}`} />
+    <div style={{ flex: 1, minWidth: 0 }}>
+      <div style={{ fontSize: 14, lineHeight: 1.3 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link> <span style={{ color: 'var(--ink-45)', marginLeft: 5, fontSize: 12 }}>{timeAgo(comment.created_at)}</span></div>
+      <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 3, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 5, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700 }}>
+        <button type="button" onClick={() => onLike(comment.id)} aria-label={comment.liked ? 'Unlike comment' : 'Like comment'} style={{ border: 0, background: 'transparent', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4, color: comment.liked ? '#E1306C' : 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}><CommentHeartIcon liked={comment.liked} size={16} /> {likeCount}</button>
+        <button type="button" onClick={() => setReplyOpen(value => !value)} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{replyOpen ? 'Cancel' : 'Reply'}</button>
+      </div>
+      {replyOpen && <CommentInput postId={postId} parentCommentId={comment.id} compact onDone={async () => { setReplyOpen(false); await onReply?.(); }} />}
+    </div>
+  </div>;
 }
 
 function CommentsPanel({ postId, initialCount, onCommented }) {
@@ -136,24 +158,29 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
     if ((initialCount || 0) > 0 && comments === null) loadComments();
   }, [postId, initialCount]);
 
+  async function toggleCommentLike(commentId) {
+    setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, Number(comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
+    const result = await toggleFeedCommentLikeAction({ commentId });
+    if (result?.error) { setError(result.error); await loadComments(); }
+  }
+
   if (comments === null) return <button onClick={loadComments} disabled={loading} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{loading ? 'Loading…' : `${initialCount || 0} ${initialCount === 1 ? 'comment' : 'comments'}`}</button>;
 
-  const visibleComments = expanded ? comments : comments.slice(0, 3);
-  const hiddenCount = Math.max(0, comments.length - 3);
+  const roots = comments.filter(comment => !comment.parent_comment_id);
+  const replies = comments.filter(comment => comment.parent_comment_id);
+  const visibleRoots = expanded ? roots : roots.slice(0, 3);
+  const hiddenCount = Math.max(0, roots.length - 3);
 
   return <div className="profile-comments" style={{ marginTop: 10 }}>
     {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
     {!error && comments.length > 0 && <div style={{ display: 'grid', gap: 12 }}>
-      {visibleComments.map(comment => <div key={comment.id} className="profile-comment" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-        <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={34} href={`/member/${comment.user_id}`} />
-        <div style={{ flex: 1, minWidth: 0 }}>
-          <div style={{ fontSize: 14, lineHeight: 1.3 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link> <span style={{ color: 'var(--ink-45)', marginLeft: 5, fontSize: 12 }}>{timeAgo(comment.created_at)}</span></div>
-          <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 3, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div>
-          <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 5, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700 }}><span style={{ display: 'inline-flex', alignItems: 'center', gap: 4 }}><CommentHeartIcon size={16} /> 0</span><span>Reply</span></div>
-        </div>
+      {visibleRoots.map(comment => <div key={comment.id}>
+        <CommentRow comment={comment} onLike={toggleCommentLike} postId={postId} onReply={loadComments} />
+        {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 44, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} postId={postId} onReply={loadComments} depth={1} /></div>)}
       </div>)}
       {hiddenCount > 0 && <button onClick={() => setExpanded(value => !value)} style={{ border: 0, background: 'transparent', padding: 0, textAlign: 'left', color: 'var(--ink-60)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>{expanded ? 'Show fewer comments' : `View ${hiddenCount} more comment${hiddenCount === 1 ? '' : 's'}`}</button>}
     </div>}
+    {!error && comments.length === 0 && <div style={{ fontSize: 12, color: 'var(--ink-45)', marginTop: 8 }}>No comments yet.</div>}
     <CommentInput postId={postId} onDone={async () => { await loadComments(); onCommented?.(); }} />
   </div>;
 }
