@@ -2,23 +2,21 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { applyMovementDelta } from '@/lib/movement-sync';
 
 function localDateStr(date = new Date()) { const y=date.getFullYear(); const m=String(date.getMonth()+1).padStart(2,'0'); const d=String(date.getDate()).padStart(2,'0'); return `${y}-${m}-${d}`; }
 function addDays(dateStr, delta) { const [y,m,d]=dateStr.split('-').map(Number); const date=new Date(y,m-1,d); date.setDate(date.getDate()+delta); return localDateStr(date); }
 function isValidDateString(value) { return /^\d{4}-\d{2}-\d{2}$/.test(value||''); }
 function todayStr() { return localDateStr(); }
-function yesterdayStr() { return addDays(todayStr(),-1); }
 
 export async function logStepsAction({ steps, source='manual', stepDate, stepTime, stepTimestamp }) {
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)return{error:'Not signed in'};
   const numericSteps=Number(steps); if(!Number.isInteger(numericSteps)||numericSteps<1||numericSteps>99999)return{error:'Enter a number between 1 and 99,999'};
   const today=todayStr(); const selectedDate=stepDate||today; if(!isValidDateString(selectedDate))return{error:'Choose a valid date'}; if(selectedDate>today)return{error:'Steps cannot be logged for a future date'};
   let syncedAt=new Date().toISOString(); if(stepTimestamp){const parsed=new Date(stepTimestamp);if(!Number.isNaN(parsed.getTime()))syncedAt=parsed.toISOString();}else if(/^\d{2}:\d{2}$/.test(stepTime||'')){const parsed=new Date(`${selectedDate}T${stepTime}:00+03:00`);if(!Number.isNaN(parsed.getTime()))syncedAt=parsed.toISOString();}
-  const {data:existing}=await supabase.from('daily_steps').select('steps').eq('user_id',user.id).eq('step_date',selectedDate).single(); const dailyTotal=(existing?.steps||0)+numericSteps;
-  const {error:upsertError}=await supabase.from('daily_steps').upsert({user_id:user.id,step_date:selectedDate,steps:dailyTotal,source,synced_at:syncedAt},{onConflict:'user_id,step_date'}); if(upsertError)return{error:upsertError.message};
-  const {data:profile}=await supabase.from('profiles').select('step_streak,last_step_date,total_steps').eq('id',user.id).single(); const newTotal=(profile?.total_steps||0)+numericSteps; let newStreak=profile?.step_streak||0;
-  if(selectedDate===today){const last=profile?.last_step_date;if(last!==today)newStreak=last===yesterdayStr()?newStreak+1:1;await supabase.from('profiles').update({step_streak:newStreak,last_step_date:today,total_steps:newTotal}).eq('id',user.id);}else await supabase.from('profiles').update({total_steps:newTotal}).eq('id',user.id);
-  revalidatePath('/');revalidatePath('/movement');return{ok:true,totalSteps:dailyTotal,stepDate:selectedDate,stepTime:stepTime||null,streak:newStreak};
+  const result=await applyMovementDelta({supabase,userId:user.id,stepDate:selectedDate,delta:numericSteps,source,syncedAt});
+  if(result?.error)return{error:result.error};
+  revalidatePath('/');revalidatePath('/movement');return{ok:true,totalSteps:result.dailyTotal,stepDate:selectedDate,stepTime:stepTime||null,streak:result.stepStreak};
 }
 
 function validateChallengeInput({name,stepTarget,startDate,endDate,visibility}) { const cleanName=String(name||'').trim();const cleanDescription=String(arguments[0]?.description||'').trim()||null;const numericTarget=Number(stepTarget);if(!cleanName)return{error:'Give the challenge a name.'};if(!Number.isInteger(numericTarget)||numericTarget<1)return{error:'Enter a valid step target.'};if(!isValidDateString(startDate)||!isValidDateString(endDate))return{error:'Choose valid challenge dates.'};if(endDate<startDate)return{error:'End date must be after the start date.'};if(!['public','invite','private'].includes(visibility))return{error:'Choose who can join this challenge.'};return{cleanName,cleanDescription,numericTarget}; }
