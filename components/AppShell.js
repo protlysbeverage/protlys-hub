@@ -20,6 +20,7 @@ function CartIcon({ size = 19 }) {
 export default function AppShell({ children }) {
   const pathname = usePathname();
   const shopUrl = getShopUrl();
+  const logoSrc = '/protlys-logo-exact.png';
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
@@ -114,7 +115,7 @@ export default function AppShell({ children }) {
   <div className="app-shell">
     <aside className="desktop-sidebar" aria-label="Protlys Hub navigation">
       <div className="sidebar-brand">
-        <Link href="/" aria-label="Protlys Hub home"><img src="/protlys-logo.svg" alt="Protlys" /></Link>
+        <Link href="/" aria-label="Protlys Hub home"><img src={logoSrc} alt="Protlys" /></Link>
       </div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map(item => <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
@@ -123,7 +124,7 @@ export default function AppShell({ children }) {
     </aside>
 
     <div className="app-header">
-      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img src="/protlys-logo.svg" alt="Protlys" /></Link>
+      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img src={logoSrc} alt="Protlys" /></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys"><CartIcon size={18}/><span>Shop Protlys</span></a>
     </div>
 
