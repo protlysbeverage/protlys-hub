@@ -16,7 +16,7 @@ export async function logStepsAction({ steps, source='manual', stepDate, stepTim
   let syncedAt=new Date().toISOString(); if(stepTimestamp){const parsed=new Date(stepTimestamp);if(!Number.isNaN(parsed.getTime()))syncedAt=parsed.toISOString();}else if(/^\d{2}:\d{2}$/.test(stepTime||'')){const parsed=new Date(`${selectedDate}T${stepTime}:00+03:00`);if(!Number.isNaN(parsed.getTime()))syncedAt=parsed.toISOString();}
   const result=await applyMovementDelta({supabase,userId:user.id,stepDate:selectedDate,delta:numericSteps,source,syncedAt});
   if(result?.error)return{error:result.error};
-  revalidatePath('/');revalidatePath('/movement');return{ok:true,totalSteps:result.dailyTotal,stepDate:selectedDate,stepTime:stepTime||null,streak:result.stepStreak};
+  revalidatePath('/');revalidatePath('/movement');revalidatePath(`/member/${user.id}`);return{ok:true,totalSteps:result.dailyTotal,stepDate:selectedDate,stepTime:stepTime||null,streak:result.stepStreak};
 }
 
 function validateChallengeInput({name,stepTarget,startDate,endDate,visibility}) { const cleanName=String(name||'').trim();const cleanDescription=String(arguments[0]?.description||'').trim()||null;const numericTarget=Number(stepTarget);if(!cleanName)return{error:'Give the challenge a name.'};if(!Number.isInteger(numericTarget)||numericTarget<1)return{error:'Enter a valid step target.'};if(!isValidDateString(startDate)||!isValidDateString(endDate))return{error:'Choose valid challenge dates.'};if(endDate<startDate)return{error:'End date must be after the start date.'};if(!['public','invite','private'].includes(visibility))return{error:'Choose who can join this challenge.'};return{cleanName,cleanDescription,numericTarget}; }
