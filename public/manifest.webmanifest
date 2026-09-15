@@ -9,7 +9,7 @@
   "orientation": "portrait",
   "icons": [
     {
-      "src": "/logo.png",
+      "src": "/protlys-logo-exact.png",
       "sizes": "any",
       "type": "image/png",
       "purpose": "any maskable"
