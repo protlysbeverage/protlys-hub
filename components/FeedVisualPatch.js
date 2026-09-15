@@ -2,18 +2,22 @@
 
 export default function FeedVisualPatch() {
   return <style>{`
-    /* Homepage feed: use the same spacious post language as the member profile mock-up. */
-    .protlys-app .feed-home { padding: 22px 18px 18px !important; }
+    /* Homepage feed: restore the wider original card proportions. */
+    .protlys-app .feed-home { padding: 18px 12px 18px !important; }
     .protlys-app .feed-home > h1 { font-size: 27px !important; line-height: 1.08 !important; letter-spacing: -.025em !important; }
-    .protlys-app .feed-home > .subhead { max-width: 340px; margin-bottom: 18px !important; }
+    .protlys-app .feed-home > .subhead { max-width: 380px; margin-bottom: 14px !important; }
+
+    .feed-mode-shell { padding: 0 12px; }
+    .feed-mode-shell > div { margin: 8px 0 10px !important; }
+    .feed-following-content { padding-top: 4px !important; }
 
     .protlys-app .feed-card.profile-post-card {
       background: #fff !important;
       border: 1.5px solid var(--line) !important;
-      border-radius: 20px !important;
-      padding: 18px !important;
-      margin: 0 0 16px !important;
-      box-shadow: 0 3px 12px rgba(15,42,74,.045) !important;
+      border-radius: 18px !important;
+      padding: 16px !important;
+      margin: 0 0 11px !important;
+      box-shadow: 0 2px 9px rgba(15,42,74,.035) !important;
       overflow: visible !important;
     }
 
@@ -22,7 +26,7 @@ export default function FeedVisualPatch() {
       align-items: center !important;
       justify-content: space-between !important;
       gap: 10px !important;
-      padding: 0 0 14px !important;
+      padding: 0 0 11px !important;
     }
     .protlys-app .profile-post-author {
       display: flex !important;
@@ -46,51 +50,51 @@ export default function FeedVisualPatch() {
     .protlys-app .profile-post-type {
       display: inline-flex !important;
       align-items: center !important;
-      min-height: 30px !important;
-      padding: 5px 11px !important;
+      min-height: 28px !important;
+      padding: 4px 10px !important;
       border-radius: 999px !important;
       background: var(--green-soft) !important;
       color: var(--green-dark) !important;
-      font-size: 11px !important;
+      font-size: 10.5px !important;
       font-weight: 800 !important;
       white-space: nowrap !important;
     }
 
     .protlys-app .feed-card-body {
       padding: 0 !important;
-      font-size: 16px !important;
+      font-size: 15.5px !important;
       line-height: 1.5 !important;
       color: var(--ink) !important;
     }
     .protlys-app .feed-card-body p {
       margin: 0 !important;
-      font-size: 16px !important;
+      font-size: 15.5px !important;
       line-height: 1.5 !important;
     }
     .protlys-app .feed-card-body img {
       display: block !important;
       width: 100% !important;
       max-height: 520px !important;
-      margin: 14px 0 0 !important;
-      border-radius: 15px !important;
+      margin: 12px 0 0 !important;
+      border-radius: 14px !important;
       object-fit: cover !important;
     }
 
     .protlys-app .profile-post-engagement {
-      margin-top: 16px !important;
-      padding-top: 13px !important;
+      margin-top: 14px !important;
+      padding-top: 12px !important;
       border-top: 1px solid var(--line) !important;
     }
     .protlys-app .profile-post-actions {
       display: flex !important;
       align-items: center !important;
-      gap: 24px !important;
+      gap: 22px !important;
       min-height: 28px !important;
     }
     .protlys-app .profile-action {
       display: inline-flex !important;
       align-items: center !important;
-      gap: 7px !important;
+      gap: 6px !important;
       border: 0 !important;
       padding: 0 !important;
       margin: 0 !important;
@@ -105,65 +109,29 @@ export default function FeedVisualPatch() {
     .protlys-app .profile-action.liked svg { color: #E1306C !important; }
     .protlys-app .profile-action.share-action { font-weight: 700 !important; }
     .protlys-app .profile-like-summary {
-      margin-top: 13px !important;
-      font-size: 14px !important;
+      margin-top: 11px !important;
+      font-size: 13px !important;
       line-height: 1.25 !important;
       font-weight: 800 !important;
       color: var(--ink) !important;
     }
 
-    .protlys-app .profile-comments {
-      margin-top: 12px !important;
-    }
-    .protlys-app .profile-comment {
-      gap: 10px !important;
-    }
+    .protlys-app .profile-comments { margin-top: 10px !important; }
+    .protlys-app .profile-comment { gap: 10px !important; }
     .protlys-app .profile-comment > div:last-child { min-width: 0; }
-    .protlys-app .profile-comment-input {
-      margin-top: 16px !important;
-      gap: 10px !important;
-    }
-    .protlys-app .profile-comment-input .field-input {
-      min-height: 48px !important;
-      padding: 12px 15px !important;
-      border-radius: 999px !important;
-      font-size: 14px !important;
-      background: #fff !important;
-    }
-    .protlys-app .profile-comment-input .btn-secondary {
-      min-height: 48px !important;
-      min-width: 82px !important;
-      padding: 11px 18px !important;
-      border-radius: 999px !important;
-      font-size: 14px !important;
-      white-space: nowrap !important;
-    }
+    .protlys-app .profile-comment-input { margin-top: 14px !important; gap: 9px !important; }
+    .protlys-app .profile-comment-input .field-input { min-height: 46px !important; padding: 11px 14px !important; border-radius: 999px !important; font-size: 14px !important; background: #fff !important; }
+    .protlys-app .profile-comment-input .btn-secondary { min-height: 46px !important; min-width: 78px !important; padding: 10px 16px !important; border-radius: 999px !important; font-size: 13px !important; white-space: nowrap !important; }
 
-    .protlys-app .post-more-btn {
-      width: 30px !important;
-      height: 30px !important;
-      padding: 5px !important;
-      border: 0 !important;
-      border-radius: 50% !important;
-      background: transparent !important;
-      color: var(--ink-45) !important;
-      cursor: pointer !important;
-    }
+    .protlys-app .post-more-btn { width: 30px !important; height: 30px !important; padding: 5px !important; border: 0 !important; border-radius: 50% !important; background: transparent !important; color: var(--ink-45) !important; cursor: pointer !important; }
     .protlys-app .post-more-btn:hover { background: var(--paper) !important; color: var(--ink) !important; }
-
-    /* Keep the composer compatible with the same card system without making it dominate the feed. */
-    .protlys-app .feed-composer {
-      border: 1.5px solid var(--line) !important;
-      border-radius: 20px !important;
-      box-shadow: 0 2px 9px rgba(15,42,74,.035) !important;
-      padding: 16px !important;
-      margin-bottom: 18px !important;
-    }
+    .protlys-app .feed-composer { border: 1.5px solid var(--line) !important; border-radius: 18px !important; box-shadow: 0 2px 8px rgba(15,42,74,.03) !important; padding: 14px !important; margin-bottom: 13px !important; }
 
     @media (max-width: 420px) {
-      .protlys-app .feed-home { padding-left: 18px !important; padding-right: 18px !important; }
-      .protlys-app .profile-post-actions { gap: 20px !important; }
-      .protlys-app .profile-post-card { padding: 17px !important; }
+      .protlys-app .feed-home { padding-left: 12px !important; padding-right: 12px !important; }
+      .feed-mode-shell { padding-left: 12px; padding-right: 12px; }
+      .protlys-app .profile-post-actions { gap: 19px !important; }
+      .protlys-app .profile-post-card { padding: 15px !important; }
     }
   `}</style>;
 }
