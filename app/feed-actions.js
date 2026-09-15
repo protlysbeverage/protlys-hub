@@ -2,6 +2,7 @@
 
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
+import { applyMovementDelta, dateFromTimestamp, extractStepCount } from '@/lib/movement-sync';
 
 async function getAuthedClient() {
   const supabase = await createClient();
@@ -23,18 +24,39 @@ export async function createFeedPostAction({ body, postType, stats, imageBase64,
     const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
     imageUrl = urlData?.publicUrl || null;
   }
-  const { error } = await supabase.from('feed_posts').insert({ user_id: user.id, body: body || null, image_url: imageUrl, post_type: postType || 'general', stats: stats || null });
+
+  const { data: createdPost, error } = await supabase
+    .from('feed_posts')
+    .insert({ user_id: user.id, body: body || null, image_url: imageUrl, post_type: postType || 'general', stats: stats || null })
+    .select('id, created_at')
+    .single();
   if (error) return { error: error.message };
+
+  const steps = extractStepCount(stats);
+  if (steps > 0) {
+    const movement = await applyMovementDelta({
+      supabase,
+      userId: user.id,
+      stepDate: dateFromTimestamp(createdPost.created_at),
+      delta: steps,
+      source: 'feed',
+      syncedAt: createdPost.created_at,
+    });
+    if (movement?.error) return { error: `Post created, but movement could not be synced: ${movement.error}` };
+  }
+
   revalidatePath('/');
+  revalidatePath('/movement');
   return { ok: true };
 }
 
 export async function updateFeedPostAction({ postId, body, postType, stats, removeImage = false }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
-  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url').eq('id', postId).single();
+  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url, stats, created_at').eq('id', postId).single();
   if (lookupError || !post) return { error: 'Post not found.' };
   if (post.user_id !== user.id) return { error: 'You can only edit your own posts.' };
+
   let imageUrl = post.image_url;
   if (removeImage && imageUrl) {
     const marker = '/feed-images/'; const index = imageUrl.indexOf(marker);
@@ -45,25 +67,63 @@ export async function updateFeedPostAction({ postId, body, postType, stats, remo
     }
     imageUrl = null;
   }
-  const { error } = await supabase.from('feed_posts').update({ body: body?.trim() || null, post_type: postType || 'general', stats: stats || null, image_url: imageUrl }).eq('id', postId).eq('user_id', user.id);
+
+  const { error } = await supabase
+    .from('feed_posts')
+    .update({ body: body?.trim() || null, post_type: postType || 'general', stats: stats || null, image_url: imageUrl })
+    .eq('id', postId)
+    .eq('user_id', user.id);
   if (error) return { error: error.message };
+
+  const oldSteps = extractStepCount(post.stats);
+  const newSteps = extractStepCount(stats);
+  const delta = newSteps - oldSteps;
+  if (delta !== 0) {
+    const movement = await applyMovementDelta({
+      supabase,
+      userId: user.id,
+      stepDate: dateFromTimestamp(post.created_at),
+      delta,
+      source: 'feed',
+      syncedAt: post.created_at,
+    });
+    if (movement?.error) return { error: `Post updated, but movement could not be synced: ${movement.error}` };
+  }
+
   revalidatePath('/');
+  revalidatePath('/movement');
   return { ok: true };
 }
 
 export async function deleteFeedPostAction({ postId }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
-  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url').eq('id', postId).single();
+  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url, stats, created_at').eq('id', postId).single();
   if (lookupError || !post) return { error: 'Post not found.' };
   if (post.user_id !== user.id) return { error: 'You can only delete your own posts.' };
+
   if (post.image_url) {
     const marker = '/feed-images/'; const index = post.image_url.indexOf(marker);
     if (index >= 0) await supabase.storage.from('feed-images').remove([decodeURIComponent(post.image_url.slice(index + marker.length).split('?')[0])]);
   }
   const { error } = await supabase.from('feed_posts').delete().eq('id', postId).eq('user_id', user.id);
   if (error) return { error: error.message };
+
+  const steps = extractStepCount(post.stats);
+  if (steps > 0) {
+    const movement = await applyMovementDelta({
+      supabase,
+      userId: user.id,
+      stepDate: dateFromTimestamp(post.created_at),
+      delta: -steps,
+      source: 'feed',
+      syncedAt: post.created_at,
+    });
+    if (movement?.error) return { error: `Post deleted, but movement could not be synced: ${movement.error}` };
+  }
+
   revalidatePath('/');
+  revalidatePath('/movement');
   return { ok: true };
 }
 
@@ -88,7 +148,6 @@ export async function getFeedCommentsAction({ postId }) {
   if (!comments.length) return { comments: [] };
 
   // Batch comment likes instead of making two database requests per comment.
-  // This is a major reduction in database round-trips when a post has many comments.
   const commentIds = comments.map(comment => String(comment.id));
   const { data: likeRows, error: likesError } = await supabase
     .from('feed_comment_likes')
