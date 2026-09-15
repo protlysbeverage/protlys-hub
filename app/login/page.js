@@ -6,8 +6,9 @@ import { useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import '../globals.css';
 
+const LOGO_SRC='/protlys-logo-exact.png?v=20260915';
 const EyeIcon=({open})=>open?<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>:<svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><path d="M17.94 17.94A10.07 10.07 0 0 1 12 20c-7 0-11-8-11-8a18.45 18.45 0 0 1 5.06-5.94M9.9 4.24A9.12 9.12 0 0 1 12 4c7 0 11 8 11 8a18.5 18.5 0 0 1-2.16 3.19m-6.72-1.07a3 3 0 1 1-4.24-4.24"/><line x1="1" y1="1" x2="23" y2="23"/></svg>;
-function Logo(){return <div style={{textAlign:'center',marginBottom:32}}><img src="/protlys-logo-exact.png" alt="Protlys" style={{width:180,height:'auto',objectFit:'contain',display:'block',margin:'0 auto'}}/></div>}
+function Logo(){return <div style={{textAlign:'center',marginBottom:32}}><img src={LOGO_SRC} alt="Protlys" style={{width:180,height:'auto',objectFit:'contain',display:'block',margin:'0 auto'}}/></div>}
 const errStyle={background:'#FEE2E2',borderRadius:10,padding:'10px 14px',fontSize:13,color:'#B3261E',marginBottom:10};
 const linkStyle={background:'none',border:'none',color:'var(--green-dark)',fontWeight:700,fontSize:13,cursor:'pointer',padding:0};
 const Spinner=({text='Please wait…'})=><span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><span style={{width:16,height:16,border:'2px solid rgba(255,255,255,.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/>{text}</span>;
