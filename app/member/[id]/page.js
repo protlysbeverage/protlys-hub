@@ -36,6 +36,22 @@ function formatJoinedDate(value) {
   return new Intl.DateTimeFormat('en-KE', { timeZone: 'Africa/Nairobi', day: 'numeric', month: 'long', year: 'numeric' }).format(date);
 }
 
+function PostStats({ stats }) {
+  if (!stats || typeof stats !== 'object') return null;
+  const items = [
+    ['Steps', stats.steps],
+    ['Distance', stats.distance],
+    ['Duration', stats.duration],
+  ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+  if (!items.length) return null;
+  return <div style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(items.length, 3)}, minmax(0, 1fr))`, gap:7, margin:'10px 0 2px' }}>
+    {items.map(([label, value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:10, padding:'8px 9px', background:'var(--paper)', minWidth:0 }}>
+      <div style={{ fontSize:8.5, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div>
+      <div className="mono" style={{ fontSize:12, fontWeight:800, color:'var(--ink)', marginTop:2, overflowWrap:'anywhere' }}>{value}</div>
+    </div>)}
+  </div>;
+}
+
 export default async function MemberProfilePage({ params }) {
   const { id } = await params;
   const supabase = await createClient();
@@ -73,7 +89,8 @@ export default async function MemberProfilePage({ params }) {
       {posts?.length ? posts.map(post => <article key={post.id} className="profile-post-card" style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:16, padding:14, marginBottom:10 }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:7 }}><span style={{ fontSize:10.5, color:'var(--ink-45)' }}>{formatNairobiDate(post.created_at)}</span>{post.post_type && post.post_type !== 'general' && <span style={{ background:'var(--green-soft)', color:'var(--green-dark)', padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:800 }}>{post.post_type.replace('_',' ')}</span>}</div>
         {post.body && <p style={{ fontSize:13.5, lineHeight:1.55, margin:'0 0 10px' }}>{post.body}</p>}
-        {post.image_url && <img src={post.image_url} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, display:'block' }} />}
+        <PostStats stats={post.stats} />
+        {post.image_url && <img src={post.image_url} alt="" style={{ width:'100%', maxHeight:280, objectFit:'cover', borderRadius:12, display:'block', marginTop: post.stats ? 10 : 0 }} />}
         <MemberPostComments postId={post.id} initialCount={post.feed_comments?.[0]?.count || 0} initialLikeCount={post.feed_likes?.[0]?.count || 0} />
       </article>) : <div style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:16, padding:'28px 18px', textAlign:'center' }}><div style={{ fontWeight:800 }}>No posts yet</div><p className="subhead" style={{ margin:'5px 0 0' }}>This member has not shared anything to the feed.</p></div>}
     </section>
