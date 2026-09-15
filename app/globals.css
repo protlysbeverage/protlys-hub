@@ -3,7 +3,7 @@
     --ink-70:rgba(15,42,74,.7);
     --ink-45:rgba(15,42,74,.45);
     --ink-20:rgba(15,42,74,.14);
-    --paper:#F5F6F1;
+    --paper:#EEF4EF;
     --white:#FFFFFF;
     --green:#2E9E5B;
     --green-dark:#1F7A45;
@@ -24,7 +24,7 @@
   .protlys-app .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
   .protlys-app p{margin:0;}.protlys-app button{font-family:inherit;}.protlys-app a{color:inherit;text-decoration:none;}
   .protlys-app .app-shell{width:100%;max-width:432px;margin:0 auto;background:var(--paper);min-height:100vh;display:flex;flex-direction:column;position:relative;}
-  @media (min-width:600px){.protlys-app{background:#E4E3D6;display:flex;justify-content:center;padding:36px 16px;}.protlys-app .app-shell{height:874px;min-height:874px;border-radius:38px;overflow:hidden;box-shadow:0 46px 90px -24px rgba(15,42,74,.4),0 0 0 10px var(--ink);}}
+  @media (min-width:600px){.protlys-app{background:#DCE8DF;display:flex;justify-content:center;padding:36px 16px;}.protlys-app .app-shell{height:874px;min-height:874px;border-radius:38px;overflow:hidden;box-shadow:0 46px 90px -24px rgba(15,42,74,.4),0 0 0 10px var(--ink);}}
   .protlys-app .app-header{position:sticky;top:0;z-index:20;background:var(--paper);display:flex;align-items:center;justify-content:space-between;padding:16px 18px 14px;border-bottom:1px solid var(--line);flex-shrink:0;}
   .protlys-app .wordmark{font-size:21px;letter-spacing:.2px;}.protlys-app .wordmark span{color:var(--green);}.protlys-app .header-icons{display:flex;gap:14px;align-items:center;}.protlys-app .icon-btn{background:none;border:none;padding:4px;cursor:pointer;color:var(--ink);position:relative;}.protlys-app .icon-btn svg{width:21px;height:21px;display:block;}.protlys-app .cart-badge{position:absolute;top:-3px;right:-5px;background:var(--green);color:#fff;font-family:'IBM Plex Mono';font-size:9px;font-weight:600;border-radius:50%;width:15px;height:15px;display:flex;align-items:center;justify-content:center;}
   .protlys-app .screen{display:none;flex:1;overflow-y:auto;padding-bottom:28px;-webkit-overflow-scrolling:touch;}.protlys-app .screen.active{display:block;}.protlys-app .screen-pad{padding:22px 18px 6px;}.protlys-app .subhead{color:var(--ink-70);font-size:14px;line-height:1.5;margin-top:6px;}.protlys-app .back-row{display:flex;align-items:center;gap:10px;padding:16px 18px 0;}.protlys-app .back-btn{background:none;border:none;cursor:pointer;color:var(--ink);display:flex;padding:4px;margin-left:-4px;}.protlys-app .back-btn svg{width:20px;height:20px;}.protlys-app .eyebrow{font-family:'IBM Plex Mono';font-size:10.5px;letter-spacing:1.4px;text-transform:uppercase;color:var(--green-dark);font-weight:600;margin-bottom:8px;display:block;}
@@ -44,3 +44,11 @@
   .protlys-app details.faq{border-bottom:1px solid var(--line);padding:13px 0;}.protlys-app details.faq:last-child{border-bottom:none;}.protlys-app details.faq summary{list-style:none;cursor:pointer;font-weight:700;font-size:13.5px;display:flex;justify-content:space-between;align-items:center;}.protlys-app details.faq summary::-webkit-details-marker{display:none;}.protlys-app details.faq summary::after{content:'+';font-size:18px;color:var(--ink-45);font-weight:400;}.protlys-app details.faq[open] summary::after{content:'–';}.protlys-app details.faq p{font-size:12.5px;color:var(--ink-70);margin-top:8px;line-height:1.55;}
   .protlys-app .qty-row{display:flex;align-items:center;gap:14px;}.protlys-app .qty-btn{width:34px;height:34px;border-radius:50%;border:1.5px solid var(--ink);background:#fff;cursor:pointer;font-size:16px;font-weight:700;display:flex;align-items:center;justify-content:center;}.protlys-app .qty-num{font-family:'IBM Plex Mono';font-weight:600;font-size:16px;min-width:18px;text-align:center;}
   .protlys-app .bottom-nav{position:sticky;bottom:0;z-index:20;display:flex;background:#fff;border-top:1px solid var(--line);padding:7px 4px 12px;flex-shrink:0;}.protlys-app .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;padding:6px 2px;border:none;background:none;color:var(--ink-45);font-size:10px;font-weight:700;cursor:pointer;}.protlys-app .nav-btn svg{width:20px;height:20px;}.protlys-app .nav-btn.active{color:var(--green);}.protlys-app .nav-btn:focus,.protlys-app .nav-btn:focus-visible{outline:none;box-shadow:none;}
+
+  /* Protlys branding: use the supplied logo without a white rectangular backdrop. */
+  .protlys-app .brand-link img{object-fit:contain;display:block;max-width:none;background:transparent!important;}
+  .protlys-app .sidebar-brand img{object-fit:contain;background:transparent!important;}
+  .protlys-app .app-header .brand-link img{height:54px!important;width:auto!important;}
+  @media (max-width:599px){.protlys-app .app-header .brand-link img{height:50px!important;}}
+  @media (min-width:900px){.protlys-app .app-header .brand-link img{height:60px!important;}.protlys-app .sidebar-brand img{width:150px!important;height:auto!important;}}
+  .protlys-app .app-header{min-height:78px;}
