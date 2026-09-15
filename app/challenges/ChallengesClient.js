@@ -1,16 +1,16 @@
 'use client';
 
 import Link from 'next/link';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
-function Card({children,featured=false}){
-  return <section style={{background:'var(--white)',border:`1.5px solid ${featured?'rgba(46,158,91,.32)':'var(--line)'}`,borderRadius:18,padding:18,boxShadow:'0 2px 10px rgba(15,42,74,.035)',marginBottom:12}}>{children}</section>;
+function Card({children,featured=false,onClick}){
+  return <section onClick={onClick} style={{background:'var(--white)',border:`1.5px solid ${featured?'rgba(46,158,91,.32)':'var(--line)'}`,borderRadius:18,padding:18,boxShadow:'0 2px 10px rgba(15,42,74,.035)',marginBottom:12,cursor:onClick?'pointer':'default'}}>{children}</section>;
 }
 
 function milestoneText(count, cap){
-  if (!cap) return count === 0 ? 'Be one of the first to join.' : count === 1 ? 'You can start the group with one more member.' : `${count} people are already in.`;
+  if (!cap) return count === 0 ? 'Be one of the first to join.' : `${count} ${count === 1 ? 'person is' : 'people are'} already in.`;
   if (count >= cap) return 'The founding 250 is full.';
   const milestones = [10,25,50,100,150,200,250];
   const next = milestones.find(n => n > count) || cap;
@@ -19,84 +19,72 @@ function milestoneText(count, cap){
   return `${left} more ${left === 1 ? 'member' : 'members'} to reach ${next}.`;
 }
 
-export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={}}){
+export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={},userId}){
   const router = useRouter();
   const supabase = createClient();
   const [joined,setJoined] = useState(() => new Set(joinedIds));
   const [counts,setCounts] = useState(() => ({...memberCounts}));
   const [joining,setJoining] = useState(null);
   const [error,setError] = useState('');
+  const [details,setDetails] = useState(null);
+  const [showCreate,setShowCreate] = useState(false);
+  const [creating,setCreating] = useState(false);
+  const [form,setForm] = useState({name:'',description:'',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false});
+
+  const selected = useMemo(()=>challenges.find(c=>Number(c.id)===details),[challenges,details]);
 
   async function joinChallenge(challengeId){
     if (joined.has(challengeId) || joining === challengeId) return;
-    setError('');
-    setJoining(challengeId);
+    setError(''); setJoining(challengeId);
     const { data:{user} } = await supabase.auth.getUser();
     if (!user){ setJoining(null); setError('Please sign in to join a challenge.'); return; }
-
     const { error:insertError } = await supabase.from('challenge_members').insert({challenge_id:challengeId,user_id:user.id});
-    if (insertError && insertError.code !== '23505') {
-      setError('We could not join you right now. Please try again.');
-      setJoining(null);
-      return;
-    }
+    if (insertError && insertError.code !== '23505') { setError('We could not join you right now. Please try again.'); setJoining(null); return; }
+    setJoined(prev => new Set([...prev,challengeId]));
+    setCounts(prev => ({...prev,[challengeId]:(Number(prev[challengeId])||0)+(insertError?0:1)}));
+    setJoining(null); router.refresh();
+  }
 
-    setJoined(prev => new Set([...prev, challengeId]));
-    setCounts(prev => ({...prev,[challengeId]:(Number(prev[challengeId])||0) + (insertError ? 0 : 1)}));
-    setJoining(null);
-    router.refresh();
+  async function createChallenge(e){
+    e.preventDefault(); setError(''); setCreating(true);
+    const start=form.startDate || new Date().toISOString().slice(0,10);
+    const end=form.endDate || start;
+    const { data:created,error:createError } = await supabase.from('challenges').insert({creator_id:userId,name:form.name.trim(),description:form.description.trim()||null,step_target:Math.max(0,Number(form.stepTarget)||0),start_date:start,end_date:end,visibility:'public',allow_teams:form.allowTeams}).select('id').single();
+    if(createError){ setError(createError.message || 'We could not create that challenge.'); setCreating(false); return; }
+    await supabase.from('challenge_members').insert({challenge_id:created.id,user_id:userId});
+    setShowCreate(false); setCreating(false); setForm({name:'',description:'',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false}); router.refresh();
+  }
+
+  async function shareChallenge(challenge){
+    const url=`${window.location.origin}/hub/challenges?challenge=${challenge.id}`;
+    const shareData={title:`${challenge.name} · Protlys`,text:challenge.description||'Join this Protlys challenge.',url};
+    try { if(navigator.share) await navigator.share(shareData); else { await navigator.clipboard.writeText(url); setError('Challenge link copied.'); } } catch {}
   }
 
   return <div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:20,paddingBottom:24}}>
     <Link href="/hub" style={{display:'inline-flex',alignItems:'center',gap:6,color:'var(--ink-70)',fontSize:13,fontWeight:800,textDecoration:'none',marginBottom:18}}>← Back to Hub</Link>
-
-    <div>
-      <span className="eyebrow">Challenges</span>
-      <h1 style={{fontSize:26,lineHeight:1.05,margin:'5px 0 0'}}>Build the habit together.</h1>
-      <p className="subhead" style={{marginTop:7}}>Join a challenge when it feels right. No protein entry screens or complicated tracking here.</p>
+    <div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'flex-end'}}>
+      <div><span className="eyebrow">Challenges</span><h1 style={{fontSize:26,lineHeight:1.05,margin:'5px 0 0'}}>Build the habit together.</h1><p className="subhead" style={{marginTop:7}}>Join a challenge, invite others, or create one of your own.</p></div>
+      <button className="btn-primary" onClick={()=>setShowCreate(true)} style={{width:'auto',minWidth:104,padding:'9px 13px',margin:0,whiteSpace:'nowrap'}}>Create challenge</button>
     </div>
 
     {error && <div role="alert" style={{marginTop:14,padding:'11px 13px',borderRadius:12,background:'var(--berry-soft)',color:'var(--ink)',fontSize:12.5,fontWeight:700}}>{error}</div>}
 
     <div style={{marginTop:18}}>
-      {challenges.map((challenge,index)=>{
-        const id = Number(challenge.id);
-        const isJoined = joined.has(id);
-        const count = Number(counts[id] || 0);
-        const isFounding = challenge.name === 'Founding 250';
-        const cap = isFounding ? 250 : null;
-        const pct = cap ? Math.min(100,Math.round((Math.min(cap,count)/cap)*100)) : 0;
-        const others = isJoined ? Math.max(0,count - 1) : count;
-
-        return <Card key={id} featured={isFounding}>
-          <div style={{display:'flex',justifyContent:'space-between',gap:14,alignItems:'flex-start'}}>
-            <div style={{flex:1}}>
-              <div style={{fontSize:10,fontWeight:800,letterSpacing:'.1em',textTransform:'uppercase',color:isFounding?'var(--green-dark)':'var(--ink-45)'}}>{isFounding?'Community milestone':'Community challenge'}</div>
-              <h2 style={{fontSize:20,margin:'5px 0 0'}}>{challenge.name}</h2>
-              <p style={{fontSize:13,lineHeight:1.5,color:'var(--ink-70)',margin:'7px 0 0'}}>{challenge.description}</p>
-            </div>
-            {isFounding && <div style={{width:46,height:46,borderRadius:14,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',fontWeight:900,fontSize:15,flexShrink:0}}>250</div>}
-          </div>
-
-          <div style={{marginTop:16,padding:'13px',background:'var(--paper)',borderRadius:13}}>
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:12,fontWeight:800}}>
-              <span>{count.toLocaleString()} {count===1?'member':'members'} joined</span>
-              {isFounding && <span>{Math.min(250,count)} / 250</span>}
-            </div>
-            {isFounding && <div style={{marginTop:9,height:7,background:'var(--green-soft)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,background:'var(--green)',borderRadius:99,transition:'width .25s ease'}}/></div>}
-            <div style={{fontSize:11,color:'var(--ink-45)',marginTop:isFounding?7:5}}>{isJoined ? `You + ${others} ${others === 1 ? 'other member' : 'other members'} are in.` : milestoneText(count,cap)}</div>
-          </div>
-
-          {isFounding && <div style={{marginTop:10,fontSize:11.5,fontWeight:700,color:'var(--green-dark)'}}>{milestoneText(count,cap)}</div>}
-
-          <div style={{marginTop:13,display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
-            <div style={{fontSize:11.5,color:'var(--ink-45)'}}>{isJoined?'Your place is saved.':'Join now and your membership will be counted immediately.'}</div>
-            <button className={isJoined?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(id)} disabled={isJoined || joining===id} style={{width:'auto',padding:'9px 15px',margin:0,whiteSpace:'nowrap',minWidth:72}}>{joining===id?'Joining…':isJoined?'Joined':'Join'}</button>
-          </div>
+      {challenges.map(challenge=>{
+        const id=Number(challenge.id), isJoined=joined.has(id), count=Number(counts[id]||0), isFounding=challenge.name==='Founding 250', cap=isFounding?250:null, pct=cap?Math.min(100,Math.round((Math.min(cap,count)/cap)*100)):0, others=isJoined?Math.max(0,count-1):count;
+        return <Card key={id} featured={isFounding} onClick={()=>setDetails(id)}>
+          <div style={{display:'flex',justifyContent:'space-between',gap:14,alignItems:'flex-start'}}><div style={{flex:1}}><div style={{fontSize:10,fontWeight:800,letterSpacing:'.1em',textTransform:'uppercase',color:isFounding?'var(--green-dark)':'var(--ink-45)'}}>{isFounding?'Community milestone':'Community challenge'}</div><h2 style={{fontSize:20,margin:'5px 0 0'}}>{challenge.name}</h2><p style={{fontSize:13,lineHeight:1.5,color:'var(--ink-70)',margin:'7px 0 0'}}>{challenge.description||'A Protlys community challenge.'}</p></div>{isFounding&&<div style={{width:46,height:46,borderRadius:14,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',fontWeight:900,fontSize:15,flexShrink:0}}>250</div>}</div>
+          <div style={{marginTop:16,padding:'13px',background:'var(--paper)',borderRadius:13}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,fontSize:12,fontWeight:800}}><span>{count.toLocaleString()} {count===1?'member':'members'} joined</span>{isFounding&&<span>{Math.min(250,count)} / 250</span>}</div>{isFounding&&<div style={{marginTop:9,height:7,background:'var(--green-soft)',borderRadius:99,overflow:'hidden'}}><div style={{height:'100%',width:`${pct}%`,background:'var(--green)',borderRadius:99,transition:'width .25s ease'}}/></div>}<div style={{fontSize:11,color:'var(--ink-45)',marginTop:isFounding?7:5}}>{isJoined?`You + ${others} ${others===1?'other member':'other members'} are in.`:milestoneText(count,cap)}</div></div>
+          <div style={{marginTop:13,display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}><span style={{fontSize:11.5,color:'var(--ink-45)'}}>Tap for details</span><div style={{display:'flex',gap:8,alignItems:'center'}}><button className={isJoined?'btn-secondary':'btn-primary'} onClick={(e)=>{e.stopPropagation();joinChallenge(id)}} disabled={isJoined||joining===id} style={{width:'auto',padding:'9px 16px',margin:0,whiteSpace:'nowrap',minWidth:92}}>{joining===id?'Joining…':isJoined?'Joined':'Join'}</button>{isJoined&&<button className="btn-secondary" onClick={(e)=>{e.stopPropagation();shareChallenge(challenge)}} style={{width:'auto',padding:'9px 11px',margin:0}}>Share</button>}</div></div>
         </Card>;
       })}
     </div>
 
-    {!challenges.length && <Card><div style={{fontWeight:800}}>No challenges are live yet.</div><p className="subhead" style={{marginTop:5}}>Check back soon for the next Protlys community challenge.</p></Card>}
+    {!challenges.length&&<Card><div style={{fontWeight:800}}>No challenges are live yet.</div><p className="subhead" style={{marginTop:5}}>Create the first Protlys community challenge.</p></Card>}
+
+    {details && selected && <div onClick={()=>setDetails(null)} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}><div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:620,maxHeight:'82vh',overflowY:'auto',background:'var(--white)',borderRadius:'22px 22px 16px 16px',padding:20,boxShadow:'0 20px 60px rgba(0,0,0,.25)'}}><div style={{display:'flex',justifyContent:'space-between',gap:12}}><div><span className="eyebrow">Challenge details</span><h2 style={{fontSize:24,margin:'5px 0 0'}}>{selected.name}</h2></div><button className="btn-secondary" onClick={()=>setDetails(null)} style={{width:'auto',padding:'8px 11px',margin:0}}>Close</button></div><p style={{fontSize:14,lineHeight:1.6,color:'var(--ink-70)',marginTop:14}}>{selected.description||'Join the community and take part together.'}</p><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:16}}><div style={{padding:13,borderRadius:14,background:'var(--paper)'}}><div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Dates</div><strong style={{display:'block',marginTop:4}}>{selected.start_date} → {selected.end_date}</strong></div><div style={{padding:13,borderRadius:14,background:'var(--paper)'}}><div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Target</div><strong style={{display:'block',marginTop:4}}>{Number(selected.step_target||0).toLocaleString()} steps</strong></div></div><div style={{marginTop:16,display:'flex',gap:9}}><button className={joined.has(Number(selected.id))?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(Number(selected.id))} disabled={joined.has(Number(selected.id))||joining===Number(selected.id)} style={{flex:1,margin:0}}>{joining===Number(selected.id)?'Joining…':joined.has(Number(selected.id))?'Joined':'Join challenge'}</button><button className="btn-secondary" onClick={()=>shareChallenge(selected)} style={{width:'auto',margin:0,padding:'10px 14px'}}>Share</button></div><p style={{fontSize:11.5,color:'var(--ink-45)',marginTop:12}}>Invite friends using the share link. Participant counts update as people join.</p></div></div>}
+
+    {showCreate&&<div onClick={()=>setShowCreate(false)} style={{position:'fixed',inset:0,zIndex:60,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}><form onClick={e=>e.stopPropagation()} onSubmit={createChallenge} style={{width:'100%',maxWidth:620,maxHeight:'88vh',overflowY:'auto',background:'var(--white)',borderRadius:'22px 22px 16px 16px',padding:20,boxShadow:'0 20px 60px rgba(0,0,0,.25)'}}><div style={{display:'flex',justifyContent:'space-between',gap:12,alignItems:'center'}}><div><span className="eyebrow">Create</span><h2 style={{fontSize:23,margin:'5px 0 0'}}>Create a challenge</h2></div><button type="button" className="btn-secondary" onClick={()=>setShowCreate(false)} style={{width:'auto',padding:'8px 11px',margin:0}}>Close</button></div><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:16}}>Challenge name<input required maxLength={70} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} placeholder="e.g. 10K Steps Together" style={{width:'100%',marginTop:6}}/></label><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>What is it about?<textarea maxLength={300} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} placeholder="A simple description people can understand before joining." style={{width:'100%',marginTop:6,minHeight:82}}/></label><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:12}}><label style={{fontSize:12,fontWeight:800}}>Start date<input required type="date" value={form.startDate} onChange={e=>setForm({...form,startDate:e.target.value})} style={{width:'100%',marginTop:6}}/></label><label style={{fontSize:12,fontWeight:800}}>End date<input required type="date" value={form.endDate} onChange={e=>setForm({...form,endDate:e.target.value})} style={{width:'100%',marginTop:6}}/></label></div><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Step target<input type="number" min="0" value={form.stepTarget} onChange={e=>setForm({...form,stepTarget:e.target.value})} style={{width:'100%',marginTop:6}}/></label><label style={{display:'flex',gap:9,alignItems:'center',fontSize:12,fontWeight:800,marginTop:14}}><input type="checkbox" checked={form.allowTeams} onChange={e=>setForm({...form,allowTeams:e.target.checked})}/> Allow teams</label><button className="btn-primary" disabled={creating} style={{marginTop:18}}>{creating?'Creating…':'Create challenge'}</button></form></div>}
   </div>;
 }
