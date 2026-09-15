@@ -2,7 +2,7 @@ import './globals.css';
 import './dark-mode.css';
 import ThemeToggle from '@/components/ThemeToggle';
 
-const EXACT_LOGO = '/protlys-logo-exact.png';
+const EXACT_LOGO = '/protlys-logo-exact.png?v=2';
 
 export const metadata = {
   metadataBase: new URL('https://hub.protlys.com'),
@@ -10,9 +10,9 @@ export const metadata = {
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: EXACT_LOGO,
-    shortcut: EXACT_LOGO,
-    apple: EXACT_LOGO,
+    icon: '/protlys-logo-exact.png',
+    shortcut: '/protlys-logo-exact.png',
+    apple: '/protlys-logo-exact.png',
   },
   openGraph: {
     title: 'Protlys Hub',
@@ -24,7 +24,7 @@ export const metadata = {
     type: 'website',
   },
   twitter: {
-    card: 'summary',
+    card: 'summary_large_image',
     title: 'Protlys Hub',
     description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
     images: [EXACT_LOGO],
