@@ -70,7 +70,7 @@ export default async function MemberProfilePage({ params }) {
   const displayName = profile.display_name?.trim() || 'Protlys Member';
   const photoPosts = (posts || []).filter(post => post.image_url);
 
-  return <AppShell><div className="screen-pad" style={{ paddingTop: 18 }}>
+  return <AppShell><style>{`html { scroll-behavior: smooth; }`}</style><div className="screen-pad" style={{ paddingTop: 18 }}>
     <Link href="/" style={{ display:'inline-flex', alignItems:'center', gap:7, color:'var(--ink-70)', textDecoration:'none', fontSize:12, fontWeight:800, marginBottom:18 }}><Icon name="arrow" size={16} /> Back to Feed</Link>
 
     <section style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:20, padding:20, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
@@ -78,13 +78,13 @@ export default async function MemberProfilePage({ params }) {
       <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginTop:20 }}>{[['Posts', postCount || 0], ['Steps', Number(profile.total_steps || 0).toLocaleString()], ['Step streak', profile.step_streak || 0]].map(([label,value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{value}</div></div>)}</div>
     </section>
 
-    <nav aria-label="Profile sections" style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, margin:'16px 0 4px', padding:4, background:'var(--green-soft)', borderRadius:14 }}>
+    <nav aria-label="Profile sections" style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:6, margin:'16px 0 4px', padding:4, background:'var(--green-soft)', borderRadius:14, position:'sticky', top:76, zIndex:10, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
       <a href="#posts" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, background:'#fff', color:'var(--ink)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Posts</a>
       <a href="#stats" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, color:'var(--green-dark)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Stats</a>
       <a href="#photos" style={{ textAlign:'center', padding:'9px 6px', borderRadius:10, color:'var(--green-dark)', textDecoration:'none', fontSize:11.5, fontWeight:800 }}>Photos</a>
     </nav>
 
-    <section id="posts" style={{ marginTop:14, paddingBottom:6 }}>
+    <section id="posts" style={{ marginTop:14, paddingBottom:6, scrollMarginTop:140 }}>
       <div className="eyebrow" style={{ marginBottom:8 }}>Posts</div>
       {posts?.length ? posts.map(post => <article key={post.id} className="profile-post-card" style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:16, padding:14, marginBottom:10 }}>
         <div style={{ display:'flex', justifyContent:'space-between', gap:10, marginBottom:7 }}><span style={{ fontSize:10.5, color:'var(--ink-45)' }}>{formatNairobiDate(post.created_at)}</span>{post.post_type && post.post_type !== 'general' && <span style={{ background:'var(--green-soft)', color:'var(--green-dark)', padding:'2px 7px', borderRadius:999, fontSize:10, fontWeight:800 }}>{post.post_type.replace('_',' ')}</span>}</div>
@@ -95,7 +95,7 @@ export default async function MemberProfilePage({ params }) {
       </article>) : <div style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:16, padding:'28px 18px', textAlign:'center' }}><div style={{ fontWeight:800 }}>No posts yet</div><p className="subhead" style={{ margin:'5px 0 0' }}>This member has not shared anything to the feed.</p></div>}
     </section>
 
-    <section id="stats" style={{ marginTop:18, scrollMarginTop:90 }}>
+    <section id="stats" style={{ marginTop:18, scrollMarginTop:140 }}>
       <div className="eyebrow" style={{ marginBottom:8 }}>Stats & movement</div>
       <div style={{ display:'grid', gridTemplateColumns:'repeat(2, 1fr)', gap:8, marginBottom:12 }}>
         <div style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:14, padding:14 }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>Step streak</div><div className="mono" style={{ fontSize:22, fontWeight:800, marginTop:4 }}>{profile.step_streak || 0}</div></div>
@@ -105,7 +105,7 @@ export default async function MemberProfilePage({ params }) {
       {achievements?.length > 0 && <section style={{ marginTop:14 }}><div className="eyebrow" style={{ marginBottom:8 }}>Milestones</div><div style={{ display:'flex', gap:8, overflowX:'auto', paddingBottom:2 }}>{achievements.map(item => <div key={`${item.achievements?.slug}-${item.earned_at}`} style={{ flex:'0 0 auto', border:'1px solid var(--line)', borderRadius:12, padding:'10px 12px', background:'#fff', minWidth:150 }}><div style={{ fontSize:12, fontWeight:800 }}>{item.achievements?.name || 'Milestone'}</div>{item.achievements?.description && <div style={{ fontSize:10.5, color:'var(--ink-45)', marginTop:3 }}>{item.achievements.description}</div>}</div>)}</div></section>}
     </section>
 
-    <section id="photos" style={{ marginTop:22, paddingBottom:24, scrollMarginTop:90 }}>
+    <section id="photos" style={{ marginTop:22, paddingBottom:24, scrollMarginTop:140 }}>
       <div className="eyebrow" style={{ marginBottom:8 }}>Photos</div>
       {photoPosts.length ? <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:5 }}>{photoPosts.map(post => <a key={post.id} href={`#photo-${post.id}`} style={{ display:'block', aspectRatio:'1 / 1', overflow:'hidden', borderRadius:10, background:'var(--paper)' }}><img src={post.image_url} alt="" style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }} /></a>)}</div> : <div style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:16, padding:'28px 18px', textAlign:'center' }}><div style={{ fontWeight:800 }}>No photos yet</div><p className="subhead" style={{ margin:'5px 0 0' }}>Photos shared by this member will appear here.</p></div>}
     </section>
