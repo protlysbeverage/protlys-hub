@@ -11,21 +11,28 @@ export default function ProfileSectionSlider({ children }) {
     if (!slider) return;
 
     const sections = Array.from(slider.children);
+    let lastActive = null;
+
+    const getActive = () => {
+      if (!sections.length) return null;
+      const center = slider.scrollLeft + slider.clientWidth / 2;
+      return sections.reduce((closest, section) => {
+        const sectionCenter = section.offsetLeft + section.offsetWidth / 2;
+        const closestCenter = closest.offsetLeft + closest.offsetWidth / 2;
+        return Math.abs(sectionCenter - center) < Math.abs(closestCenter - center) ? section : closest;
+      }, sections[0]);
+    };
 
     const setHeight = () => {
-      if (!sections.length) return;
-      const center = slider.scrollLeft + slider.clientWidth / 2;
-      let active = sections[0];
-      let closest = Infinity;
-      sections.forEach((section) => {
-        const sectionCenter = section.offsetLeft + section.offsetWidth / 2;
-        const distance = Math.abs(sectionCenter - center);
-        if (distance < closest) {
-          closest = distance;
-          active = section;
-        }
-      });
-      slider.style.height = `${active.scrollHeight}px`;
+      const active = getActive();
+      if (!active) return;
+
+      // Clear the previous fixed height before measuring. Otherwise a tall
+      // previous section can make scrollHeight/offsetHeight stay artificially tall.
+      slider.style.height = 'auto';
+      const naturalHeight = active.offsetHeight;
+      slider.style.height = `${naturalHeight}px`;
+      lastActive = active;
     };
 
     const scheduleHeight = () => {
@@ -37,7 +44,9 @@ export default function ProfileSectionSlider({ children }) {
     slider.addEventListener('scroll', scheduleHeight, { passive: true });
     window.addEventListener('resize', scheduleHeight);
 
-    const resizeObserver = new ResizeObserver(scheduleHeight);
+    const resizeObserver = new ResizeObserver(() => {
+      if (lastActive) scheduleHeight();
+    });
     sections.forEach((section) => resizeObserver.observe(section));
 
     return () => {
@@ -63,7 +72,7 @@ export default function ProfileSectionSlider({ children }) {
         margin: '0 -1px',
         paddingBottom: 8,
         alignItems: 'flex-start',
-        transition: 'height .18s ease',
+        transition: 'height .12s ease',
       }}
     >
       {children}
