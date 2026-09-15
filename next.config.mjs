@@ -7,7 +7,7 @@ const nextConfig = {
   },
   async rewrites() {
     return [
-      { source: '/logo.png', destination: '/protlys-logo.svg' },
+      { source: '/logo.png', destination: '/protlys-logo-exact.png?v=2' },
     ];
   },
 };
