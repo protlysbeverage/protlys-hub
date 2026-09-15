@@ -43,5 +43,5 @@ export default async function FeedPage({ searchParams }) {
     normalizedPosts = (posts || []).map(post => ({ ...post, like_count: post.feed_likes?.[0]?.count || 0, comment_count: post.feed_comments?.[0]?.count || 0, profiles: post.profiles || { id: post.user_id, display_name:null, avatar_url:null } }));
   }
 
-  return <AppShell><FeedVisualPatch/><div className="screen-pad" style={{ paddingTop: 8 }}><FeedModeTabs/>{mode === 'following' ? <FollowingFeed posts={normalizedPosts} followingCount={followingIds.length}/> : <FeedClient posts={normalizedPosts} likedIds={likedIds} userId={user.id} profile={profile || {}} />}</div>{mode === 'for-you' && <FeedInteractionEnhancer posts={normalizedPosts}/>}</AppShell>;
+  return <AppShell><FeedVisualPatch/><div className="feed-mode-shell"><FeedModeTabs/></div>{mode === 'following' ? <div className="screen-pad feed-following-content"><FollowingFeed posts={normalizedPosts} followingCount={followingIds.length}/></div> : <FeedClient posts={normalizedPosts} likedIds={likedIds} userId={user.id} profile={profile || {}} />}{mode === 'for-you' && <FeedInteractionEnhancer posts={normalizedPosts}/>}</AppShell>;
 }
