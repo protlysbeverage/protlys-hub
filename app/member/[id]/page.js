@@ -5,6 +5,7 @@ import AppShell from '@/components/AppShell';
 import MemberPostComments from '@/app/MemberPostComments';
 import MovementActivity from '@/components/MovementActivity';
 import ProfileSectionNav from '@/components/ProfileSectionNav';
+import FollowButton from '@/components/FollowButton';
 
 function Avatar({ name, url, size = 92 }) {
   const style = { width: size, height: size, minWidth: size, minHeight: size, aspectRatio: '1 / 1', borderRadius: '50%', objectFit: 'cover', display: 'block', flexShrink: 0 };
@@ -39,17 +40,10 @@ function formatJoinedDate(value) {
 
 function PostStats({ stats }) {
   if (!stats || typeof stats !== 'object') return null;
-  const items = [
-    ['Steps', stats.steps],
-    ['Distance', stats.distance],
-    ['Duration', stats.duration],
-  ].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
+  const items = [['Steps', stats.steps], ['Distance', stats.distance], ['Duration', stats.duration]].filter(([, value]) => value !== null && value !== undefined && String(value).trim() !== '');
   if (!items.length) return null;
   return <div style={{ display:'grid', gridTemplateColumns:`repeat(${Math.min(items.length, 3)}, minmax(0, 1fr))`, gap:7, margin:'10px 0 2px' }}>
-    {items.map(([label, value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:10, padding:'8px 9px', background:'var(--paper)', minWidth:0 }}>
-      <div style={{ fontSize:8.5, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div>
-      <div className="mono" style={{ fontSize:12, fontWeight:800, color:'var(--ink)', marginTop:2, overflowWrap:'anywhere' }}>{value}</div>
-    </div>)}
+    {items.map(([label, value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:10, padding:'8px 9px', background:'var(--paper)', minWidth:0 }}><div style={{ fontSize:8.5, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize:12, fontWeight:800, color:'var(--ink)', marginTop:2, overflowWrap:'anywhere' }}>{value}</div></div>)}
   </div>;
 }
 
@@ -59,24 +53,32 @@ export default async function MemberProfilePage({ params }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: profile }, { data: posts }, { count: postCount }, { data: achievements }, { data: movementDays }] = await Promise.all([
+  const [{ data: profile }, { data: posts }, { count: postCount }, { data: achievements }, { data: movementDays }, { count: followerCount }, { count: followingCount }, { data: followRow }] = await Promise.all([
     supabase.from('profiles').select('id, display_name, avatar_url, created_at, streak, step_streak, total_steps, step_goal, target_g').eq('id', id).maybeSingle(),
     supabase.from('feed_posts').select('id, body, image_url, post_type, stats, created_at, feed_likes(count), feed_comments(count)').eq('user_id', id).order('created_at', { ascending: false }).limit(30),
     supabase.from('feed_posts').select('id', { count: 'exact', head: true }).eq('user_id', id),
     supabase.from('user_achievements').select('earned_at, achievements(slug, name, icon, description)').eq('user_id', id).order('earned_at', { ascending: false }).limit(6),
     supabase.from('daily_steps').select('step_date, steps').eq('user_id', id).gt('steps', 0).order('step_date', { ascending: true }),
+    supabase.from('follows').select('id', { count: 'exact', head: true }).eq('following_id', id),
+    supabase.from('follows').select('id', { count: 'exact', head: true }).eq('follower_id', id),
+    supabase.from('follows').select('id').eq('follower_id', user.id).eq('following_id', id).maybeSingle(),
   ]);
 
   if (!profile) notFound();
   const displayName = profile.display_name?.trim() || 'Protlys Member';
   const photoPosts = (posts || []).filter(post => post.image_url);
+  const isOwnProfile = String(user.id) === String(id);
 
   return <AppShell><style>{`html { scroll-behavior: smooth; } .profile-section-slider::-webkit-scrollbar { display:none; }`}</style><div className="screen-pad" style={{ paddingTop: 18 }}>
     <Link href="/" style={{ display:'inline-flex', alignItems:'center', gap:7, color:'var(--ink-70)', textDecoration:'none', fontSize:12, fontWeight:800, marginBottom:18 }}><Icon name="arrow" size={16} /> Back to Feed</Link>
 
     <section style={{ background:'#fff', border:'1.5px solid var(--line)', borderRadius:20, padding:20, boxShadow:'0 2px 8px rgba(0,0,0,.04)' }}>
-      <div style={{ display:'flex', alignItems:'center', gap:16 }}><Avatar name={displayName} url={profile.avatar_url} /><div style={{ minWidth:0, flex:1 }}><div className="eyebrow">Protlys member</div><h1 style={{ fontSize:24, margin:'3px 0 4px' }}>{displayName}</h1><p className="subhead" style={{ margin:0 }}>Progress shared with the Protlys community.</p><div style={{ marginTop:8, fontSize:11.5, color:'var(--ink-45)', fontWeight:700 }}>Joined {formatJoinedDate(profile.created_at)}</div></div></div>
-      <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginTop:20 }}>{[['Posts', postCount || 0], ['Steps', Number(profile.total_steps || 0).toLocaleString()], ['Step streak', profile.step_streak || 0]].map(([label,value]) => <div key={label} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>{label}</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{value}</div></div>)}</div>
+      <div style={{ display:'flex', alignItems:'center', gap:16 }}><Avatar name={displayName} url={profile.avatar_url} /><div style={{ minWidth:0, flex:1 }}><div className="eyebrow">Protlys member</div><h1 style={{ fontSize:24, margin:'3px 0 4px' }}>{displayName}</h1><p className="subhead" style={{ margin:0 }}>Progress shared with the Protlys community.</p><div style={{ marginTop:8, fontSize:11.5, color:'var(--ink-45)', fontWeight:700 }}>Joined {formatJoinedDate(profile.created_at)}</div></div>{!isOwnProfile && <FollowButton profileId={id} initialFollowing={Boolean(followRow)} initialFollowers={followerCount || 0} />}</div>
+      <div style={{ display:'grid', gridTemplateColumns:'repeat(3, 1fr)', gap:8, marginTop:20 }}>
+        <Link href={`/member/${id}`} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)', textDecoration:'none', color:'var(--ink)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>Posts</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{postCount || 0}</div></Link>
+        <Link href={`/member/${id}/connections?type=followers`} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)', textDecoration:'none', color:'var(--ink)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>Followers</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{followerCount || 0}</div></Link>
+        <Link href={`/member/${id}/connections?type=following`} style={{ border:'1px solid var(--line)', borderRadius:12, padding:'11px 10px', background:'var(--paper)', textDecoration:'none', color:'var(--ink)' }}><div style={{ fontSize:9, textTransform:'uppercase', letterSpacing:'.06em', fontWeight:800, color:'var(--ink-45)' }}>Following</div><div className="mono" style={{ fontSize:17, fontWeight:800, marginTop:3 }}>{followingCount || 0}</div></Link>
+      </div>
     </section>
 
     <ProfileSectionNav />
