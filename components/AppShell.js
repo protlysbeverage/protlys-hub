@@ -74,7 +74,7 @@ export default function AppShell({ children }) {
     .protlys-app .disclaimer { display:none!important; }
     .protlys-app .desktop-sidebar { display:none; }
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
-    .protlys-app .brand-link img { height:46px;width:auto;object-fit:contain;display:block; }
+    .protlys-app .brand-link img { height:52px;width:auto;object-fit:contain;display:block; }
     @media (min-width:900px) {
       .protlys-app { min-height:100vh!important;background:#E4E3D6!important;display:flex!important;justify-content:center!important;align-items:flex-start!important;padding:28px!important; }
       .protlys-app .app-shell { width:min(1180px,100%)!important;max-width:none!important;min-height:calc(100vh - 56px)!important;height:auto!important;border-radius:28px!important;overflow:hidden!important;box-shadow:0 30px 70px -28px rgba(15,42,74,.35)!important;background:var(--paper)!important;display:grid!important;grid-template-columns:220px minmax(0,1fr)!important;grid-template-rows:auto 1fr!important; }
@@ -91,7 +91,7 @@ export default function AppShell({ children }) {
       .protlys-app .app-header > .brand-link { grid-column:2; }
       .protlys-app .app-header > .shop-header-link { grid-column:3;justify-self:end; }
       .protlys-app .app-header > a:first-child:not(.brand-link) { grid-column:2; }
-      .protlys-app .brand-link img { height:50px!important; }
+      .protlys-app .brand-link img { height:56px!important; }
       .protlys-app .screen { grid-column:2;grid-row:2;display:block!important;width:100%;max-width:760px;margin:0 auto;overflow-y:auto;padding:0 24px 40px!important; }
       .protlys-app .bottom-nav { display:none!important; }
     }
@@ -101,7 +101,7 @@ export default function AppShell({ children }) {
       .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important; }
       .protlys-app .app-header .brand-link { grid-column:2; }
       .protlys-app .app-header .shop-header-link { grid-column:3;justify-self:end; }
-      .protlys-app .brand-link img { height:46px!important; }
+      .protlys-app .brand-link img { height:52px!important; }
     }
   `}</style>
 
@@ -118,7 +118,7 @@ export default function AppShell({ children }) {
 
     <div className="app-header">
       <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img src={logoSrc} alt="Protlys" /></Link>
-      <a className="shop-header-link" href={shopUrl} aria-label="Shop Protlys" title="Shop Protlys"><CartIcon size={18}/><span>Shop Protlys</span></a>
+      <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
     </div>
 
     <section className="screen active">{children}</section>
