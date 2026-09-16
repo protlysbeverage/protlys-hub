@@ -38,9 +38,29 @@ export default function ProfileSectionSlider({ children }) {
       frameRef.current = requestAnimationFrame(setHeight);
     };
 
+    // Connections owns the gesture once a touch starts inside it. This keeps
+    // the profile's horizontal section scroller from competing with its
+    // vertical page scroll and its own Followers/Following swipe.
+    const handlePointerDown = (event) => {
+      if (event.target instanceof Element && event.target.closest('#connections')) {
+        slider.style.touchAction = 'pan-y pinch-zoom';
+      } else {
+        slider.style.touchAction = 'auto';
+      }
+    };
+
+    const releaseTouchMode = (event) => {
+      if (event.target instanceof Element && event.target.closest('#connections')) {
+        slider.style.touchAction = 'auto';
+      }
+    };
+
     scheduleHeight();
     slider.addEventListener('scroll', scheduleHeight, { passive: true });
     window.addEventListener('resize', scheduleHeight);
+    slider.addEventListener('pointerdown', handlePointerDown, true);
+    slider.addEventListener('pointerup', releaseTouchMode, true);
+    slider.addEventListener('pointercancel', releaseTouchMode, true);
 
     const resizeObserver = new ResizeObserver(() => {
       if (lastActive) scheduleHeight();
@@ -51,6 +71,9 @@ export default function ProfileSectionSlider({ children }) {
       cancelAnimationFrame(frameRef.current);
       slider.removeEventListener('scroll', scheduleHeight);
       window.removeEventListener('resize', scheduleHeight);
+      slider.removeEventListener('pointerdown', handlePointerDown, true);
+      slider.removeEventListener('pointerup', releaseTouchMode, true);
+      slider.removeEventListener('pointercancel', releaseTouchMode, true);
       resizeObserver.disconnect();
     };
   }, []);
