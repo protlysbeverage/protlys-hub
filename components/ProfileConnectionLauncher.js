@@ -3,15 +3,9 @@
 export default function ProfileConnectionLauncher({ profileId, type = 'followers', count = 0, borderRight = false }) {
   const label = type === 'following' ? 'Following' : 'Followers';
 
-  function openConnections(event) {
-    event.preventDefault();
-    window.dispatchEvent(new CustomEvent('protlys-profile-connections', { detail: { type } }));
-  }
-
   return (
     <a
       href={`/member/${profileId}/connections?type=${type}`}
-      onClick={openConnections}
       style={{ textAlign:'center', textDecoration:'none', color:'var(--ink)', borderRight:borderRight ? '1px solid var(--line)' : undefined, cursor:'pointer' }}
       aria-label={`View ${count} ${label.toLowerCase()}`}
     >
