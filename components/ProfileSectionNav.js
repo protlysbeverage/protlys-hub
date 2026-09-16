@@ -6,25 +6,42 @@ const sections = [['posts','Posts'],['stats','Stats'],['photos','Photos'],['conn
 
 export default function ProfileSectionNav() {
   const [active,setActive]=useState('posts');
+
   useEffect(()=>{
-    const slider=document.querySelector('.profile-section-slider'); if(!slider)return;
+    const slider=document.querySelector('.profile-section-slider');
+    if(!slider)return;
     const targets=sections.map(([id])=>document.getElementById(id)).filter(Boolean);
     const observer=new IntersectionObserver(entries=>{
       const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
       if(visible)setActive(visible.target.id);
     },{root:slider,threshold:[0.55,0.75,0.9]});
     targets.forEach(target=>observer.observe(target));
+
     const openConnections=event=>{
       const type=event.detail?.type==='following'?'following':'followers';
       const target=document.getElementById('connections');
       if(!target)return;
-      const left=target.offsetLeft;
+
+      // The profile slider is a four-page horizontal track. Use the page
+      // index rather than offsetLeft so the connection page always lands
+      // exactly on the Connections section, regardless of margins/padding.
+      const index=targets.indexOf(target);
+      const left=Math.max(0,index*slider.clientWidth);
       slider.scrollTo({left,behavior:'smooth'});
-      window.requestAnimationFrame(()=>window.dispatchEvent(new CustomEvent('protlys-open-connection-type',{detail:{type}})));
+
+      // Let the outer slider start moving before selecting Followers/Following.
+      window.setTimeout(()=>{
+        window.dispatchEvent(new CustomEvent('protlys-open-connection-type',{detail:{type}}));
+      },80);
     };
+
     window.addEventListener('protlys-profile-connections',openConnections);
-    return()=>{observer.disconnect();window.removeEventListener('protlys-profile-connections',openConnections)};
+    return()=>{
+      observer.disconnect();
+      window.removeEventListener('protlys-profile-connections',openConnections);
+    };
   },[]);
+
   return <nav aria-label="Profile sections" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:2,margin:'12px 0 5px',padding:'3px',background:'#fff',border:'1px solid var(--line)',borderRadius:12,position:'sticky',top:76,zIndex:10,boxShadow:'0 2px 7px rgba(0,0,0,.035)'}}>
     {sections.map(([id,label])=><a key={id} href={`#${id}`} aria-current={active===id?'page':undefined} style={{minWidth:0,textAlign:'center',padding:'9px 3px',borderRadius:9,background:active===id?'var(--green-soft)':'transparent',color:active===id?'var(--green-dark)':'var(--ink-45)',textDecoration:'none',fontSize:10.5,fontWeight:800,whiteSpace:'nowrap',transition:'background .18s ease,color .18s ease'}}>{label}</a>)}
   </nav>;
