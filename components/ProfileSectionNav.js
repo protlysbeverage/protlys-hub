@@ -21,18 +21,9 @@ export default function ProfileSectionNav() {
       const type=event.detail?.type==='following'?'following':'followers';
       const target=document.getElementById('connections');
       if(!target)return;
-
-      // The profile slider is a four-page horizontal track. Use the page
-      // index rather than offsetLeft so the connection page always lands
-      // exactly on the Connections section, regardless of margins/padding.
       const index=targets.indexOf(target);
-      const left=Math.max(0,index*slider.clientWidth);
-      slider.scrollTo({left,behavior:'smooth'});
-
-      // Let the outer slider start moving before selecting Followers/Following.
-      window.setTimeout(()=>{
-        window.dispatchEvent(new CustomEvent('protlys-open-connection-type',{detail:{type}}));
-      },80);
+      slider.scrollTo({left:Math.max(0,index*slider.clientWidth),behavior:'smooth'});
+      window.setTimeout(()=>window.dispatchEvent(new CustomEvent('protlys-open-connection-type',{detail:{type}})),80);
     };
 
     window.addEventListener('protlys-profile-connections',openConnections);
@@ -42,7 +33,16 @@ export default function ProfileSectionNav() {
     };
   },[]);
 
+  const goToSection=(event,id)=>{
+    event.preventDefault();
+    const slider=document.querySelector('.profile-section-slider');
+    const target=document.getElementById(id);
+    if(!slider||!target)return;
+    const index=sections.findIndex(([sectionId])=>sectionId===id);
+    slider.scrollTo({left:Math.max(0,index*slider.clientWidth),behavior:'smooth'});
+  };
+
   return <nav aria-label="Profile sections" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:2,margin:'12px 0 5px',padding:'3px',background:'#fff',border:'1px solid var(--line)',borderRadius:12,position:'sticky',top:76,zIndex:10,boxShadow:'0 2px 7px rgba(0,0,0,.035)'}}>
-    {sections.map(([id,label])=><a key={id} href={`#${id}`} aria-current={active===id?'page':undefined} style={{minWidth:0,textAlign:'center',padding:'9px 3px',borderRadius:9,background:active===id?'var(--green-soft)':'transparent',color:active===id?'var(--green-dark)':'var(--ink-45)',textDecoration:'none',fontSize:10.5,fontWeight:800,whiteSpace:'nowrap',transition:'background .18s ease,color .18s ease'}}>{label}</a>)}
+    {sections.map(([id,label])=><a key={id} href={`#${id}`} onClick={event=>goToSection(event,id)} aria-current={active===id?'page':undefined} style={{minWidth:0,textAlign:'center',padding:'9px 3px',borderRadius:9,background:active===id?'var(--green-soft)':'transparent',color:active===id?'var(--green-dark)':'var(--ink-45)',textDecoration:'none',fontSize:10.5,fontWeight:800,whiteSpace:'nowrap',transition:'background .18s ease,color .18s ease'}}>{label}</a>)}
   </nav>;
 }
