@@ -27,8 +27,6 @@ export default function ProfileSectionSlider({ children }) {
       const active = getActive();
       if (!active) return;
 
-      // Clear the previous fixed height before measuring. Otherwise a tall
-      // previous section can make scrollHeight/offsetHeight stay artificially tall.
       slider.style.height = 'auto';
       const naturalHeight = active.offsetHeight;
       slider.style.height = `${naturalHeight}px`;
