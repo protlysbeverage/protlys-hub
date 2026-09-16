@@ -10,16 +10,14 @@ function Icon({ name, size = 19 }) {
     challenge: <><path d="M8 4h8l-1 6a3 3 0 0 1-6 0L8 4Z"/><path d="M12 13v5M8 21h8M5 4h3M16 4h3"/></>,
     community: <><circle cx="9" cy="9" r="3"/><circle cx="17" cy="10" r="2.5"/><path d="M3 20c.5-3.2 2.5-5 6-5s5.5 1.8 6 5M14.5 15.5c2.5-.2 4.5 1.3 5 3.5"/></>,
     profile: <><circle cx="12" cy="8" r="3.2"/><path d="M5 20c.6-3.6 2.9-5.5 7-5.5s6.4 1.9 7 5.5"/></>,
+    share: <><circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="m8 11 7.8-4.6M8 13l7.8 4.6"/></>,
     box: <><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v9l8 4 8-4V8M12 12v9"/></>,
     camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z"/><circle cx="12" cy="12.5" r="3.2"/></>,
   };
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
 
-function formatDistance(km) {
-  if (km < 1) return `${Math.round(km * 1000)} m`;
-  return `${km.toFixed(1)} km`;
-}
+function formatDistance(km) { if (km < 1) return `${Math.round(km * 1000)} m`; return `${km.toFixed(1)} km`; }
 
 export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], shopUrl, email }) {
   const router = useRouter();
@@ -28,35 +26,50 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [message, setMessage] = useState('');
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
+  const [sharing, setSharing] = useState(false);
 
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
   const totalSteps = Number(profile?.total_steps || 0);
+  const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/member/${profile?.id}` : `/member/${profile?.id}`;
   const activeDays = Array.from({ length:7 }, (_, index) => {
-    const date = new Date();
-    date.setDate(date.getDate() - (6 - index));
+    const date = new Date(); date.setDate(date.getDate() - (6 - index));
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
     const row = weekSteps.find(item => item.step_date === key);
     return { key, steps:Number(row?.steps || 0) };
   });
   const activeDayCount = activeDays.filter(day => day.steps > 0).length;
-
-  // Approximation using a 0.75 m average stride. It is deliberately labelled
-  // as estimated because actual distance varies with a person's stride length.
   const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
 
+  async function handleShareProfile() {
+    if (!profile?.id) return;
+    setSharing(true); setMessage('');
+    try {
+      const shareData = { title: `${name} on Protlys Hub`, text: `Check out ${name}'s Protlys Hub profile.`, url: profileUrl };
+      if (typeof navigator !== 'undefined' && navigator.share) {
+        await navigator.share(shareData);
+        setMessage('Profile shared.');
+      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
+        await navigator.clipboard.writeText(profileUrl);
+        setMessage('Profile link copied.');
+      } else {
+        throw new Error('Sharing is not supported on this device.');
+      }
+    } catch (error) {
+      if (error?.name !== 'AbortError') setMessage(error?.message || 'Could not share profile.');
+    } finally { setSharing(false); }
+  }
+
   async function handlePhoto(event) {
-    const file = event.target.files?.[0];
-    event.target.value = '';
+    const file = event.target.files?.[0]; event.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) return setMessage('Choose an image file.');
     if (file.size > 5 * 1024 * 1024) return setMessage('Photo must be 5MB or smaller.');
     setUploading(true); setMessage('');
     try {
-      const supabase = createClient();
-      const { data: { user } } = await supabase.auth.getUser();
+      const supabase = createClient(); const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
       const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
       const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
@@ -65,18 +78,13 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
       const { error: profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id);
       if (profileError) throw profileError;
-      setMessage('Profile photo updated.');
-      router.refresh();
+      setMessage('Profile photo updated.'); router.refresh();
     } catch (error) { setMessage(error?.message || 'Could not update profile photo.'); }
     finally { setUploading(false); }
   }
 
   async function handleSignOut() {
-    setSigningOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push('/login');
-    router.refresh();
+    setSigningOut(true); const supabase = createClient(); await supabase.auth.signOut(); router.push('/login'); router.refresh();
   }
 
   const links = [
@@ -102,52 +110,30 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         <div style={{minWidth:0,flex:1}}>
           <div style={{fontWeight:800,fontSize:16}}>{name}</div>
           <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
-          <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{marginTop:5,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-          {message && <div style={{fontSize:10.5,color:message.includes('updated')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
+          <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
+            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
+            <button type="button" onClick={handleShareProfile} disabled={sharing} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>{sharing ? 'Sharing…' : 'Share profile'}</button>
+          </div>
+          {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
         </div>
       </div>
     </div>
 
     <div className="screen-pad" style={{paddingTop:4}}>
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}>
-          <div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div>
-          <span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
-          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div>
-          <div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div>
-        </div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
       </div>
 
-      <div className="hub-card" style={{padding:14,marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}>
-          <div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
-          <span style={{fontSize:11,color:'var(--ink-45)'}}>last 7 days</span>
-        </div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:7}}>
-          {activeDays.map(day => <div key={day.key} style={{textAlign:'center'}}><div style={{fontSize:9.5,color:'var(--ink-45)',marginBottom:5}}>{new Date(`${day.key}T12:00:00`).toLocaleDateString([], {weekday:'short'}).slice(0,1)}</div><div style={{height:9,borderRadius:999,background:day.steps > 0 ? 'var(--green-dark)' : 'var(--green-soft)',border:day.steps > 0 ? '0' : '1px solid var(--line)'}} aria-label={`${day.steps.toLocaleString()} steps`} /></div>)}
-        </div>
-      </div>
+      <div className="hub-card" style={{padding:14,marginBottom:10}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',marginBottom:10}}><div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>last 7 days</span></div><div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:7}}>{activeDays.map(day => <div key={day.key} style={{textAlign:'center'}}><div style={{fontSize:9.5,color:'var(--ink-45)',marginBottom:5}}>{new Date(`${day.key}T12:00:00`).toLocaleDateString([], {weekday:'short'}).slice(0,1)}</div><div style={{height:9,borderRadius:999,background:day.steps > 0 ? 'var(--green-dark)' : 'var(--green-soft)',border:day.steps > 0 ? '0' : '1px solid var(--line)'}} aria-label={`${day.steps.toLocaleString()} steps`} /></div>)}</div></div>
 
-      <div className="hub-grid" style={{marginBottom:20}}>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{Number(todaySteps).toLocaleString()}</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Estimated distance</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{formatDistance(totalDistanceKm)}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded steps</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>last 7 days</div></div>
-        <div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{totalSteps.toLocaleString()}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded movement</div></div>
-      </div>
-
+      <div className="hub-grid" style={{marginBottom:20}}><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{Number(todaySteps).toLocaleString()}</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Estimated distance</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{formatDistance(totalDistanceKm)}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded steps</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>last 7 days</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{totalSteps.toLocaleString()}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded movement</div></div></div>
       <p className="disclaimer" style={{marginTop:-8,marginBottom:20}}>Distance is an estimate using an average 0.75 m stride. Your actual distance may vary.</p>
-
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
-      <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>
-        {links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}
-      </div>
-
+      <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
       <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Shop Protlys products</a>
-
       <div style={{marginTop:24,paddingTop:18,borderTop:'1px solid var(--line)',textAlign:'center'}}>
-        {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} style={{background:'none',border:0,color:'var(--ink-45)',fontSize:13,fontWeight:700,cursor:'pointer'}}>Sign out</button> : <div style={{background:'#FEE2E2',borderRadius:14,padding:15}}><div style={{fontSize:13,color:'#B3261E',fontWeight:700,marginBottom:11}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:9}}><button type="button" className="btn-secondary" style={{flex:1,marginTop:0}} onClick={() => setConfirmSignOut(false)}>Cancel</button><button type="button" disabled={signingOut} onClick={handleSignOut} style={{flex:1,border:0,borderRadius:12,padding:12,background:'#B3261E',color:'#fff',fontWeight:800,cursor:'pointer'}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
+        {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
     </div>
   </>;
