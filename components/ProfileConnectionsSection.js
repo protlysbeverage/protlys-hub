@@ -71,12 +71,19 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     if (!drag) return;
     const dx = event.clientX - drag.startX;
     const dy = event.clientY - drag.startY;
+    const absX = Math.abs(dx);
+    const absY = Math.abs(dy);
+
+    // Do not interfere with normal vertical scrolling. A horizontal swipe must be
+    // deliberate: enough movement and clearly more horizontal than vertical.
     if (!drag.active) {
-      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
-      if (Math.abs(dy) > Math.abs(dx)) { dragRef.current = null; return; }
+      if (absX < 12 && absY < 12) return;
+      if (absY >= absX * 1.35) return;
+      if (absX <= absY * 1.35) return;
       drag.active = true;
       setDragging(true);
     }
+
     event.preventDefault();
     event.stopPropagation();
     drag.lastX = event.clientX;
@@ -91,10 +98,13 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     const wasHorizontal = drag.active;
     dragRef.current = null;
     setDragging(false);
+
+    // Vertical taps/drags are completely native browser interactions.
     if (!wasHorizontal) return;
+
     event.preventDefault();
     event.stopPropagation();
-    const threshold = Math.max(45, window.innerWidth * 0.12);
+    const threshold = Math.max(55, window.innerWidth * 0.14);
     if (Math.abs(dx) >= threshold) switchType(dx < 0 ? 'following' : 'followers');
     else setDragX(0);
     window.setTimeout(() => { suppressClick.current = false; }, 80);
@@ -107,8 +117,8 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
   return <section id="connections" style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start',scrollMarginTop:140,paddingTop:8,paddingBottom:24}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:8}}><div className="eyebrow">Connections</div><span style={{fontSize:10.5,color:'var(--ink-45)'}}>Swipe to switch</span></div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,marginBottom:10}}>{[['followers','Followers',followerCount],['following','Following',followingCount]].map(([key,label,count])=><button key={key} type="button" onClick={() => switchType(key)} style={{border:0,borderRadius:9,padding:'9px 4px',background:type===key?'var(--green-soft)':'transparent',color:type===key?'var(--green-dark)':'var(--ink-45)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{label} <span className="mono">{count}</span></button>)}</div>
-    <div onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointer} onPointerCancel={cancelPointer} onClickCapture={handleClickCapture} style={{width:'100%',overflow:'hidden',touchAction:'pan-y',userSelect:'none',cursor:dragging?'grabbing':'grab'}}>
-      <div style={{display:'flex',width:'200%',transform:`translate3d(calc(${base}% + ${dragX}px),0,0)`,transition:dragging?'none':'transform 260ms cubic-bezier(0.22,1,0.36,1)',willChange:'transform'}}>
+    <div onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointer} onPointerCancel={cancelPointer} onClickCapture={handleClickCapture} style={{width:'100%',overflow:'hidden',touchAction:'pan-y pinch-zoom'}}>
+      <div style={{display:'flex',width:'200%',transform:`translate3d(calc(${base}% + ${dragX}px),0,0)`,transition:dragging?'none':'transform 280ms cubic-bezier(0.22,1,0.36,1)',willChange:'transform'}}>
         <div style={{width:'50%',minWidth:'50%',flexShrink:0,paddingRight:8}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
         <div style={{width:'50%',minWidth:'50%',flexShrink:0,paddingLeft:8}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
       </div>
