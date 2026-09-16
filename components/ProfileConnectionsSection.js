@@ -1,42 +1,48 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import FollowButton from '@/components/FollowButton';
 
-export default function ProfileConnectionsSection({ profileId, followersCount = 0, followingCount = 0 }) {
+function Avatar({ name, url }) {
+  const style = { width:44, height:44, minWidth:44, borderRadius:'50%', objectFit:'cover', flexShrink:0, display:'block' };
+  if (url) return <img src={url} alt="" loading="lazy" decoding="async" style={style} />;
+  return <div style={{...style, background:'var(--green-soft)', display:'flex', alignItems:'center', justifyContent:'center', fontWeight:800, color:'var(--green-dark)'}}>{(name || '?')[0].toUpperCase()}</div>;
+}
+
+function List({ people, loading, title }) {
+  if (loading) return <div style={{display:'grid',gap:8}}>{[1,2,3].map(i=><div key={i} style={{height:64,borderBottom:'1px solid var(--line)',background:'var(--paper)',borderRadius:8}} />)}</div>;
+  if (!people.length) return <div style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:'28px 18px',textAlign:'center'}}><div style={{fontWeight:800}}>No {title.toLowerCase()} yet</div><p className="subhead" style={{margin:'5px 0 0'}}>People who connect with this profile will appear here.</p></div>;
+  return <div style={{display:'grid',gap:8}}>{people.map(person=><div key={person.id} style={{display:'flex',alignItems:'center',gap:11,padding:'10px 0',borderBottom:'1px solid var(--line)'}}><Link href={`/member/${person.id}`} style={{display:'flex',alignItems:'center',gap:11,flex:1,minWidth:0,textDecoration:'none',color:'var(--ink)'}}><Avatar name={person.display_name} url={person.avatar_url}/><span style={{fontSize:13,fontWeight:800,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{person.display_name || 'Protlys Member'}</span></Link>{person.id && <FollowButton profileId={person.id} initialFollowing={Boolean(person.following)} compact />}</div>);}</div>;
+}
+
+export default function ProfileConnectionsSection({ profileId, followerCount = 0, followingCount = 0 }) {
   const [type, setType] = useState('followers');
+  const [data, setData] = useState({ followers:null, following:null });
+  const [loading, setLoading] = useState({ followers:false, following:false });
   const [dragX, setDragX] = useState(0);
-  const [isDragging, setIsDragging] = useState(false);
-  const [followers, setFollowers] = useState([]);
-  const [following, setFollowing] = useState([]);
-  const [loading, setLoading] = useState(false);
-  const loaded = useRef({ followers: false, following: false });
-  const drag = useRef(null);
+  const [dragging, setDragging] = useState(false);
+  const dragRef = useRef(null);
+  const requested = useRef(new Set());
   const suppressClick = useRef(false);
 
   const load = useCallback(async (nextType) => {
-    if (loaded.current[nextType]) return;
-    setLoading(true);
+    if (requested.current.has(nextType)) return;
+    requested.current.add(nextType);
+    setLoading(prev => ({...prev, [nextType]:true}));
     try {
-      const response = await fetch(`/api/member/${profileId}/connections?type=${nextType}`, { cache: 'no-store' });
-      if (!response.ok) throw new Error('Failed to load connections');
-      const data = await response.json();
-      if (nextType === 'following') setFollowing(data.users || []);
-      else setFollowers(data.users || []);
-      loaded.current[nextType] = true;
-    } catch (error) {
-      console.error(error);
+      const response = await fetch(`/api/member/${profileId}/connections?type=${nextType}`, { cache:'no-store' });
+      if (!response.ok) throw new Error('connections request failed');
+      const json = await response.json();
+      setData(prev => ({...prev, [nextType]:Array.isArray(json.people) ? json.people : []}));
+    } catch {
+      setData(prev => ({...prev, [nextType]:[]}));
     } finally {
-      setLoading(false);
+      setLoading(prev => ({...prev, [nextType]:false}));
     }
   }, [profileId]);
 
-  useEffect(() => {
-    load('followers');
-    const timer = window.setTimeout(() => load('following'), 350);
-    return () => window.clearTimeout(timer);
-  }, [load]);
-
-  const changeType = useCallback((nextType) => {
+  const switchType = useCallback((nextType) => {
     const normalized = nextType === 'following' ? 'following' : 'followers';
     setType(normalized);
     setDragX(0);
@@ -44,149 +50,94 @@ export default function ProfileConnectionsSection({ profileId, followersCount = 
   }, [load]);
 
   useEffect(() => {
-    const openType = (event) => changeType(event.detail?.type);
-    window.addEventListener('protlys-open-connection-type', openType);
-    return () => window.removeEventListener('protlys-open-connection-type', openType);
-  }, [changeType]);
+    const handler = event => switchType(event.detail?.type);
+    window.addEventListener('protlys-open-connection-type', handler);
+    return () => window.removeEventListener('protlys-open-connection-type', handler);
+  }, [switchType]);
 
-  const beginDrag = (event) => {
+  useEffect(() => {
+    const timer = window.setTimeout(() => { load('followers'); load('following'); }, 350);
+    return () => window.clearTimeout(timer);
+  }, [load]);
+
+  const handlePointerDown = useCallback((event) => {
     if (event.pointerType === 'mouse' && event.button !== 0) return;
-    drag.current = {
-      startX: event.clientX,
-      startY: event.clientY,
-      lastX: event.clientX,
-      active: false,
-    };
+    dragRef.current = { startX:event.clientX, startY:event.clientY, active:false, pointerId:event.pointerId };
     suppressClick.current = false;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
-  };
+  }, []);
 
-  const moveDrag = (event) => {
-    const current = drag.current;
-    if (!current) return;
-    const dx = event.clientX - current.startX;
-    const dy = event.clientY - current.startY;
+  const handlePointerMove = useCallback((event) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
 
-    if (!current.active) {
-      if (Math.abs(dy) > 8 && Math.abs(dy) > Math.abs(dx)) {
-        drag.current = null;
+    if (!drag.active) {
+      if (Math.abs(dx) < 8 && Math.abs(dy) < 8) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        dragRef.current = null;
         return;
       }
-      if (Math.abs(dx) < 8) return;
-      current.active = true;
-      setIsDragging(true);
+      drag.active = true;
+      setDragging(true);
     }
 
     event.preventDefault();
     event.stopPropagation();
-    current.lastX = event.clientX;
     setDragX(dx);
     suppressClick.current = true;
-  };
+  }, []);
 
-  const endDrag = (event) => {
-    const current = drag.current;
-    if (!current) return;
-    const dx = current.lastX - current.startX;
-    const wasActive = current.active;
-    drag.current = null;
-    setIsDragging(false);
+  const finishPointer = useCallback((event) => {
+    const drag = dragRef.current;
+    if (!drag) return;
+    const dx = event.clientX - drag.startX;
+    const wasHorizontal = drag.active;
+    dragRef.current = null;
+    setDragging(false);
 
-    if (wasActive) {
-      event.preventDefault();
-      event.stopPropagation();
-      const threshold = Math.max(45, window.innerWidth * 0.12);
-      if (Math.abs(dx) >= threshold) {
-        changeType(dx < 0 ? 'following' : 'followers');
-      } else {
-        setDragX(0);
-      }
-      window.setTimeout(() => { suppressClick.current = false; }, 50);
-    }
-  };
+    if (!wasHorizontal) return;
+    event.preventDefault();
+    event.stopPropagation();
+    const threshold = Math.max(45, window.innerWidth * 0.12);
+    if (Math.abs(dx) >= threshold) switchType(dx < 0 ? 'following' : 'followers');
+    else setDragX(0);
+    window.setTimeout(() => { suppressClick.current = false; }, 60);
+  }, [switchType]);
 
-  const cancelDrag = () => {
-    drag.current = null;
-    setIsDragging(false);
+  const cancelPointer = useCallback(() => {
+    dragRef.current = null;
+    setDragging(false);
     setDragX(0);
-  };
+  }, []);
 
-  const handleClickCapture = (event) => {
-    if (suppressClick.current) {
-      event.preventDefault();
-      event.stopPropagation();
-      suppressClick.current = false;
-    }
-  };
+  const handleClickCapture = useCallback((event) => {
+    if (!suppressClick.current) return;
+    event.preventDefault();
+    event.stopPropagation();
+    suppressClick.current = false;
+  }, []);
 
-  const users = type === 'following' ? following : followers;
   const base = type === 'following' ? -50 : 0;
 
-  return (
-    <section id="connections" style={{ width: '100%', minWidth: 0 }}>
-      <div style={{ display: 'flex', gap: 8, marginBottom: 14 }}>
-        <button
-          type="button"
-          onClick={() => changeType('followers')}
-          style={{ flex: 1, border: '1px solid #dce8df', borderRadius: 12, background: type === 'followers' ? '#eef8f0' : '#fff', padding: '10px 8px', cursor: 'pointer' }}
-        >
-          <strong style={{ display: 'block', fontSize: 18 }}>{followersCount}</strong>
-          <span style={{ fontSize: 12, color: '#66736b' }}>Followers</span>
-        </button>
-        <button
-          type="button"
-          onClick={() => changeType('following')}
-          style={{ flex: 1, border: '1px solid #dce8df', borderRadius: 12, background: type === 'following' ? '#eef8f0' : '#fff', padding: '10px 8px', cursor: 'pointer' }}
-        >
-          <strong style={{ display: 'block', fontSize: 18 }}>{followingCount}</strong>
-          <span style={{ fontSize: 12, color: '#66736b' }}>Following</span>
-        </button>
-      </div>
-
-      <div
-        onPointerDown={beginDrag}
-        onPointerMove={moveDrag}
-        onPointerUp={endDrag}
-        onPointerCancel={cancelDrag}
-        onClickCapture={handleClickCapture}
-        style={{ width: '100%', overflow: 'hidden', touchAction: 'pan-y', cursor: isDragging ? 'grabbing' : 'grab', userSelect: 'none' }}
-      >
-        <div
-          style={{
-            display: 'flex',
-            width: '200%',
-            transform: `translate3d(calc(${base}% + ${dragX}px), 0, 0)`,
-            transition: isDragging ? 'none' : 'transform 260ms cubic-bezier(0.22,1,0.36,1)',
-            willChange: 'transform',
-          }}
-        >
-          <div style={{ width: '50%', flexShrink: 0, paddingRight: 8 }}>
-            <ConnectionList users={followers} loading={loading && !loaded.current.followers} emptyText="No followers yet." />
-          </div>
-          <div style={{ width: '50%', flexShrink: 0, paddingLeft: 8 }}>
-            <ConnectionList users={following} loading={loading && !loaded.current.following} emptyText="Not following anyone yet." />
-          </div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-function ConnectionList({ users, loading, emptyText }) {
-  if (loading) return <div style={{ padding: '24px 8px', textAlign: 'center', color: '#718078' }}>Loading…</div>;
-  if (!users.length) return <div style={{ padding: '24px 8px', textAlign: 'center', color: '#718078' }}>{emptyText}</div>;
-
-  return (
-    <div style={{ display: 'grid', gap: 8 }}>
-      {users.map((user) => (
-        <a key={user.id} href={`/member/${user.id}`} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '9px 6px', borderRadius: 10, textDecoration: 'none', color: 'inherit' }}>
-          <img src={user.avatar_url || '/logo.png'} alt="" loading="lazy" decoding="async" width="40" height="40" style={{ width: 40, height: 40, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
-          <div style={{ minWidth: 0 }}>
-            <div style={{ fontWeight: 650, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user.full_name || user.username || 'Protlys member'}</div>
-            {user.username ? <div style={{ fontSize: 12, color: '#718078', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>@{user.username}</div> : null}
-          </div>
-        </a>
-      ))}
+  return <section id="connections" style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start',scrollMarginTop:140,paddingTop:8,paddingBottom:24}}>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:8}}><div className="eyebrow">Connections</div><span style={{fontSize:10.5,color:'var(--ink-45)'}}>Swipe to switch</span></div>
+    <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,marginBottom:10}}>
+      {[['followers','Followers',followerCount],['following','Following',followingCount]].map(([key,label,count])=><button key={key} type="button" onClick={() => switchType(key)} style={{border:0,borderRadius:9,padding:'9px 4px',background:type===key?'var(--green-soft)':'transparent',color:type===key?'var(--green-dark)':'var(--ink-45)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{label} <span className="mono">{count}</span></button>)}
     </div>
-  );
+    <div
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={finishPointer}
+      onPointerCancel={cancelPointer}
+      onPointerLeave={(event) => { if (event.pointerType === 'mouse') finishPointer(event); }}
+      onClickCapture={handleClickCapture}
+      style={{position:'relative',overflow:'hidden',width:'100%',maxWidth:'100%',touchAction:'pan-y',userSelect:'none',cursor:dragging?'grabbing':'grab'}}
+    >
+      <div style={{display:'flex',width:'200%',transform:`translate3d(calc(${base}% + ${dragX}px),0,0)`,transition:dragging?'none':'transform 260ms cubic-bezier(0.22,1,0.36,1)',willChange:'transform'}}>
+        <div style={{width:'50%',minWidth:'50%'}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
+        <div style={{width:'50%',minWidth:'50%'}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
+      </div>
+    </div>
+  </section>;
 }
