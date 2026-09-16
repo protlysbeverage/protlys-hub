@@ -13,7 +13,7 @@ function Avatar({ name, url }) {
 function List({ people, loading, title }) {
   if (loading) return <div style={{display:'grid',gap:8}}>{[1,2,3].map(i=><div key={i} style={{height:64,borderBottom:'1px solid var(--line)',background:'var(--paper)',borderRadius:8}} />)}</div>;
   if (!people.length) return <div style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:'28px 18px',textAlign:'center'}}><div style={{fontWeight:800}}>No {title.toLowerCase()} yet</div><p className="subhead" style={{margin:'5px 0 0'}}>People who connect with this profile will appear here.</p></div>;
-  return <div style={{display:'grid',gap:8}}>{people.map(person=><div key={person.id} style={{display:'flex',alignItems:'center',gap:11,padding:'10px 0',borderBottom:'1px solid var(--line)'}}><Link href={`/member/${person.id}`} style={{display:'flex',alignItems:'center',gap:11,flex:1,minWidth:0,textDecoration:'none',color:'var(--ink)'}}><Avatar name={person.display_name} url={person.avatar_url}/><span style={{fontSize:13,fontWeight:800,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{person.display_name || 'Protlys Member'}</span></Link>{person.id && <FollowButton profileId={person.id} initialFollowing={Boolean(person.following)} compact />}</div>)}</div>;
+  return <div style={{display:'grid',gap:8}}>{people.map(person=><div key={person.id} style={{display:'flex',alignItems:'center',gap:11,padding:'10px 0',borderBottom:'1px solid var(--line)'}}><Link href={`/member/${person.id}`} style={{display:'flex',alignItems:'center',gap:11,flex:1,minWidth:0,textDecoration:'none',color:'var(--ink)'}}><Avatar name={person.display_name} url={person.avatar_url}/><span style={{fontSize:13,fontWeight:800,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{person.display_name || 'Protlys Member'}</span></Link>{person.id && <FollowButton profileId={person.id} initialFollowing={Boolean(person.following)} compact />}</div>);}</div>;
 }
 
 export default function ProfileConnectionsSection({ profileId, followerCount = 0, followingCount = 0 }) {
@@ -21,6 +21,7 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
   const [data, setData] = useState({ followers:null, following:null });
   const [loading, setLoading] = useState({ followers:false, following:false });
   const sliderRef = useRef(null);
+  const dragRef = useRef({ active:false, horizontal:false, startX:0, startY:0, startScroll:0, pointerId:null });
   const requested = useRef(new Set());
 
   const load = useCallback(async (nextType) => {
@@ -39,17 +40,19 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     }
   }, [profileId]);
 
+  const setPosition = useCallback((nextType, behavior = 'smooth') => {
+    const slider = sliderRef.current;
+    if (!slider) return;
+    const width = slider.clientWidth;
+    slider.scrollTo({ left: nextType === 'following' ? width : 0, behavior });
+  }, []);
+
   const scrollToType = useCallback((nextType, immediate = false) => {
     const normalized = nextType === 'following' ? 'following' : 'followers';
     setType(normalized);
     load(normalized);
-    const slider = sliderRef.current;
-    if (!slider) return;
-    slider.scrollTo({
-      left: normalized === 'following' ? slider.clientWidth : 0,
-      behavior: immediate ? 'auto' : 'smooth',
-    });
-  }, [load]);
+    setPosition(normalized, immediate ? 'auto' : 'smooth');
+  }, [load, setPosition]);
 
   useEffect(() => {
     const handler = event => scrollToType(event.detail?.type, true);
@@ -62,11 +65,65 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  const handlePointerDown = useCallback((event) => {
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    const slider = sliderRef.current;
+    if (!slider) return;
+    dragRef.current = {
+      active:true,
+      horizontal:false,
+      startX:event.clientX,
+      startY:event.clientY,
+      startScroll:slider.scrollLeft,
+      pointerId:event.pointerId,
+    };
+  }, []);
+
+  const handlePointerMove = useCallback((event) => {
+    const drag = dragRef.current;
+    const slider = sliderRef.current;
+    if (!drag.active || !slider) return;
+    const dx = event.clientX - drag.startX;
+    const dy = event.clientY - drag.startY;
+
+    if (!drag.horizontal) {
+      if (Math.abs(dx) < 7 && Math.abs(dy) < 7) return;
+      if (Math.abs(dy) > Math.abs(dx)) {
+        drag.active = false;
+        return;
+      }
+      drag.horizontal = true;
+      try { slider.setPointerCapture(drag.pointerId); } catch {}
+    }
+
+    event.preventDefault();
+    event.stopPropagation();
+    slider.scrollLeft = drag.startScroll - dx;
+  }, []);
+
+  const finishPointer = useCallback(() => {
+    const drag = dragRef.current;
+    const slider = sliderRef.current;
+    if (!drag.active) return;
+    drag.active = false;
+    if (!drag.horizontal || !slider) return;
+    const width = slider.clientWidth;
+    const moved = slider.scrollLeft - drag.startScroll;
+    const threshold = Math.max(42, width * 0.18);
+    const next = Math.abs(moved) > threshold
+      ? (moved > 0 ? 'following' : 'followers')
+      : (slider.scrollLeft > width / 2 ? 'following' : 'followers');
+    setType(next);
+    load(next);
+    setPosition(next, 'smooth');
+  }, [load, setPosition]);
+
   const handleScroll = useCallback(() => {
     const slider = sliderRef.current;
-    if (!slider || !slider.clientWidth) return;
-    const page = Math.round(slider.scrollLeft / slider.clientWidth);
-    const next = page === 1 ? 'following' : 'followers';
+    if (!slider || dragRef.current.horizontal) return;
+    const width = slider.clientWidth;
+    if (!width) return;
+    const next = slider.scrollLeft > width / 2 ? 'following' : 'followers';
     if (next !== type) {
       setType(next);
       load(next);
@@ -78,9 +135,11 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,marginBottom:10}}>
       {[['followers','Followers',followerCount],['following','Following',followingCount]].map(([key,label,count])=><button key={key} type="button" onClick={() => scrollToType(key)} style={{border:0,borderRadius:9,padding:'9px 4px',background:type===key?'var(--green-soft)':'transparent',color:type===key?'var(--green-dark)':'var(--ink-45)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{label} <span className="mono">{count}</span></button>)}
     </div>
-    <div ref={sliderRef} onScroll={handleScroll} style={{display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',scrollSnapStop:'always',scrollBehavior:'smooth',scrollbarWidth:'none',overscrollBehaviorX:'contain',touchAction:'pan-x',WebkitOverflowScrolling:'touch',width:'100%',maxWidth:'100%',willChange:'scroll-position'}}>
-      <div style={{flex:'0 0 100%',minWidth:0,width:'100%',scrollSnapAlign:'start'}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
-      <div style={{flex:'0 0 100%',minWidth:0,width:'100%',scrollSnapAlign:'start'}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
+    <div ref={sliderRef} onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointer} onPointerCancel={finishPointer} onPointerLeave={(event) => { if (event.pointerType === 'mouse') finishPointer(); }} onScroll={handleScroll} style={{position:'relative',overflowX:'hidden',overflowY:'visible',width:'100%',maxWidth:'100%',touchAction:'pan-y',userSelect:'none'}}>
+      <div style={{display:'flex',width:'200%',transform:`translateX(${type === 'following' ? '-50%' : '0%'})`,transition:'transform 260ms cubic-bezier(0.22,1,0.36,1)',willChange:'transform'}}>
+        <div style={{width:'50%',minWidth:'50%'}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
+        <div style={{width:'50%',minWidth:'50%'}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
+      </div>
     </div>
   </section>;
 }
