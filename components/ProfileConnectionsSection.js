@@ -74,12 +74,11 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     const absX = Math.abs(dx);
     const absY = Math.abs(dy);
 
-    // Do not interfere with normal vertical scrolling. A horizontal swipe must be
-    // deliberate: enough movement and clearly more horizontal than vertical.
+    // Leave vertical movement entirely to the browser. Only take over once the
+    // gesture is clearly horizontal and has crossed the activation distance.
     if (!drag.active) {
       if (absX < 12 && absY < 12) return;
-      if (absY >= absX * 1.35) return;
-      if (absX <= absY * 1.35) return;
+      if (absY >= absX * 1.35 || absX <= absY * 1.35) return;
       drag.active = true;
       setDragging(true);
     }
@@ -99,7 +98,6 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     dragRef.current = null;
     setDragging(false);
 
-    // Vertical taps/drags are completely native browser interactions.
     if (!wasHorizontal) return;
 
     event.preventDefault();
@@ -114,7 +112,7 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
   const handleClickCapture = useCallback((event) => { if (!suppressClick.current) return; event.preventDefault(); event.stopPropagation(); suppressClick.current = false; }, []);
   const base = type === 'following' ? -50 : 0;
 
-  return <section id="connections" style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start',scrollMarginTop:140,paddingTop:8,paddingBottom:24}}>
+  return <section id="connections" style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start',scrollMarginTop:140,paddingTop:8,paddingBottom:24,touchAction:'pan-y pinch-zoom',overscrollBehaviorX:'contain'}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:8}}><div className="eyebrow">Connections</div><span style={{fontSize:10.5,color:'var(--ink-45)'}}>Swipe to switch</span></div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,marginBottom:10}}>{[['followers','Followers',followerCount],['following','Following',followingCount]].map(([key,label,count])=><button key={key} type="button" onClick={() => switchType(key)} style={{border:0,borderRadius:9,padding:'9px 4px',background:type===key?'var(--green-soft)':'transparent',color:type===key?'var(--green-dark)':'var(--ink-45)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{label} <span className="mono">{count}</span></button>)}</div>
     <div onPointerDown={handlePointerDown} onPointerMove={handlePointerMove} onPointerUp={finishPointer} onPointerCancel={cancelPointer} onClickCapture={handleClickCapture} style={{width:'100%',overflow:'hidden',touchAction:'pan-y pinch-zoom'}}>
