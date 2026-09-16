@@ -33,8 +33,18 @@ export default async function MemberProfilePage({params}){
   if(!profile)notFound(); const displayName=profile.display_name?.trim()||'Protlys Member'; const photoPosts=(posts||[]).filter(post=>post.image_url); const isOwnProfile=String(user.id)===String(id); const bio=profile.bio?.trim()||'';
   return <AppShell><style>{`html{scroll-behavior:smooth}.profile-section-slider::-webkit-scrollbar{display:none}`}</style><div className="screen-pad" style={{paddingTop:14}}>
     <Link href="/" style={{display:'inline-flex',alignItems:'center',gap:7,color:'var(--ink-70)',textDecoration:'none',fontSize:12,fontWeight:800,marginBottom:10}}><Icon name="arrow" size={16}/> Back to Feed</Link>
-    <section style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:20,padding:'16px 14px 13px',boxShadow:'0 2px 8px rgba(0,0,0,.035)'}}>
-      <div style={{display:'flex',alignItems:'center',gap:12}}><Avatar name={displayName} url={profile.avatar_url}/><div style={{minWidth:0,flex:1}}><div className="eyebrow">Protlys member</div><h1 style={{fontSize:21,margin:'2px 0 0',lineHeight:1.12,overflowWrap:'anywhere'}}>{displayName}</h1></div><div style={{display:'flex',alignItems:'center',gap:7,flexShrink:0}}><ShareProfileButton profileId={id} displayName={displayName}/>{!isOwnProfile&&<FollowButton profileId={id} initialFollowing={Boolean(followRow)} initialFollowers={followerCount||0} compact/>}</div></div>
+    <section style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:20,padding:'16px 14px 14px',boxShadow:'0 2px 8px rgba(0,0,0,.035)'}}>
+      <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
+        <Avatar name={displayName} url={profile.avatar_url} size={64}/>
+        <div style={{minWidth:0,flex:1,paddingTop:1}}>
+          <div className="eyebrow" style={{marginBottom:3}}>Protlys member</div>
+          <h1 style={{fontSize:22,margin:0,lineHeight:1.12,overflowWrap:'anywhere'}}>{displayName}</h1>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:8,marginTop:12}}>
+        <ShareProfileButton profileId={id} displayName={displayName}/>
+        {!isOwnProfile&&<FollowButton profileId={id} initialFollowing={Boolean(followRow)} initialFollowers={followerCount||0} compact/>}
+      </div>
       <div style={{marginTop:13,borderTop:'1px solid var(--line)',borderBottom:'1px solid var(--line)',padding:'10px 0'}}>
         <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))'}}>
           <Link href={`/member/${id}`} style={{textAlign:'center',textDecoration:'none',color:'var(--ink)',borderRight:'1px solid var(--line)'}}><div className="mono" style={{fontSize:16,fontWeight:800}}>{postCount||0}</div><div style={{fontSize:9,textTransform:'uppercase',letterSpacing:'.05em',fontWeight:800,color:'var(--ink-45)',marginTop:2}}>Posts</div></Link>
