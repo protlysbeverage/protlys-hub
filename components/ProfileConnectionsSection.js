@@ -39,16 +39,20 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     }
   }, [profileId]);
 
-  const scrollToType = useCallback((nextType) => {
+  const scrollToType = useCallback((nextType, immediate = false) => {
     const normalized = nextType === 'following' ? 'following' : 'followers';
     setType(normalized);
     load(normalized);
     const slider = sliderRef.current;
-    if (slider) slider.scrollTo({ left:(normalized === 'following' ? slider.clientWidth : 0), behavior:'smooth' });
+    if (!slider) return;
+    slider.scrollTo({
+      left: normalized === 'following' ? slider.clientWidth : 0,
+      behavior: immediate ? 'auto' : 'smooth',
+    });
   }, [load]);
 
   useEffect(() => {
-    const handler = event => scrollToType(event.detail?.type);
+    const handler = event => scrollToType(event.detail?.type, true);
     window.addEventListener('protlys-open-connection-type', handler);
     return () => window.removeEventListener('protlys-open-connection-type', handler);
   }, [scrollToType]);
@@ -58,14 +62,25 @@ export default function ProfileConnectionsSection({ profileId, followerCount = 0
     return () => window.clearTimeout(timer);
   }, [load]);
 
+  const handleScroll = useCallback(() => {
+    const slider = sliderRef.current;
+    if (!slider || !slider.clientWidth) return;
+    const page = Math.round(slider.scrollLeft / slider.clientWidth);
+    const next = page === 1 ? 'following' : 'followers';
+    if (next !== type) {
+      setType(next);
+      load(next);
+    }
+  }, [type, load]);
+
   return <section id="connections" style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start',scrollMarginTop:140,paddingTop:8,paddingBottom:24}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:8}}><div className="eyebrow">Connections</div><span style={{fontSize:10.5,color:'var(--ink-45)'}}>Swipe to switch</span></div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:2,padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,marginBottom:10}}>
       {[['followers','Followers',followerCount],['following','Following',followingCount]].map(([key,label,count])=><button key={key} type="button" onClick={() => scrollToType(key)} style={{border:0,borderRadius:9,padding:'9px 4px',background:type===key?'var(--green-soft)':'transparent',color:type===key?'var(--green-dark)':'var(--ink-45)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{label} <span className="mono">{count}</span></button>)}
     </div>
-    <div ref={sliderRef} onScroll={() => { const slider=sliderRef.current; if(!slider)return; const next=slider.scrollLeft > slider.clientWidth/2 ? 'following' : 'followers'; if(next!==type){setType(next);load(next);} }} style={{display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',scrollBehavior:'smooth',scrollbarWidth:'none',overscrollBehaviorX:'contain',touchAction:'pan-x',WebkitOverflowScrolling:'touch'}}>
-      <div style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start'}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
-      <div style={{flex:'0 0 100%',minWidth:0,scrollSnapAlign:'start'}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
+    <div ref={sliderRef} onScroll={handleScroll} style={{display:'flex',overflowX:'auto',scrollSnapType:'x mandatory',scrollSnapStop:'always',scrollBehavior:'smooth',scrollbarWidth:'none',overscrollBehaviorX:'contain',touchAction:'pan-x',WebkitOverflowScrolling:'touch',width:'100%',maxWidth:'100%',willChange:'scroll-position'}}>
+      <div style={{flex:'0 0 100%',minWidth:0,width:'100%',scrollSnapAlign:'start'}}><List people={data.followers || []} loading={loading.followers && !data.followers} title="Followers" /></div>
+      <div style={{flex:'0 0 100%',minWidth:0,width:'100%',scrollSnapAlign:'start'}}><List people={data.following || []} loading={loading.following && !data.following} title="Following" /></div>
     </div>
   </section>;
 }
