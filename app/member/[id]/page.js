@@ -8,8 +8,9 @@ import ProfileSectionNav from '@/components/ProfileSectionNav';
 import ProfileSectionSlider from '@/components/ProfileSectionSlider';
 import FollowButton from '@/components/FollowButton';
 import ShareProfileButton from '@/components/ShareProfileButton';
+import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
 
-function Avatar({ name, url, size = 72 }) { const style={width:size,height:size,minWidth:size,minHeight:size,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block',flexShrink:0}; if(url)return <img src={url} alt="" style={style}/>; return <div style={{...style,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*.34,fontWeight:800,color:'var(--green-dark)'}}>{(name||'?')[0].toUpperCase()}</div>; }
+function Avatar({ name, url, size = 72 }) { if(url)return <ProfilePhotoLightbox name={name} url={url} size={size}/>; const style={width:size,height:size,minWidth:size,minHeight:size,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block',flexShrink:0}; return <div style={{...style,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*.34,fontWeight:800,color:'var(--green-dark)'}}>{(name||'?')[0].toUpperCase()}</div>; }
 function Icon({name,size=17}) { const paths={arrow:<path d="M19 12H5m6-6-6 6 6 6"/>}; return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>; }
 function parseProtlysDate(value){if(!value)return null;const raw=String(value);const normalized=/(?:Z|[+-]\d{2}:?\d{2})$/i.test(raw)?raw:`${raw}Z`;const date=new Date(normalized);return Number.isNaN(date.getTime())?null:date;}
 function formatNairobiDate(value){const date=parseProtlysDate(value);if(!date)return 'Date unavailable';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(date);}
