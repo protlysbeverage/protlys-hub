@@ -1,48 +1,110 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
-const sections = [['posts','Posts'],['stats','Stats'],['photos','Photos'],['connections','Connections']];
+const sections = [
+  ['posts', 'Posts'],
+  ['stats', 'Stats'],
+  ['photos', 'Photos'],
+  ['connections', 'Connections'],
+];
 
 export default function ProfileSectionNav() {
-  const [active,setActive]=useState('posts');
+  const [active, setActive] = useState('posts');
+  const sliderRef = useRef(null);
 
-  useEffect(()=>{
-    const slider=document.querySelector('.profile-section-slider');
-    if(!slider)return;
-    const targets=sections.map(([id])=>document.getElementById(id)).filter(Boolean);
-    const observer=new IntersectionObserver(entries=>{
-      const visible=entries.filter(e=>e.isIntersecting).sort((a,b)=>b.intersectionRatio-a.intersectionRatio)[0];
-      if(visible)setActive(visible.target.id);
-    },{root:slider,threshold:[0.55,0.75,0.9]});
-    targets.forEach(target=>observer.observe(target));
+  useEffect(() => {
+    const slider = document.querySelector('.profile-section-slider');
+    if (!slider) return;
+    sliderRef.current = slider;
 
-    const openConnections=event=>{
-      const type=event.detail?.type==='following'?'following':'followers';
-      const target=document.getElementById('connections');
-      if(!target)return;
-      const index=targets.indexOf(target);
-      slider.scrollTo({left:Math.max(0,index*slider.clientWidth),behavior:'smooth'});
-      window.setTimeout(()=>window.dispatchEvent(new CustomEvent('protlys-open-connection-type',{detail:{type}})),80);
+    const updateActive = () => {
+      const width = slider.clientWidth || 1;
+      const index = Math.max(0, Math.min(sections.length - 1, Math.round(slider.scrollLeft / width)));
+      setActive(sections[index][0]);
     };
 
-    window.addEventListener('protlys-profile-connections',openConnections);
-    return()=>{
-      observer.disconnect();
-      window.removeEventListener('protlys-profile-connections',openConnections);
-    };
-  },[]);
+    updateActive();
+    slider.addEventListener('scroll', updateActive, { passive: true });
+    window.addEventListener('resize', updateActive);
 
-  const goToSection=(event,id)=>{
+    const openConnections = (event) => {
+      const type = event.detail?.type === 'following' ? 'following' : 'followers';
+      slider.scrollTo({
+        left: slider.clientWidth * 3,
+        behavior: 'smooth',
+      });
+      window.setTimeout(() => {
+        window.dispatchEvent(
+          new CustomEvent('protlys-open-connection-type', { detail: { type } })
+        );
+      }, 180);
+    };
+
+    window.addEventListener('protlys-profile-connections', openConnections);
+
+    return () => {
+      slider.removeEventListener('scroll', updateActive);
+      window.removeEventListener('resize', updateActive);
+      window.removeEventListener('protlys-profile-connections', openConnections);
+    };
+  }, []);
+
+  const goToSection = (event, index, id) => {
     event.preventDefault();
-    const slider=document.querySelector('.profile-section-slider');
-    const target=document.getElementById(id);
-    if(!slider||!target)return;
-    const index=sections.findIndex(([sectionId])=>sectionId===id);
-    slider.scrollTo({left:Math.max(0,index*slider.clientWidth),behavior:'smooth'});
+    event.stopPropagation();
+
+    const slider = sliderRef.current || document.querySelector('.profile-section-slider');
+    if (!slider) return;
+
+    const left = slider.clientWidth * index;
+    setActive(id);
+    slider.scrollTo({ left, behavior: 'smooth' });
   };
 
-  return <nav aria-label="Profile sections" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:2,margin:'12px 0 5px',padding:'3px',background:'#fff',border:'1px solid var(--line)',borderRadius:12,position:'sticky',top:76,zIndex:10,boxShadow:'0 2px 7px rgba(0,0,0,.035)'}}>
-    {sections.map(([id,label])=><a key={id} href={`#${id}`} onClick={event=>goToSection(event,id)} aria-current={active===id?'page':undefined} style={{minWidth:0,textAlign:'center',padding:'9px 3px',borderRadius:9,background:active===id?'var(--green-soft)':'transparent',color:active===id?'var(--green-dark)':'var(--ink-45)',textDecoration:'none',fontSize:10.5,fontWeight:800,whiteSpace:'nowrap',transition:'background .18s ease,color .18s ease'}}>{label}</a>)}
-  </nav>;
+  return (
+    <nav
+      aria-label="Profile sections"
+      style={{
+        display: 'grid',
+        gridTemplateColumns: 'repeat(4,minmax(0,1fr))',
+        gap: 2,
+        margin: '12px 0 5px',
+        padding: 3,
+        background: '#fff',
+        border: '1px solid var(--line)',
+        borderRadius: 12,
+        position: 'sticky',
+        top: 76,
+        zIndex: 10,
+        boxShadow: '0 2px 7px rgba(0,0,0,.035)',
+      }}
+    >
+      {sections.map(([id, label], index) => (
+        <button
+          key={id}
+          type="button"
+          onClick={(event) => goToSection(event, index, id)}
+          aria-current={active === id ? 'page' : undefined}
+          style={{
+            minWidth: 0,
+            border: 0,
+            textAlign: 'center',
+            padding: '9px 3px',
+            borderRadius: 9,
+            background: active === id ? 'var(--green-soft)' : 'transparent',
+            color: active === id ? 'var(--green-dark)' : 'var(--ink-45)',
+            textDecoration: 'none',
+            fontSize: 10.5,
+            fontWeight: 800,
+            whiteSpace: 'nowrap',
+            transition: 'background .18s ease,color .18s ease',
+            cursor: 'pointer',
+          }}
+        >
+          {label}
+        </button>
+      ))}
+    </nav>
+  );
 }
