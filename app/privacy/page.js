@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import '../../globals.css';
+import '../globals.css';
 
 const LOGO_SRC='/protlys-logo-exact.png?v=20260915';
 const Section=({title,children})=><section style={{marginTop:22}}><h2 style={{fontSize:17,marginBottom:7}}>{title}</h2><div style={{fontSize:13,lineHeight:1.65,color:'var(--ink-70)'}}>{children}</div></section>;
