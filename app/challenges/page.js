@@ -7,6 +7,10 @@ export default async function ChallengesPage({ searchParams }) {
   const { data:{user} } = await supabase.auth.getUser();
   if (!user) return <AppShell><div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:28}}><span className="eyebrow">Challenges</span><h1 style={{fontSize:28,marginTop:6}}>Build the habit together.</h1><p className="subhead" style={{marginTop:8}}>Sign in to join Protlys community challenges.</p></div></AppShell>;
 
+  // Every registered Hub user is automatically part of Founding 250.
+  // The database function uses auth.uid(), so users cannot add anyone else.
+  await supabase.rpc('ensure_founding_250_member');
+
   const params = await searchParams;
   const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
   const challengeId = typeof params?.challenge === 'string' ? params.challenge : '';
