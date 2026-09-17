@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import '../../globals.css';
+import '../globals.css';
 
 const LOGO_SRC='/protlys-logo-exact.png?v=20260915';
 
