@@ -57,6 +57,7 @@ function distanceForSteps(steps) {
 
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity' }) {
   const [expanded, setExpanded] = useState(false);
+  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
   const movementKeys = useMemo(() => days.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [days]);
   const { current, best } = useMemo(() => streaks(movementKeys), [movementKeys]);
@@ -74,15 +75,23 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
+  const calendarBounds = useMemo(() => {
+    const available = movementKeys.length ? movementKeys.map(parseKey) : [today];
+    const earliest = available.reduce((min, d) => d < min ? d : min, available[0]);
+    return { min: new Date(earliest.getFullYear(), earliest.getMonth(), 1), max: new Date(today.getFullYear(), today.getMonth(), 1) };
+  }, [movementKeys.join('|')]);
+
   const calendar = useMemo(() => {
-    const first = new Date(today.getFullYear(), today.getMonth(), 1);
-    const last = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+    const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
+    const last = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
     const leading = first.getDay();
     const cells = [];
     for (let i = 0; i < leading; i += 1) cells.push(null);
-    for (let d = 1; d <= last.getDate(); d += 1) cells.push(new Date(today.getFullYear(), today.getMonth(), d));
+    for (let d = 1; d <= last.getDate(); d += 1) cells.push(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
     return cells;
-  }, [today.getFullYear(), today.getMonth()]);
+  }, [calendarMonth]);
+  const canGoPrev = calendarMonth > calendarBounds.min;
+  const canGoNext = calendarMonth < calendarBounds.max;
 
   return (
     <div className="hub-card" style={{ marginTop: 10 }}>
@@ -120,10 +129,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
         </>
       ) : (
         <div style={{ marginTop:12 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', marginBottom:10 }}>
-            <strong style={{ fontSize:13 }}>{today.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
-            <span style={{ fontSize:10.5, color:'var(--ink-45)' }}>Green = movement logged</span>
+          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:10 }}>
+            <button type="button" onClick={() => canGoPrev && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:30,height:30,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
+            <div style={{textAlign:'center'}}><strong style={{ fontSize:13 }}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div></div>
+            <button type="button" onClick={() => canGoNext && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoNext} aria-label="Next month" style={{width:30,height:30,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-70)',opacity:canGoNext?1:.35,cursor:canGoNext?'pointer':'default'}}>›</button>
           </div>
+          <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>Green = movement logged</div>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(7,1fr)', gap:5 }}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{ textAlign:'center', fontSize:9, color:'var(--ink-45)', fontWeight:800, paddingBottom:2 }}>{d}</div>)}
             {calendar.map((d, i) => {
