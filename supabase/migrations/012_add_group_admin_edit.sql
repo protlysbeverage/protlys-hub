@@ -19,3 +19,9 @@ begin
 end; $$;
 revoke execute on function public.update_group_details(uuid,text,text,public.group_privacy,text) from public,anon;
 grant execute on function public.update_group_details(uuid,text,text,public.group_privacy,text) to authenticated;
+alter table public.messages add column if not exists image_url text;
+insert into storage.buckets (id,name,public) values ('group-media','group-media',true) on conflict (id) do update set public=true;
+drop policy if exists "Group media public read" on storage.objects;
+drop policy if exists "Group media member upload" on storage.objects;
+create policy "Group media public read" on storage.objects for select to public using (bucket_id='group-media');
+create policy "Group media member upload" on storage.objects for insert to authenticated with check (bucket_id='group-media' and (storage.foldername(name))[1]=(select auth.uid()::text));
