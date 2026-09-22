@@ -68,6 +68,21 @@ export default function AppShell({ children }) {
     .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
     .protlys-app .profile-comment a:hover { text-decoration:underline!important; }
     .protlys-app .bottom-nav { align-items:stretch!important; }
+    /* Mobile navigation must stay attached to the viewport, never the scrolling content. */
+    @media (max-width:899px) {
+      .protlys-app .bottom-nav {
+        position:fixed!important;
+        left:50%!important;
+        right:auto!important;
+        bottom:0!important;
+        width:min(432px,100vw)!important;
+        transform:translateX(-50%)!important;
+        z-index:9999!important;
+        padding-bottom:calc(12px + env(safe-area-inset-bottom))!important;
+      }
+      .protlys-app .app-shell { overflow:visible!important; }
+      .protlys-app .screen { padding-bottom:120px!important; }
+    }
     .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:68px!important;padding:8px 2px 7px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-family:'Manrope',sans-serif!important;font-size:10.5px!important;font-weight:700!important;line-height:1.05!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important;color:var(--ink-45);text-decoration:none; }
     .protlys-app .bottom-nav .nav-btn.active { color:var(--green-dark)!important;font-weight:800!important; }
     .protlys-app .bottom-nav .nav-btn svg { flex:0 0 22px!important;width:22px!important;height:22px!important;display:block!important;margin:0!important; }
