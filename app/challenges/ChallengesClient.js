@@ -47,18 +47,22 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
     if(!selectedGroup)return null;
     const leader=selectedGroupMembers.slice().map(m=>m.id===userId&&userStreak?{...m,streak:userStreak}:m).sort((a,b)=>b.streak-a.streak);
     return <div style={{width:'100%',maxWidth:620,margin:'0 auto',background:'var(--white)',paddingBottom:40}}><div style={{padding:'0 20px'}}>
-            <div style={{position:'sticky',top:0,display:'flex',justifyContent:'space-between',gap:12,alignItems:'center',padding:'14px 0 12px',background:'var(--white)',borderBottom:'1px solid var(--line)'}}>
-              <div style={{display:'flex',gap:9,alignItems:'center',minWidth:0}}>
-                <button type="button" aria-label="Back to groups" title="Back to groups" onClick={backToList} style={{width:34,height:34,flexShrink:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:19,lineHeight:1,cursor:'pointer'}}>←</button>
-                <div style={{width:46,height:46,borderRadius:14,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:23,overflow:'hidden'}}>
+            <div style={{position:'sticky',top:0,zIndex:5,padding:'14px 0 16px',background:'var(--white)',borderBottom:'1px solid var(--line)'}}>
+              <div style={{display:'flex',gap:13,alignItems:'flex-start',minWidth:0}}>
+                <div style={{width:62,height:62,borderRadius:18,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,overflow:'hidden',flexShrink:0,boxShadow:'0 4px 14px rgba(15,42,74,.06)'}}>
                   {selectedGroup.image_url?<img src={selectedGroup.image_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(selectedGroup.emoji||'G')}
                 </div>
-                <div style={{minWidth:0}}>
+                <div style={{minWidth:0,flex:1,paddingTop:1}}>
                   <span className="eyebrow">{selectedGroup.privacy==='private'?'Private group':'Public group'}</span>
-                  <h2 style={{fontSize:22,margin:'3px 0 0',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{selectedGroup.name}</h2>
+                  <h1 style={{fontSize:30,lineHeight:1.02,letterSpacing:'-.025em',margin:'5px 0 0',color:'var(--ink)',overflowWrap:'anywhere'}}>{selectedGroup.name}</h1>
+                  <div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:7}}>{selectedGroupMembers.length} {selectedGroupMembers.length===1?'member':'members'} · Group space</div>
                 </div>
               </div>
-              {currentGroupAdmin&&<button type="button" aria-label="Edit group" title="Edit group" onClick={()=>{setGroupName(selectedGroup.name||'');setGroupEmoji(selectedGroup.emoji||'');setGroupPrivacy(selectedGroup.privacy||'public');setGroupImageUrl(selectedGroup.image_url||'');setGroupImageFile(null);setGroupModal('edit')}} style={{width:32,height:32,flexShrink:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:14,cursor:'pointer'}}>✎</button>}
+
+              <div style={{display:'flex',gap:9,marginTop:14}}>
+                <button type="button" aria-label="Back to groups" title="Back to groups" onClick={backToList} className="btn-secondary" style={{width:'auto',margin:0,padding:'9px 14px',fontSize:12}}>← Back to groups</button>
+                {currentGroupAdmin&&<button type="button" aria-label="Edit group" title="Edit group" onClick={()=>{setGroupName(selectedGroup.name||'');setGroupEmoji(selectedGroup.emoji||'');setGroupPrivacy(selectedGroup.privacy||'public');setGroupImageUrl(selectedGroup.image_url||'');setGroupImageFile(null);setGroupModal('edit')}} className="btn-secondary" style={{width:'auto',margin:0,padding:'9px 14px',fontSize:12}}>✎ Edit group</button>}
+              </div>
             </div>
 
             <div style={{display:'flex',gap:8,marginTop:16}}>
