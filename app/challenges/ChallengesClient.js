@@ -85,7 +85,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                   <div style={{fontSize:11,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)',letterSpacing:'.05em'}}>Group chat</div>
                   <div style={{fontSize:11,color:'var(--ink-45)',marginTop:2}}>Keep the group moving together.</div>
                 </div>
-                {chatLoading&&<span style={{fontSize:10,color:'var(--ink-45'}}>Loading…</span>}
+                {chatLoading&&<span style={{fontSize:10,color:'var(--ink-45)'}}>Loading…</span>}
               </div>
 
               <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:12,minHeight:150}}>
