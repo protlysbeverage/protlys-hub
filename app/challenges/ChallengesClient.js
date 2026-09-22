@@ -70,19 +70,6 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
               {currentGroupAdmin&&<button className="btn-secondary" onClick={()=>{navigator.clipboard?.writeText(selectedGroup.invite_code);setError('Group invite code copied.')}} style={{width:'auto',margin:0}}>Invite</button>}
             </div>
 
-            <section style={{marginTop:18,padding:15,border:'1px solid var(--line)',borderRadius:18,background:'var(--white)'}}>
-              <div style={{fontSize:11,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)',marginBottom:7}}>Streak leaderboard</div>
-              {leader.slice(0,10).map((m,i)=>{
-                const streak=m.streak;
-                return <div key={m.id} style={{display:'flex',alignItems:'center',gap:10,padding:'9px 0',borderBottom:i<Math.min(leader.length,10)-1?'1px solid var(--line)':'0'}}>
-                  <strong style={{width:20,fontSize:12}}>{i+1}</strong>
-                  <Avatar member={m}/>
-                  <div style={{flex:1,fontSize:12,fontWeight:800}}>{m.name}{m.id===userId&&<span style={{fontWeight:500,color:'var(--ink-45)'}}> · You</span>}</div>
-                  <span style={{fontSize:12,fontWeight:900}}>{streak}-day streak</span>
-                </div>
-              })}
-            </section>
-
             <section style={{marginTop:18}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:9}}>
                 <div>
