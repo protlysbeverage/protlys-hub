@@ -128,7 +128,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
               </div>
             </div>
           </div>}
-          </div></div>
+          </div>
   }
 
   return <div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:20,paddingBottom:24}}>
