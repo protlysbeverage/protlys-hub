@@ -47,6 +47,11 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
     if(!selectedGroup)return null;
         return <div style={{width:'100%',maxWidth:620,margin:'0 auto',background:'var(--white)',paddingBottom:40}}><div style={{padding:'0 20px'}}>
             <div style={{position:'sticky',top:0,zIndex:5,padding:'14px 0 16px',background:'var(--white)',borderBottom:'1px solid var(--line)'}}>
+              <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,marginBottom:14}}>
+                <button type="button" aria-label="Back to groups" title="Back to groups" onClick={backToList} className="btn-secondary" style={{width:'auto',margin:0,padding:'8px 12px',fontSize:12}}>← Back to groups</button>
+                {currentGroupAdmin&&<button type="button" aria-label="Edit group" title="Edit group" onClick={()=>{setGroupName(selectedGroup.name||'');setGroupEmoji(selectedGroup.emoji||'');setGroupPrivacy(selectedGroup.privacy||'public');setGroupImageUrl(selectedGroup.image_url||'');setGroupImageFile(null);setGroupModal('edit')}} className="btn-secondary" style={{width:34,height:34,padding:0,margin:0,borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:15}}><span aria-hidden="true">✎</span></button>}
+              </div>
+
               <div style={{display:'flex',gap:13,alignItems:'flex-start',minWidth:0}}>
                 <div style={{width:62,height:62,borderRadius:18,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:30,overflow:'hidden',flexShrink:0,boxShadow:'0 4px 14px rgba(15,42,74,.06)'}}>
                   {selectedGroup.image_url?<img src={selectedGroup.image_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(selectedGroup.emoji||'G')}
@@ -58,10 +63,6 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 </div>
               </div>
 
-              <div style={{display:'flex',gap:9,marginTop:14}}>
-                <button type="button" aria-label="Back to groups" title="Back to groups" onClick={backToList} className="btn-secondary" style={{width:'auto',margin:0,padding:'9px 14px',fontSize:12}}>← Back to groups</button>
-                {currentGroupAdmin&&<button type="button" aria-label="Edit group" title="Edit group" onClick={()=>{setGroupName(selectedGroup.name||'');setGroupEmoji(selectedGroup.emoji||'');setGroupPrivacy(selectedGroup.privacy||'public');setGroupImageUrl(selectedGroup.image_url||'');setGroupImageFile(null);setGroupModal('edit')}} className="btn-secondary" style={{width:'auto',margin:0,padding:'9px 14px',fontSize:12}}>✎ Edit group</button>}
-              </div>
             </div>
 
             <section style={{marginTop:18}}>
@@ -74,7 +75,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 {currentGroupAdmin&&<button type="button" aria-label="Copy group invite code" title="Copy invite code" onClick={()=>{navigator.clipboard?.writeText(selectedGroup.invite_code);setError('Group invite code copied.')}} style={{width:28,height:28,margin:0,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,cursor:'pointer'}}>↗</button>}
               </div>
 
-              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:14,minHeight:180,maxHeight:520,overflowY:'auto',overscrollBehaviorY:'contain'}}>
+              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:14,minHeight:180,height:280,maxHeight:280,overflowY:'auto',overscrollBehaviorY:'contain'}}>
                 {messages.length?messages.map(m=>{
                   const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
                   const isMine=m.sender_id===userId;
