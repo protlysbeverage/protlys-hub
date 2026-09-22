@@ -17,9 +17,7 @@ export default async function ChallengesPage({ searchParams }) {
     .from('challenges')
     .select('id,creator_id,name,description,step_target,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id');
 
-  const { data:challengeRows } = inviteToken
-    ? await challengeQuery.or(`visibility.eq.public,creator_id.eq.${user.id},invite_token.eq.${inviteToken}`).order('created_at',{ascending:false})
-    : await challengeQuery.or(`visibility.eq.public,creator_id.eq.${user.id}`).order('created_at',{ascending:false});
+  const { data:challengeRows } = await challengeQuery.order('created_at',{ascending:false});
 
   let challenges = challengeRows || [];
   if (challengeId && inviteToken && !challenges.some(c => String(c.id) === challengeId)) {
