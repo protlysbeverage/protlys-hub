@@ -80,8 +80,21 @@ export default function AppShell({ children }) {
         z-index:9999!important;
         padding-bottom:calc(12px + env(safe-area-inset-bottom))!important;
       }
-      .protlys-app .app-shell { overflow:visible!important; }
-      .protlys-app .screen { padding-bottom:120px!important; }
+      .protlys-app .app-shell {
+        height:100dvh!important;
+        min-height:100dvh!important;
+        overflow:hidden!important;
+      }
+      .protlys-app .screen {
+        flex:1 1 auto!important;
+        min-height:0!important;
+        height:auto!important;
+        overflow-y:auto!important;
+        overflow-x:hidden!important;
+        padding-bottom:180px!important;
+        scroll-padding-bottom:180px!important;
+        -webkit-overflow-scrolling:touch!important;
+      }
     }
     .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:68px!important;padding:8px 2px 7px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-family:'Manrope',sans-serif!important;font-size:10.5px!important;font-weight:700!important;line-height:1.05!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important;color:var(--ink-45);text-decoration:none; }
     .protlys-app .bottom-nav .nav-btn.active { color:var(--green-dark)!important;font-weight:800!important; }
