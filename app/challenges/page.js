@@ -44,7 +44,7 @@ export default async function ChallengesPage({ searchParams }) {
 
   const { data:groups } = await supabase
     .from('groups')
-    .select('id,name,emoji,privacy,invite_code,created_by,created_at')
+    .select('id,name,emoji,image_url,privacy,invite_code,created_by,created_at')
     .order('created_at',{ascending:false});
 
   const groupRows = groups || [];
@@ -54,11 +54,11 @@ export default async function ChallengesPage({ searchParams }) {
     groupIds.length ? supabase.from('group_members').select('group_id,user_id').in('group_id',groupIds) : Promise.resolve({data:[]})
   ]);
   const groupUserIds=[...new Set((groupMemberProfiles||[]).map(r=>r.user_id))];
-  const {data:groupProfiles}=groupUserIds.length ? await supabase.from('profiles').select('id,display_name,avatar_url,streak,points').in('id',groupUserIds) : {data:[]};
+  const {data:groupProfiles}=groupUserIds.length ? await supabase.from('profiles').select('id,display_name,avatar_url,streak').in('id',groupUserIds) : {data:[]};
   const groupProfileMap=Object.fromEntries((groupProfiles||[]).map(p=>[p.id,p]));
   const groupMembersById=Object.fromEntries(groupIds.map(id=>[id,(groupMemberRows||[]).filter(r=>r.group_id===id).map(r=>({
     id:r.user_id,name:groupProfileMap[r.user_id]?.display_name||'Protlys member',avatar:groupProfileMap[r.user_id]?.avatar_url||null,
-    streak:Number(groupProfileMap[r.user_id]?.streak||0),points:Number(groupProfileMap[r.user_id]?.points||0),role:r.role
+    streak:Number(groupProfileMap[r.user_id]?.streak||0),role:r.role
   }))]));
   const activeToday=[...groupUserIds].map(id=>groupProfileMap[id]).filter(Boolean).sort((a,b)=>Number(b.streak||0)-Number(a.streak||0)).slice(0,10).map(p=>({id:p.id,name:p.display_name||'Protlys member',avatar:p.avatar_url||null,streak:Number(p.streak||0)}));
 
