@@ -79,18 +79,17 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 {messages.length?messages.map(m=>{
                   const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
                   const isMine=m.sender_id===userId;
-                  return <div key={m.id} style={{display:'flex',gap:8,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',width:'100%',flexShrink:0}}>
-                    <div style={{width:'100%',display:'flex',gap:8,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',flexDirection:isMine?'row-reverse':'row',minWidth:0}}>
-                      <Avatar member={sender} size={32}/>
-                      <div style={{minWidth:0,maxWidth:'78%'}}>
-                        <div style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginBottom:4,textAlign:isMine?'right':'left'}}>{isMine?'You':(sender?.name||'Protlys member')}</div>
-                        {m.deleted_at?<div style={{fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',borderRadius:14,padding:'10px 12px'}}>Message removed.</div>:<div style={{display:'inline-block',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:isMine?'16px 16px 4px 16px':'16px 16px 16px 4px',padding:m.image_url||m.text?'10px 14px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
+                  return <div key={m.id} style={{display:'flex',width:'100%',flexShrink:0,justifyContent:isMine?'flex-end':'flex-start',minWidth:0}}>
+                    <div style={{display:'flex',gap:6,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',flexDirection:isMine?'row-reverse':'row',maxWidth:'78%',minWidth:0}}>
+                      <div style={{display:'flex',flexDirection:'column',alignItems:isMine?'flex-end':'flex-start',minWidth:0,maxWidth:'100%'}}>
+                        {!isMine&&<div style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginBottom:4,paddingLeft:2}}>{sender?.name||'Protlys member'}</div>}
+                        {m.deleted_at?<div style={{display:'inline-block',width:'fit-content',maxWidth:'100%',fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',border:'1px solid var(--line)',borderRadius:16,padding:'10px 14px',overflowWrap:'anywhere'}}>Message removed.</div>:<div style={{display:'inline-block',width:'fit-content',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:16,padding:m.image_url||m.text?'10px 14px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
                           {m.image_url&&<img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:280,maxHeight:280,objectFit:'cover',borderRadius:11}}/>}
                           {m.text&&<div style={{fontSize:13,lineHeight:1.5,color:'var(--ink)',padding:m.image_url?'6px 3px 2px':'2px 3px',overflowWrap:'anywhere'}}>{m.text}</div>}
                         </div>}
                       </div>
+                      {currentGroupAdmin&&!m.deleted_at&&<button type="button" onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{flexShrink:0,border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:'3px 2px',alignSelf:'flex-end'}}>Remove</button>}
                     </div>
-                    {currentGroupAdmin&&!m.deleted_at&&<button onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{flexShrink:0,border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:'3px'}}>Remove</button>}
                   </div>
                 }):<div style={{padding:'34px 16px',textAlign:'center'}}>
                   <div style={{fontSize:24,marginBottom:7}}>💬</div>
