@@ -79,25 +79,25 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 {chatLoading&&<span style={{fontSize:10,color:'var(--ink-45)'}}>Loading…</span>}
               </div>
 
-              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:12,minHeight:150}}>
+              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:14,minHeight:180,maxHeight:520,overflowY:'auto',overscrollBehaviorY:'contain'}}>
                 {messages.length?messages.map(m=>{
                   const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
                   const isMine=m.sender_id===userId;
-                  return <div key={m.id} style={{display:'flex',gap:8,marginBottom:14,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start'}}>
-                    <div style={{maxWidth:'82%',display:'flex',gap:7,alignItems:'flex-end',flexDirection:isMine?'row-reverse':'row'}}>
-                      <Avatar member={sender} size={30}/>
-                      <div style={{minWidth:0}}>
+                  return <div key={m.id} style={{display:'flex',gap:8,marginBottom:15,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',width:'100%'}}>
+                    <div style={{width:'100%',display:'flex',gap:8,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',flexDirection:isMine?'row-reverse':'row',minWidth:0}}>
+                      <Avatar member={sender} size={32}/>
+                      <div style={{minWidth:0,maxWidth:'min(88%,420px)'}}>
                         <div style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginBottom:4,textAlign:isMine?'right':'left'}}>{isMine?'You':(sender?.name||'Protlys member')}</div>
-                        {m.deleted_at?<div style={{fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',borderRadius:14,padding:'9px 11px'}}>Message removed.</div>:<div style={{background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:isMine?'16px 16px 4px 16px':'16px 16px 16px 4px',padding:m.image_url||m.text?'7px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)'}}>
-                          {m.image_url&&<img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:240,maxHeight:240,objectFit:'cover',borderRadius:11}}/>}
-                          {m.text&&<div style={{fontSize:12.5,lineHeight:1.5,color:'var(--ink)',padding:m.image_url?'6px 5px 3px':'4px 5px'}}>{m.text}</div>}
+                        {m.deleted_at?<div style={{fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',borderRadius:14,padding:'10px 12px'}}>Message removed.</div>:<div style={{display:'inline-block',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:isMine?'16px 16px 4px 16px':'16px 16px 16px 4px',padding:m.image_url||m.text?'9px 10px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
+                          {m.image_url&&<img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:280,maxHeight:280,objectFit:'cover',borderRadius:11}}/>}
+                          {m.text&&<div style={{fontSize:13,lineHeight:1.5,color:'var(--ink)',padding:m.image_url?'6px 3px 2px':'2px 3px',overflowWrap:'anywhere'}}>{m.text}</div>}
                         </div>}
                       </div>
                     </div>
-                    {currentGroupAdmin&&!m.deleted_at&&<button onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:'3px'}}>Remove</button>}
+                    {currentGroupAdmin&&!m.deleted_at&&<button onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{flexShrink:0,border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:'3px'}}>Remove</button>}
                   </div>
-                }):<div style={{padding:'28px 14px',textAlign:'center'}}>
-                  <div style={{fontSize:24,marginBottom:6}}>💬</div>
+                }):<div style={{padding:'34px 16px',textAlign:'center'}}>
+                  <div style={{fontSize:24,marginBottom:7}}>💬</div>
                   <div style={{fontSize:13,fontWeight:800}}>Start the conversation</div>
                   <div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:3}}>Share a win, ask a question, or post a photo.</div>
                 </div>}
