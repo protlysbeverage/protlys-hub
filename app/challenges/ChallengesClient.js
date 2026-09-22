@@ -75,16 +75,16 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 {currentGroupAdmin&&<button type="button" aria-label="Copy group invite code" title="Copy invite code" onClick={()=>{navigator.clipboard?.writeText(selectedGroup.invite_code);setError('Group invite code copied.')}} style={{width:28,height:28,margin:0,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,cursor:'pointer'}}>↗</button>}
               </div>
 
-              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:14,minHeight:180,height:280,maxHeight:280,overflowY:'auto',overscrollBehaviorY:'contain'}}>
+              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:'8px 2px',minHeight:260,maxHeight:400,height:'auto',overflowY:'auto',overscrollBehaviorY:'contain',display:'flex',flexDirection:'column',gap:10}}>
                 {messages.length?messages.map(m=>{
                   const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
                   const isMine=m.sender_id===userId;
-                  return <div key={m.id} style={{display:'flex',gap:8,marginBottom:15,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',width:'100%'}}>
+                  return <div key={m.id} style={{display:'flex',gap:8,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',width:'100%',flexShrink:0}}>
                     <div style={{width:'100%',display:'flex',gap:8,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',flexDirection:isMine?'row-reverse':'row',minWidth:0}}>
                       <Avatar member={sender} size={32}/>
-                      <div style={{minWidth:0,maxWidth:'min(72%,420px)'}}>
+                      <div style={{minWidth:0,maxWidth:'78%'}}>
                         <div style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginBottom:4,textAlign:isMine?'right':'left'}}>{isMine?'You':(sender?.name||'Protlys member')}</div>
-                        {m.deleted_at?<div style={{fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',borderRadius:14,padding:'10px 12px'}}>Message removed.</div>:<div style={{display:'inline-block',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:isMine?'16px 16px 4px 16px':'16px 16px 16px 4px',padding:m.image_url||m.text?'9px 10px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
+                        {m.deleted_at?<div style={{fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',borderRadius:14,padding:'10px 12px'}}>Message removed.</div>:<div style={{display:'inline-block',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:isMine?'16px 16px 4px 16px':'16px 16px 16px 4px',padding:m.image_url||m.text?'10px 14px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
                           {m.image_url&&<img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:280,maxHeight:280,objectFit:'cover',borderRadius:11}}/>}
                           {m.text&&<div style={{fontSize:13,lineHeight:1.5,color:'var(--ink)',padding:m.image_url?'6px 3px 2px':'2px 3px',overflowWrap:'anywhere'}}>{m.text}</div>}
                         </div>}
@@ -104,10 +104,10 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 <button type="button" aria-label="Remove photo" onClick={()=>setMessageImageUrl('')} style={{position:'absolute',top:-7,right:-7,width:23,height:23,border:0,borderRadius:'50%',background:'var(--ink)',color:'var(--white)',fontSize:14,lineHeight:1,cursor:'pointer'}}>×</button>
               </div>}
 
-              <form onSubmit={sendMessage} style={{display:'flex',gap:7,marginTop:10,alignItems:'center',padding:5,border:'1px solid var(--line)',borderRadius:17,background:'var(--white)'}}>
-                <label aria-label="Add photo" title="Add photo" style={{width:36,height:36,flexShrink:0,border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:17,cursor:messageUploading?'wait':'pointer',opacity:messageUploading ? .55 : 1}}>＋<input type="file" accept="image/*" hidden disabled={messageUploading} onChange={e=>handleMessagePhoto(e.target.files?.[0])}/></label>
-                <input value={messageText} onChange={e=>setMessageText(e.target.value)} placeholder="Write a message…" maxLength={2000} style={{flex:1,minWidth:0,border:0,background:'transparent',padding:'8px 2px',outline:'none'}}/>
-                <button className="btn-primary" disabled={sending||messageUploading||(!messageText.trim()&&!messageImageUrl)} style={{width:'auto',margin:0,padding:'9px 14px',borderRadius:13}}>{messageUploading?'…':'Send'}</button>
+              <form onSubmit={sendMessage} style={{display:'flex',gap:8,marginTop:12,alignItems:'center',height:44,minHeight:44,maxHeight:44,flexShrink:0,padding:'4px 5px',border:'1px solid var(--line)',borderRadius:999,background:'var(--white)',boxSizing:'border-box'}}>
+                <label aria-label="Add photo" title="Add photo" style={{width:34,height:34,flexShrink:0,border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:17,cursor:messageUploading?'wait':'pointer',opacity:messageUploading ? .55 : 1}}>＋<input type="file" accept="image/*" hidden disabled={messageUploading} onChange={e=>handleMessagePhoto(e.target.files?.[0])}/></label>
+                <input value={messageText} onChange={e=>setMessageText(e.target.value)} placeholder="Write a message…" maxLength={2000} style={{flex:1,minWidth:0,height:34,minHeight:34,maxHeight:34,border:0,borderRadius:999,background:'transparent',padding:'0 8px',outline:'none',boxSizing:'border-box'}}/>
+                <button className="btn-primary" disabled={sending||messageUploading||(!messageText.trim()&&!messageImageUrl)} style={{width:34,height:34,minWidth:34,flexShrink:0,margin:0,padding:0,borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:0}}>{messageUploading?'…':'↑'}</button>
               </form>
             </section>
 
