@@ -33,12 +33,20 @@ create table if not exists public.messages (
 );
 alter table public.challenges add column if not exists group_id uuid references public.groups(id) on delete set null;
 create index if not exists group_members_user_id_idx on public.group_members(user_id);
+create index if not exists groups_created_by_idx on public.groups(created_by);
+create index if not exists messages_sender_id_idx on public.messages(sender_id);
 create index if not exists messages_group_created_idx on public.messages(group_id,created_at desc);
 create index if not exists challenges_group_id_idx on public.challenges(group_id);
 
 create or replace function private.is_group_member(p_group_id uuid, p_user_id uuid default auth.uid())
 returns boolean language sql stable security definer set search_path=''
 as $$ select exists(select 1 from public.group_members gm where gm.group_id=p_group_id and gm.user_id=p_user_id); $$;
+create or replace function private.is_group_creator(p_group_id uuid, p_user_id uuid default auth.uid())
+returns boolean language sql stable security definer set search_path=''
+as $ select exists(select 1 from public.groups g where g.id=p_group_id and g.created_by=p_user_id); $;
+revoke execute on function private.is_group_creator(uuid,uuid) from public,anon;
+grant execute on function private.is_group_creator(uuid,uuid) to authenticated;
+
 create or replace function private.is_group_admin(p_group_id uuid, p_user_id uuid default auth.uid())
 returns boolean language sql stable security definer set search_path=''
 as $$ select exists(select 1 from public.group_members gm where gm.group_id=p_group_id and gm.user_id=p_user_id and gm.role='admin'::public.group_role); $$;
@@ -82,7 +90,7 @@ drop policy if exists "group_members: read" on public.group_members;
 drop policy if exists "group_members: insert" on public.group_members;
 drop policy if exists "group_members: delete" on public.group_members;
 create policy "group_members: read" on public.group_members for select to authenticated using ((select private.is_group_member(group_id)));
-create policy "group_members: insert" on public.group_members for insert to authenticated with check ((select auth.uid())=user_id and (exists(select 1 from public.groups g where g.id=group_id and g.privacy='public'::public.group_privacy) or exists(select 1 from public.groups g where g.id=group_id and g.created_by=(select auth.uid()))));
+create policy "group_members: insert" on public.group_members for insert to authenticated with check ((select auth.uid())=user_id and ((select private.is_group_creator(group_id)) or exists(select 1 from public.groups g where g.id=group_id and g.privacy='public'::public.group_privacy)));
 create policy "group_members: delete" on public.group_members for delete to authenticated using (user_id<>(select auth.uid()) and (select private.is_group_admin(group_id)));
 
 drop policy if exists "messages: read" on public.messages;
