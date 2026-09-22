@@ -65,11 +65,6 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
               </div>
             </div>
 
-            <div style={{display:'flex',gap:8,marginTop:16}}>
-              <button className="btn-primary" onClick={()=>openCreate(selectedGroup.id)} style={{margin:0,flex:1}}>Create challenge</button>
-              {currentGroupAdmin&&<button className="btn-secondary" onClick={()=>{navigator.clipboard?.writeText(selectedGroup.invite_code);setError('Group invite code copied.')}} style={{width:'auto',margin:0}}>Invite</button>}
-            </div>
-
             <section style={{marginTop:18}}>
               <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-end',marginBottom:9}}>
                 <div>
@@ -77,6 +72,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                   <div style={{fontSize:11,color:'var(--ink-45)',marginTop:2}}>Keep the group moving together.</div>
                 </div>
                 {chatLoading&&<span style={{fontSize:10,color:'var(--ink-45)'}}>Loading…</span>}
+                {currentGroupAdmin&&<button type="button" aria-label="Copy group invite code" title="Copy invite code" onClick={()=>{navigator.clipboard?.writeText(selectedGroup.invite_code);setError('Group invite code copied.')}} style={{width:28,height:28,margin:0,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,cursor:'pointer'}}>↗</button>}
               </div>
 
               <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:14,minHeight:180,maxHeight:520,overflowY:'auto',overscrollBehaviorY:'contain'}}>
