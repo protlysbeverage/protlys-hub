@@ -91,8 +91,8 @@ export default function AppShell({ children }) {
         height:auto!important;
         overflow-y:auto!important;
         overflow-x:hidden!important;
-        padding-bottom:calc(87px + env(safe-area-inset-bottom))!important;
-        scroll-padding-bottom:calc(87px + env(safe-area-inset-bottom))!important;
+        padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
+        scroll-padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
         -webkit-overflow-scrolling:touch!important;
       }
     }
