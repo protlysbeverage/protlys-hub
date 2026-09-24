@@ -8,6 +8,8 @@ export default async function ChallengesPage({ searchParams }) {
   if (!user) return <AppShell><div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:28}}><span className="eyebrow">Challenges</span><h1 style={{fontSize:28,marginTop:6}}>Build the habit together.</h1><p className="subhead" style={{marginTop:8}}>Sign in to join Protlys community challenges.</p></div></AppShell>;
 
   await supabase.rpc('ensure_founding_250_member');
+  const { data: hubStats } = await supabase.from('hub_stats').select('founding_count').eq('id', true).maybeSingle();
+  const foundingCount = Math.min(250, Number(hubStats?.founding_count || 0));
 
   const params = await searchParams;
   const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
@@ -64,6 +66,6 @@ export default async function ChallengesPage({ searchParams }) {
 
   return <AppShell><ChallengesClient
     challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} memberPreviews={memberPreviews}
-    userId={user.id} groups={groupRows} groupMembers={groupMembersById} activeToday={activeToday}
+    userId={user.id} groups={groupRows} groupMembers={groupMembersById} activeToday={activeToday} foundingCount={foundingCount}
   /></AppShell>;
 }
