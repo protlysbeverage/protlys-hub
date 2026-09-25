@@ -16,7 +16,7 @@ export default function ProfileSectionNav({ profileId }) {
   const onConnectionsPage = pathname?.includes('/connections');
 
   return (
-    <nav aria-label="Profile sections" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:2,margin:'12px 0 5px',padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,position:'sticky',top:76,zIndex:10,boxShadow:'0 2px 7px rgba(0,0,0,.035)'}}>
+    <nav aria-label="Profile sections" style={{display:'grid',gridTemplateColumns:'repeat(4,minmax(0,1fr))',gap:2,margin:'12px 0 5px',padding:3,background:'#fff',border:'1px solid var(--line)',borderRadius:12,position:'sticky',top:0,zIndex:30,boxShadow:'0 2px 7px rgba(0,0,0,.035)',backdropFilter:'blur(8px)'}}>
       {sections.map(([id,label]) => (
         <Link
           key={id}
