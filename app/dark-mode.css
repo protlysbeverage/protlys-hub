@@ -130,14 +130,15 @@ html.protlys-dark .protlys-app .sidebar-brand img {
 
 /* Theme control: high-contrast, compact, and aligned with the top bar. */
 .theme-toggle {
-  position:fixed;
-  top:16px;
-  left:50%;
+  position:relative;
+  top:auto;
+  left:auto;
   right:auto;
-  transform:translateX(-50%);
-  z-index:100;
-  width:38px;
-  height:38px;
+  transform:none;
+  z-index:auto;
+  width:44px;
+  height:44px;
+  flex:0 0 44px;
   display:flex;
   align-items:center;
   justify-content:center;
@@ -151,7 +152,7 @@ html.protlys-dark .protlys-app .sidebar-brand img {
   -webkit-tap-highlight-color:transparent;
   transition:transform .15s ease,background .15s ease,border-color .15s ease,color .15s ease,box-shadow .15s ease;
 }
-.theme-toggle:hover { transform:translateX(-50%) translateY(-1px); }
+.theme-toggle:hover { transform:translateY(-1px); }
 .theme-toggle:focus-visible { outline:3px solid rgba(85,201,125,.45);outline-offset:2px; }
 .theme-toggle-icon { width:20px;height:20px;display:flex;align-items:center;justify-content:center; }
 .theme-toggle svg { width:20px;height:20px;display:block; }
@@ -160,7 +161,6 @@ html.protlys-dark .protlys-app .sidebar-brand img {
 
 @media (min-width:900px) {
   html.protlys-dark .protlys-app { background:#090C0A!important; }
-  .theme-toggle { top:21px;left:50%;right:auto; }
 }
 
 
