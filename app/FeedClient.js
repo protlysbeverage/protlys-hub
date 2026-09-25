@@ -218,7 +218,7 @@ function ComposePost({ profile, onPosted }) {
   function handleFile(e) { const file = e.target.files?.[0]; if (!file) return; if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; } setError(''); setPreview(URL.createObjectURL(file)); prepareImage(file).then(setImageData).catch(() => setError('Could not prepare that photo.')); }
   const handleStatChange = useCallback(key => e => setStats(current => ({ ...current, [key]: e.target.value })), []);
   async function handlePost() {
-    const body = bodyRef.current?.value?.trim(); if (!body && !imageData) { setError('Add a caption or photo before posting.'); return; }
+    const body = bodyRef.current?.value ?? ''; if (!body.trim() && !imageData) { setError('Add a caption or photo before posting.'); return; }
     setLoading(true); setError('');
     const statsData = (stats.steps || stats.distance || stats.duration) ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null } : null;
     const result = await createFeedPostAction({ body, postType, stats: statsData, imageBase64: imageData?.base64 || null, imageName: imageData?.name || null, imageType: imageData?.type || null });
@@ -226,7 +226,7 @@ function ComposePost({ profile, onPosted }) {
     if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted();
   }
   return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 16, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
-    <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}><Avatar name={profile?.display_name} url={profile?.avatar_url} /><textarea ref={bodyRef} placeholder="Share your progress with the community…" style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, fontFamily: 'inherit', resize: 'none', minHeight: 72, color: 'var(--ink)', background: 'transparent' }} /></div>
+    <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}><Avatar name={profile?.display_name} url={profile?.avatar_url} /><textarea ref={bodyRef} placeholder="Share your progress with the community…" style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical', minHeight: 72, color: 'var(--ink)', background: 'transparent' }} /></div>
     <div className="feed-post-type-selector">{POST_TYPES.map(type => <button key={type.value} onClick={() => setPostType(type.value)} aria-pressed={postType === type.value} style={{ border: postType === type.value ? '1.5px solid var(--green)' : '1.5px solid var(--line)', background: postType === type.value ? 'var(--green-soft)' : '#fff', borderRadius: 11, padding: '7px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', color: postType === type.value ? 'var(--green-dark)' : 'var(--ink-70)' }}>{type.label}</button>)}</div>
     {preview && <div style={{ position: 'relative', marginBottom: 12 }}><img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} /><button onClick={() => { URL.revokeObjectURL(preview); setPreview(null); setImageData(null); if (fileRef.current) fileRef.current.value = ''; }} aria-label="Remove photo" style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="x" size={16} /></button></div>}
     {showStats && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>{[['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']].map(([key, label]) => <div key={key}><label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>{label.toUpperCase()}</label><input className="field-input" type="text" value={stats[key]} onChange={handleStatChange(key)} style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" /></div>)}</div>}
@@ -283,7 +283,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
 
         {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); router.refresh(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
           <div className="feed-card-body">
-            {post.body && <p>{post.body}</p>}
+            {post.body && <p className="post-content-text">{post.body}</p>}
             {post.image_url && <img src={post.image_url} alt="Post photo" />}
             {post.stats && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>{post.stats.steps && <StatChip label="Steps" value={post.stats.steps} />}{post.stats.distance && <StatChip label="Distance" value={`${post.stats.distance} km`} />}{post.stats.duration && <StatChip label="Duration" value={post.stats.duration} />}</div>}
           </div>
