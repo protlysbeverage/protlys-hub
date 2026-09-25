@@ -219,3 +219,46 @@ html.protlys-dark .protlys-app .field-input {
 html.protlys-dark .protlys-app .hr-tight {
   border-color:var(--line)!important;
 }
+
+
+/* Calculator + shared inline components: ensure every state follows the active theme. */
+html.protlys-dark .protlys-app .calculator-option,
+html.protlys-dark .protlys-app .option-card {
+  background:var(--white)!important;
+  color:var(--ink)!important;
+}
+html.protlys-dark .protlys-app .calculator-option[aria-pressed="true"],
+html.protlys-dark .protlys-app .option-card[aria-pressed="true"] {
+  background:var(--green-soft)!important;
+  color:var(--green-dark)!important;
+  border-color:var(--green)!important;
+}
+html.protlys-dark .protlys-app .option-card span,
+html.protlys-dark .protlys-app .calculator-option span {
+  color:inherit;
+}
+html.protlys-dark .protlys-app .option-card small,
+html.protlys-dark .protlys-app .calculator-option small {
+  color:var(--ink-45)!important;
+}
+html.protlys-dark .protlys-app .option-card[aria-pressed="true"] small,
+html.protlys-dark .protlys-app .calculator-option[aria-pressed="true"] small {
+  color:var(--green-dark)!important;
+}
+html.protlys-dark .protlys-app .option-check {
+  background:var(--green)!important;
+  color:#08110C!important;
+}
+html.protlys-dark .protlys-app .btn-secondary {
+  background:transparent;
+  color:var(--ink)!important;
+}
+html.protlys-dark .protlys-app .btn-secondary[style*="background:var(--green)"] {
+  background:var(--green)!important;
+  color:#08110C!important;
+}
+html.protlys-dark .protlys-app .field-input,
+html.protlys-dark .protlys-app input {
+  color:var(--ink)!important;
+  caret-color:var(--green)!important;
+}
