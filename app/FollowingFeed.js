@@ -36,7 +36,7 @@ export default function FollowingFeed({ posts, followingCount }) {
       <div style={{ minWidth:0, flex:1 }}><Link href={`/member/${post.user_id}`} style={{ textDecoration:'none', color:'var(--ink)', fontWeight:800, fontSize:13 }}>{profile.display_name || 'Protlys Member'}</Link><div style={{ color:'var(--ink-45)', fontSize:10.5, marginTop:2 }}>{timeAgo(post.created_at)}</div></div>
       {post.post_type && post.post_type !== 'general' && <span style={{ background:'var(--green-soft)', color:'var(--green-dark)', padding:'3px 8px', borderRadius:999, fontSize:9.5, fontWeight:800 }}>{post.post_type.replace('_',' ')}</span>}
     </div>
-    {post.body && <p style={{ fontSize:13.5, lineHeight:1.55, margin:'12px 0 8px', whiteSpace:'pre-wrap' }}>{post.body}</p>}
+    {post.body && <p style={{ fontSize:13.5, lineHeight:1.55, margin:'12px 0 8px', whiteSpace:'pre-wrap',overflowWrap:'break-word' }}>{post.body}</p>}
     <PostStats stats={post.stats} />
     {post.image_url && <img src={post.image_url} alt="" style={{ width:'100%', maxHeight:430, objectFit:'cover', borderRadius:13, display:'block', marginTop:8 }} />}
     <div style={{ display:'flex', gap:14, marginTop:11, color:'var(--ink-45)', fontSize:11, fontWeight:700 }}><span>{post.like_count || 0} likes</span><span>{post.comment_count || 0} comments</span></div>
