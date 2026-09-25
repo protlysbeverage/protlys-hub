@@ -1,6 +1,5 @@
 import './globals.css';
 import './dark-mode.css';
-import ThemeToggle from '@/components/ThemeToggle';
 
 const EXACT_LOGO = '/protlys-logo-exact.png?v=2';
 
@@ -55,7 +54,7 @@ export default function RootLayout({ children }) {
         />
         <script dangerouslySetInnerHTML={{ __html: `(()=>{try{const s=localStorage.getItem('protlys-theme');const d=s==='dark'||(!s&&matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('protlys-dark');document.documentElement.style.colorScheme='dark';}}catch(e){}})()` }} />
       </head>
-      <body><ThemeToggle />{children}</body>
+      <body>{children}</body>
     </html>
   );
 }
