@@ -43,7 +43,7 @@ export default async function MemberProfilePage({params}){
   for(const post of movementPosts||[]){
     const raw=post?.stats?.steps;
     const rawValue=String(raw??'').replace(/,/g,'').trim();
-    const compact=rawValue.match(/^(\\d+(?:\\.\\d+)?)\\s*k$/i);
+    const compact=rawValue.match(/^(\d+(?:\.\d+)?)\s*k$/i);
     const steps=compact?Number(compact[1])*1000:Number(rawValue);
     if(!Number.isFinite(steps)||steps<=0)continue;
     const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(post.created_at));
