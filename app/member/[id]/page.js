@@ -10,6 +10,7 @@ import ProfileConnectionLauncher from '@/components/ProfileConnectionLauncher';
 import FollowButton from '@/components/FollowButton';
 import ShareProfileButton from '@/components/ShareProfileButton';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
+import ProfileLiveRefresh from '@/components/ProfileLiveRefresh';
 
 function Avatar({ name, url, size = 72 }) { if(url)return <ProfilePhotoLightbox name={name} url={url} size={size}/>; const style={width:size,height:size,minWidth:size,minHeight:size,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block',flexShrink:0}; return <div style={{...style,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*.34,fontWeight:800,color:'var(--green-dark)'}}>{(name||'?')[0].toUpperCase()}</div>; }
 function Icon({name,size=17}) { const paths={arrow:<path d="M19 12H5m6-6-6 6 6 6"/>}; return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>; }
@@ -17,6 +18,9 @@ function parseProtlysDate(value){if(!value)return null;const raw=String(value);c
 function formatNairobiDate(value){const date=parseProtlysDate(value);if(!date)return 'Date unavailable';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(date);}
 function formatJoinedDate(value){const date=parseProtlysDate(value);if(!date)return 'Joined date unavailable';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'long',year:'numeric'}).format(date);}
 function PostStats({stats}){if(!stats||typeof stats!=='object')return null;const items=[['Steps',stats.steps],['Distance',stats.distance],['Duration',stats.duration]].filter(([,value])=>value!==null&&value!==undefined&&String(value).trim()!=='');if(!items.length)return null;return <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(items.length,3)},minmax(0,1fr))`,gap:7,margin:'10px 0 2px'}}>{items.map(([label,value])=><div key={label} style={{border:'1px solid var(--line)',borderRadius:10,padding:'8px 9px',background:'var(--paper)',minWidth:0}}><div style={{fontSize:8.5,textTransform:'uppercase',letterSpacing:'.06em',fontWeight:800,color:'var(--ink-45)'}}>{label}</div><div className="mono" style={{fontSize:12,fontWeight:800,color:'var(--ink)',marginTop:2,overflowWrap:'anywhere'}}>{value}</div></div>)}</div>;}
+
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
 
 export default async function MemberProfilePage({params}){
   const {id}=await params; const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
@@ -38,7 +42,9 @@ export default async function MemberProfilePage({params}){
   const movementByDate=new Map((movementDays||[]).map(row=>[row.step_date,Number(row.steps||0)]));
   for(const post of movementPosts||[]){
     const raw=post?.stats?.steps;
-    const steps=Number(String(raw??'').replace(/,/g,''));
+    const rawValue=String(raw??'').replace(/,/g,'').trim();
+    const compact=rawValue.match(/^(\\d+(?:\\.\\d+)?)\\s*k$/i);
+    const steps=compact?Number(compact[1])*1000:Number(rawValue);
     if(!Number.isFinite(steps)||steps<=0)continue;
     const date=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(post.created_at));
     if(!movementByDate.has(date))movementByDate.set(date,steps);
@@ -52,7 +58,7 @@ export default async function MemberProfilePage({params}){
     ? (()=>{let run=0;let previous=null;for(const row of publicMovementDays.slice().reverse()){if(!Number(row.steps||0))continue;const current=row.step_date;if(!previous){run=1;previous=current;continue;}const d1=new Date(previous+'T12:00:00');const d2=new Date(current+'T12:00:00');if(Math.round((d1-d2)/86400000)===1){run++;previous=current;}else break;}return run;})()
     : 0;
   const displayName=profile.display_name?.trim()||'Protlys Member'; const photoPosts=(posts||[]).filter(post=>post.image_url); const isOwnProfile=String(user.id)===String(id); const bio=profile.bio?.trim()||'';
-  return <AppShell><style>{`html{scroll-behavior:smooth}.profile-section-slider::-webkit-scrollbar{display:none}`}</style><div className="screen-pad" style={{paddingTop:14}}>
+  return <AppShell><ProfileLiveRefresh profileId={id}/><style>{`html{scroll-behavior:smooth}.profile-section-slider::-webkit-scrollbar{display:none}`}</style><div className="screen-pad" style={{paddingTop:14}}>
     <Link href="/" style={{display:'inline-flex',alignItems:'center',gap:7,color:'var(--ink-70)',textDecoration:'none',fontSize:12,fontWeight:800,marginBottom:10}}><Icon name="arrow" size={16}/> Back to Feed</Link>
     <section style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:20,padding:'16px 14px 14px',boxShadow:'0 2px 8px rgba(0,0,0,.035)'}}>
       <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
