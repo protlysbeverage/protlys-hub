@@ -14,6 +14,8 @@ async function getAuthedClient() {
 export async function createFeedPostAction({ body, postType, stats, imageBase64, imageName, imageType }) {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
+  const rawBody = typeof body === 'string' ? body : '';
+  if (!rawBody.trim() && !imageBase64) return { error: 'Add a caption or photo before posting.' };
   let imageUrl = null;
   if (imageBase64 && imageName) {
     const bytes = Buffer.from(imageBase64, 'base64');
@@ -27,7 +29,7 @@ export async function createFeedPostAction({ body, postType, stats, imageBase64,
 
   const { data: createdPost, error } = await supabase
     .from('feed_posts')
-    .insert({ user_id: user.id, body: body || null, image_url: imageUrl, post_type: postType || 'general', stats: stats || null })
+    .insert({ user_id: user.id, body: rawBody || null, image_url: imageUrl, post_type: postType || 'general', stats: stats || null })
     .select('id, created_at')
     .single();
   if (error) return { error: error.message };
@@ -71,7 +73,7 @@ export async function updateFeedPostAction({ postId, body, postType, stats, remo
 
   const { error } = await supabase
     .from('feed_posts')
-    .update({ body: body?.trim() || null, post_type: postType || 'general', stats: stats || null, image_url: imageUrl })
+    .update({ body: typeof body === 'string' ? (body || null) : null, post_type: postType || 'general', stats: stats || null, image_url: imageUrl })
     .eq('id', postId)
     .eq('user_id', user.id);
   if (error) return { error: error.message };
