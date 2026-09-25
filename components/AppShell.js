@@ -116,21 +116,20 @@ export default function AppShell({ children }) {
       .protlys-app .sidebar-nav .nav-btn:hover { background:var(--green-soft);color:var(--green-dark); }
       .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft);color:var(--green-dark);font-weight:850; }
       .protlys-app .sidebar-spacer { flex:1; }
-      .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;border-bottom:1px solid var(--line)!important; }
-      .protlys-app .app-header > .theme-toggle { grid-column:1;justify-self:start; }
-      .protlys-app .app-header > .brand-link { grid-column:2; }
-      .protlys-app .app-header > .shop-header-link { grid-column:3;justify-self:end; }
-      .protlys-app .app-header > a:first-child:not(.brand-link) { grid-column:2; }
+      .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important; }
+      .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
+      .protlys-app .app-header > .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
+      .protlys-app .app-header > .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link img { height:54px!important; }
       .protlys-app .screen { grid-column:2;grid-row:2;display:block!important;width:100%;max-width:760px;margin:0 auto;overflow-y:auto;padding:0 24px 40px!important; }
       .protlys-app .bottom-nav { display:none!important; }
     }
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
-      .protlys-app .app-header > a:first-child:not(.brand-link) { display:none!important; }
-      .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important;min-height:72px!important;padding:9px 14px!important; }
-      .protlys-app .app-header .brand-link { grid-column:2; }
-      .protlys-app .app-header .shop-header-link { grid-column:3;justify-self:end; }
+      .protlys-app .app-header { display:flex!important;align-items:center!important;gap:14px!important;min-height:72px!important;height:72px!important;padding:9px 14px!important; }
+      .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
+      .protlys-app .app-header .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
+      .protlys-app .app-header .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link img { height:50px!important; }
     }
   `}</style>
