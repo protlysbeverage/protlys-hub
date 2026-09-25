@@ -17,10 +17,10 @@ const ACTIVITY = [
 ];
 const GOALS = [
   { id:'health', label:'General health', detail:'0.8g / kg body weight', v:0.8, icon:'heart' },
-  { id:'maintain', label:'Maintain & stay active', detail:'1.2–1.4g / kg', v:1.2, icon:'down' },
+  { id:'maintain', label:'Maintain & stay active', detail:'1.2–1.4g / kg', v:1.2, icon:'run' },
   { id:'muscle', label:'Build muscle', detail:'1.6–2.0g / kg', v:1.6, icon:'barbell' },
   { id:'performance', label:'Athletic performance', detail:'1.8–2.2g / kg', v:1.8, icon:'medal' },
-  { id:'lose', label:'Lose weight', detail:'1.2g / kg', v:1.2 },
+  { id:'lose', label:'Lose weight', detail:'1.2g / kg', v:1.2, icon:'down' },
 ];
 function activityLabel(v){return ACTIVITY.find(a=>a.v===v)?.label?.toLowerCase()||'moderate';}
 
