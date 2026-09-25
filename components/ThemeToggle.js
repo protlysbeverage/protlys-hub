@@ -13,7 +13,6 @@ function applyTheme(theme) {
 
 export default function ThemeToggle() {
   const [dark, setDark] = useState(false);
-  const [position, setPosition] = useState(null);
 
   useEffect(() => {
     const saved = window.localStorage.getItem(STORAGE_KEY);
@@ -21,21 +20,7 @@ export default function ThemeToggle() {
     setDark(preferred === 'dark');
     applyTheme(preferred);
 
-    const alignWithHeader = () => {
-      const header = document.querySelector('.protlys-app .app-header');
-      if (!header) return;
-      const rect = header.getBoundingClientRect();
-      setPosition({
-        left: rect.left + 36,
-        top: rect.top + rect.height / 2,
-      });
-    };
 
-    alignWithHeader();
-    window.addEventListener('resize', alignWithHeader);
-    return () => {
-      window.removeEventListener('resize', alignWithHeader);
-    };
   }, []);
 
   function toggle() {
@@ -45,14 +30,9 @@ export default function ThemeToggle() {
     applyTheme(next);
   }
 
-  const positionStyle = position
-    ? { left: position.left, top: position.top, transform: 'translate(-50%, -50%)' }
-    : undefined;
-
   return (
     <button
       className={`theme-toggle${dark ? ' is-dark' : ' is-light'}`}
-      style={positionStyle}
       type="button"
       onClick={toggle}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
