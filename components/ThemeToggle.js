@@ -33,10 +33,8 @@ export default function ThemeToggle() {
 
     alignWithHeader();
     window.addEventListener('resize', alignWithHeader);
-    window.addEventListener('scroll', alignWithHeader, { passive: true });
     return () => {
       window.removeEventListener('resize', alignWithHeader);
-      window.removeEventListener('scroll', alignWithHeader);
     };
   }, []);
 
