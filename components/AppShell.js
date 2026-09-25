@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
@@ -116,6 +117,7 @@ export default function AppShell({ children }) {
       .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft);color:var(--green-dark);font-weight:850; }
       .protlys-app .sidebar-spacer { flex:1; }
       .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:grid!important;grid-template-columns:1fr auto 1fr!important;align-items:center!important;border-bottom:1px solid var(--line)!important; }
+      .protlys-app .app-header > .theme-toggle { grid-column:1;justify-self:start; }
       .protlys-app .app-header > .brand-link { grid-column:2; }
       .protlys-app .app-header > .shop-header-link { grid-column:3;justify-self:end; }
       .protlys-app .app-header > a:first-child:not(.brand-link) { grid-column:2; }
@@ -145,6 +147,7 @@ export default function AppShell({ children }) {
     </aside>
 
     <div className="app-header">
+      <ThemeToggle />
       <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img src={logoSrc} alt="Protlys" /></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
     </div>
