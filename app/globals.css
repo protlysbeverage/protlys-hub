@@ -52,3 +52,20 @@
   @media (max-width:599px){.protlys-app .app-header .brand-link img{height:50px!important;}}
   @media (min-width:900px){.protlys-app .app-header .brand-link img{height:60px!important;}.protlys-app .sidebar-brand img{width:150px!important;height:auto!important;}}
   .protlys-app .app-header{min-height:78px;}
+
+/* Calculator typography follows the active Protlys theme in every mode. */
+.protlys-app .calculator-step-progress-label{
+  font-family:'Manrope',sans-serif;
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:.05em;
+  color:var(--ink-70);
+  margin-bottom:6px;
+}
+.protlys-app .calculator-step-label{
+  font-family:'Manrope',sans-serif;
+  font-size:14px;
+  font-weight:900;
+  letter-spacing:.05em;
+  color:var(--ink);
+}
