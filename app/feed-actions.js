@@ -47,6 +47,7 @@ export async function createFeedPostAction({ body, postType, stats, imageBase64,
 
   revalidatePath('/');
   revalidatePath('/movement');
+  revalidatePath(`/member/${user.id}`);
   return { ok: true };
 }
 
