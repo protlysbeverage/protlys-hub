@@ -116,7 +116,10 @@ export default function AppShell({ children }) {
       .protlys-app .sidebar-nav .nav-btn:hover { background:var(--green-soft);color:var(--green-dark); }
       .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft);color:var(--green-dark);font-weight:850; }
       .protlys-app .sidebar-spacer { flex:1; }
-      .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important; }
+      .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
+      .protlys-app .app-header .theme-toggle { width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important;margin:0!important;position:relative!important; }
+      .protlys-app .app-header .brand-link { flex:0 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important; }
+      .protlys-app .app-header .shop-header-link { margin-left:auto!important;flex:0 0 auto!important; }
       .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
       .protlys-app .app-header > .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
       .protlys-app .app-header > .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
@@ -126,9 +129,9 @@ export default function AppShell({ children }) {
     }
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
-      .protlys-app .app-header { display:flex!important;align-items:center!important;gap:14px!important;min-height:72px!important;height:72px!important;padding:9px 14px!important; }
-      .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
-      .protlys-app .app-header .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
+      .protlys-app .app-header { display:flex!important;align-items:center!important;gap:14px!important;min-height:72px!important;height:72px!important;padding:9px 14px!important;box-sizing:border-box!important; }
+      .protlys-app .app-header .theme-toggle { width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important;position:relative!important; }
+      .protlys-app .app-header .brand-link { flex:0 1 auto!important;min-width:0!important;justify-content:center!important; }
       .protlys-app .app-header .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link img { height:50px!important; }
     }
