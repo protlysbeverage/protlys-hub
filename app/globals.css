@@ -69,3 +69,56 @@
   letter-spacing:.05em;
   color:var(--ink);
 }
+
+
+/* Global typography consistency — recent calculator UI and all shared controls use the same Protlys type system. */
+.protlys-app,
+.protlys-app button,
+.protlys-app input,
+.protlys-app select,
+.protlys-app textarea {
+  font-family:'Manrope',sans-serif;
+}
+.protlys-app h1,
+.protlys-app h2,
+.protlys-app h3,
+.protlys-app h4,
+.protlys-app h5,
+.protlys-app h6,
+.protlys-app .display,
+.protlys-app .wordmark,
+.protlys-app .ptile .pname,
+.protlys-app .prod-card .pname,
+.protlys-app .chal-title,
+.protlys-app .comm-title,
+.protlys-app .learn-title,
+.protlys-app .section-title {
+  font-family:'Space Grotesk',sans-serif;
+}
+.protlys-app .mono,
+.protlys-app .eyebrow,
+.protlys-app .tag,
+.protlys-app .section-kicker {
+  font-family:'IBM Plex Mono',monospace;
+}
+.protlys-app .section-label,
+.protlys-app .step-progress-label,
+.protlys-app .option-label,
+.protlys-app .option-detail,
+.protlys-app .option-card,
+.protlys-app .option-card *,
+.protlys-app .btn,
+.protlys-app .weight-input,
+.protlys-app .result-g {
+  font-family:'Manrope',sans-serif !important;
+}
+.protlys-app .section-label,
+.protlys-app .step-progress-label {
+  color:var(--ink) !important;
+}
+.protlys-app .option-label {
+  font-weight:800;
+}
+.protlys-app .option-detail {
+  font-weight:600;
+}
