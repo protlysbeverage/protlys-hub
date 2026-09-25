@@ -162,3 +162,60 @@ html.protlys-dark .protlys-app .sidebar-brand img {
   html.protlys-dark .protlys-app { background:#090C0A!important; }
   .theme-toggle { top:21px;left:50%;right:auto; }
 }
+
+
+/* Global theme adaptation: keep all reusable UI colors tied to theme tokens. */
+html.protlys-dark .protlys-app h1,
+html.protlys-dark .protlys-app h2,
+html.protlys-dark .protlys-app h3,
+html.protlys-dark .protlys-app .field-label,
+html.protlys-dark .protlys-app .section-title,
+html.protlys-dark .protlys-app .chal-title,
+html.protlys-dark .protlys-app .comm-title,
+html.protlys-dark .protlys-app .learn-title,
+html.protlys-dark .protlys-app .movement-setting-title,
+html.protlys-dark .protlys-app .find-q,
+html.protlys-dark .protlys-app .list-row .lbl {
+  color:var(--ink)!important;
+}
+html.protlys-dark .protlys-app .subhead,
+html.protlys-dark .protlys-app .field-label,
+html.protlys-dark .protlys-app .option-detail,
+html.protlys-dark .protlys-app .feed-meta,
+html.protlys-dark .protlys-app .chal-meta,
+html.protlys-dark .protlys-app .comm-desc,
+html.protlys-dark .protlys-app .movement-setting-value {
+  color:var(--ink-70)!important;
+}
+html.protlys-dark .protlys-app .option-card,
+html.protlys-dark .protlys-app .calculator-option,
+html.protlys-dark .protlys-app .section-card {
+  background:var(--white)!important;
+  color:var(--ink)!important;
+  border-color:var(--line)!important;
+}
+html.protlys-dark .protlys-app .option-card[aria-pressed="true"] {
+  background:var(--green-soft)!important;
+  color:var(--green-dark)!important;
+  border-color:var(--green)!important;
+}
+html.protlys-dark .protlys-app .option-card small,
+html.protlys-dark .protlys-app .option-card .option-detail {
+  color:var(--ink-45)!important;
+}
+html.protlys-dark .protlys-app .option-card[aria-pressed="true"] small,
+html.protlys-dark .protlys-app .option-card[aria-pressed="true"] .option-detail {
+  color:var(--green-dark)!important;
+}
+html.protlys-dark .protlys-app .option-check {
+  background:var(--green)!important;
+  color:var(--paper)!important;
+}
+html.protlys-dark .protlys-app .weight-input,
+html.protlys-dark .protlys-app .field-input {
+  background:var(--white)!important;
+  color:var(--ink)!important;
+}
+html.protlys-dark .protlys-app .hr-tight {
+  border-color:var(--line)!important;
+}
