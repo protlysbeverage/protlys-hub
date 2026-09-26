@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { saveTargetAction } from '@/app/actions';
 
 const SEX = [
@@ -33,6 +33,14 @@ function OptionGrid({items,value,onChange,getValue,height}){return <div style={{
 export default function CalculatorClient({ savedTarget }) {
   const [weight,setWeight]=useState(70); const [sex,setSex]=useState('male'); const [activity,setActivity]=useState(1.375); const [goal,setGoal]=useState('maintain');
   const [result,setResult]=useState(null); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
+  const resultRef = useRef(null);
+
+  useEffect(()=>{
+    if(!result || !resultRef.current)return;
+    requestAnimationFrame(()=>{
+      resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'});
+    });
+  },[result]);
 
   function calculate(){
     const w=Number(weight); if(!w||w<20||w>300)return;
@@ -58,7 +66,7 @@ export default function CalculatorClient({ savedTarget }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    {result&&<div style={{marginTop:26}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><span className="eyebrow">Your daily protein target</span><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
+    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><span className="eyebrow">Your daily protein target</span><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
       <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={saveTarget} disabled={isPending||saved}>{saved?'Target saved to your Hub':isPending?'Saving…':'Save this target in the Hub →'}</button>
       {!savedTarget&&!saved&&<p className="disclaimer" style={{marginTop:9}}>We’ll carry this number into your Hub so you don’t have to enter it again.</p>}
       {savedTarget&&<button className="link-btn" style={{marginTop:12}} onClick={()=>{window.location.assign('/hub')}}>Just show me the number</button>}
