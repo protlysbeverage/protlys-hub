@@ -153,3 +153,28 @@
   margin-left:auto !important;
   flex:0 0 16px !important;
 }
+
+
+/* Native feed category select — replaces the custom popover. */
+.protlys-app .tag-picker{min-width:0;display:flex;align-items:center;}
+.protlys-app .tag-select{
+  appearance:none;
+  -webkit-appearance:none;
+  background:var(--white) url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%231f6b34' stroke-width='2'%3E%3Cpath d='M6 9l6 6 6-6'/%3E%3C/svg%3E") no-repeat right 12px center;
+  background-size:12px;
+  border:0.5px solid #dfe6da;
+  border-radius:999px;
+  padding:7px 30px 7px 14px;
+  font-size:13px;
+  font-weight:500;
+  color:var(--green-dark);
+  font-family:'Manrope',sans-serif;
+  max-width:min(150px,42vw);
+  min-height:36px;
+  cursor:pointer;
+  outline:none;
+}
+.protlys-app .tag-select:focus{border-color:var(--green);}
+.protlys-app .tag-select option{font-family:'Manrope',sans-serif;color:var(--ink);background:var(--white);}
+.protlys-app .feed-category-menu,
+.protlys-app .feed-category-option{all:revert;}
