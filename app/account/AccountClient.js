@@ -101,8 +101,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
       <p className="subhead">A simple view of your movement and what you have recorded.</p>
 
-      <div style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'#fff',border:'1.5px solid var(--line)',borderRadius:16,padding:14}}>
-        <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
+      <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
+        <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
           {avatarUrl ? <img src={avatarUrl} alt="Profile" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:20,fontWeight:800}}>{name[0].toUpperCase()}</span>}
           <span style={{position:'absolute',right:0,bottom:0,width:20,height:20,borderRadius:'50%',background:'var(--ink)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}><Icon name="camera" size={10}/></span>
         </button>
@@ -111,8 +111,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           <div style={{fontWeight:800,fontSize:16}}>{name}</div>
           <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
           <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
-            <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-            <button type="button" onClick={handleShareProfile} disabled={sharing} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>{sharing ? 'Sharing…' : 'Share profile'}</button>
+            <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
+            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} disabled={sharing} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>{sharing ? 'Sharing…' : 'Share profile'}</button>
           </div>
           {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
         </div>
