@@ -122,3 +122,34 @@
 .protlys-app .option-detail {
   font-weight:600;
 }
+
+/* Feed category popover: keep the menu and every option in a predictable flex layout. */
+.protlys-app .feed-category-menu {
+  position:absolute;
+  z-index:10000;
+  isolation:isolate;
+}
+.protlys-app .feed-category-menu .feed-category-option {
+  display:flex !important;
+  flex-direction:row !important;
+  align-items:center !important;
+  justify-content:flex-start !important;
+  gap:8px !important;
+  position:static !important;
+  white-space:nowrap;
+}
+.protlys-app .feed-category-menu .feed-category-option-icon,
+.protlys-app .feed-category-menu .feed-category-option-label,
+.protlys-app .feed-category-menu .feed-category-option-check {
+  position:static !important;
+  float:none !important;
+  transform:none !important;
+}
+.protlys-app .feed-category-menu .feed-category-option-label {
+  flex:1 1 auto !important;
+  min-width:0;
+}
+.protlys-app .feed-category-menu .feed-category-option-check {
+  margin-left:auto !important;
+  flex:0 0 16px !important;
+}
