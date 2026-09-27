@@ -28,10 +28,10 @@ jobs:
       - name: Install dependencies
         run: npm install
 
-      - name: Fetch exact Protlys logo
+      - name: Use exact Protlys logo from repository
         run: |
           mkdir -p assets
-          curl -L --fail --silent --show-error "https://hub.protlys.com/protlys-logo-exact.png?v=2" -o assets/icon.png
+          cp public/protlys-logo-exact.png assets/icon.png
 
       - name: Generate Android project
         run: npx cap add android
