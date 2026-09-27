@@ -28,8 +28,16 @@ jobs:
       - name: Install dependencies
         run: npm install
 
+      - name: Fetch exact Protlys logo
+        run: |
+          mkdir -p assets
+          curl -L --fail --silent --show-error "https://hub.protlys.com/protlys-logo-exact.png?v=2" -o assets/icon.png
+
       - name: Generate Android project
         run: npx cap add android
+
+      - name: Generate Android app icon and splash assets
+        run: npx @capacitor/assets generate --android --assetPath assets --iconBackgroundColor "#ffffff" --iconBackgroundColorDark "#ffffff" --splashBackgroundColor "#ffffff" --splashBackgroundColorDark "#ffffff"
 
       - name: Sync Capacitor
         run: npx cap sync android
