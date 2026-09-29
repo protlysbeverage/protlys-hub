@@ -37,7 +37,6 @@ export default function CalculatorClient({ savedTarget }) {
   const [weight,setWeight]=useState(70); const [sex,setSex]=useState('male'); const [activity,setActivity]=useState(1.375); const [goal,setGoal]=useState('maintain');
   const [result,setResult]=useState(null); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
   const [saveMessage,setSaveMessage]=useState('');
-  const [authChecked,setAuthChecked]=useState(false);
   const resultRef = useRef(null);
 
   useEffect(()=>{
@@ -73,7 +72,6 @@ export default function CalculatorClient({ savedTarget }) {
       const supabase=createClient();
       const {data:{session}}=await supabase.auth.getSession();
       if(cancelled)return;
-      setAuthChecked(true);
       if(!session)return;
       let pending=null;
       try{
@@ -113,9 +111,9 @@ export default function CalculatorClient({ savedTarget }) {
         });
       }} disabled={isPending||saved}>{saved?'Saved!':isPending?'Saving…':'Save my protein target'}</button>
       {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
-      {!authChecked&&!saved&&<p className="disclaimer" style={{marginTop:9}}>Checking your account…</p>}
-      {saved&&!saveMessage.includes('account')&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
+      {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
       <p className="disclaimer" style={{marginTop:14}}>This is a starting estimate, not medical advice. Speak with a registered dietitian for personalised guidance.</p></div>}
-    {savedTarget&&!result&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
+    {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button></section>}
+    {savedTarget&&!result&&!saved&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
   </div>;
 }
