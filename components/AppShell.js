@@ -69,18 +69,147 @@ export default function AppShell({ children }) {
     .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
     .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
     .protlys-app .profile-comment a:hover { text-decoration:underline!important; }
-    .protlys-app .bottom-nav { align-items:stretch!important; }
+    .protlys-app .bottom-nav {
+      align-items:stretch!important;
+      position:relative;
+      isolation:isolate;
+      background:var(--white)!important;
+      border-top:1px solid var(--line)!important;
+      box-shadow:0 -4px 14px rgba(15,42,74,.06);
+    }
+    .protlys-app .bottom-nav .nav-active-slot {
+      position:absolute;
+      z-index:0;
+      top:7px;
+      left:0;
+      width:20%;
+      height:32px;
+      pointer-events:none;
+      transform:translate3d(calc(var(--nav-index,0) * 100%),0,0);
+      transition:transform 250ms var(--ease-out);
+    }
+    .protlys-app .bottom-nav .nav-active-slot::before {
+      content:'';
+      position:absolute;
+      inset:0 auto auto 50%;
+      width:min(56px,calc(100% - 8px));
+      height:32px;
+      transform:translateX(-50%);
+      border-radius:999px;
+      background:rgba(46,158,91,.14);
+    }
+    .protlys-app .bottom-nav .nav-btn {
+      position:relative;
+      z-index:1;
+      box-sizing:border-box!important;
+      display:flex!important;
+      flex:1 1 0!important;
+      min-width:0!important;
+      min-height:48px!important;
+      height:68px!important;
+      padding:7px 2px 6px!important;
+      flex-direction:column!important;
+      align-items:center!important;
+      justify-content:center!important;
+      gap:5px!important;
+      font-family:'Manrope',sans-serif!important;
+      font-size:12px!important;
+      font-weight:500!important;
+      line-height:1.05!important;
+      letter-spacing:0!important;
+      text-transform:none!important;
+      text-align:center!important;
+      white-space:nowrap!important;
+      font-style:normal!important;
+      font-variant:normal!important;
+      margin:0!important;
+      color:var(--ink-45);
+      text-decoration:none;
+      -webkit-tap-highlight-color:transparent;
+      transition:transform 150ms var(--ease-out),color 150ms ease;
+    }
+    .protlys-app .bottom-nav .nav-btn:focus,
+    .protlys-app .bottom-nav .nav-btn:focus-visible {
+      outline:2px solid var(--green)!important;
+      outline-offset:-3px!important;
+      border-radius:12px!important;
+      box-shadow:0 0 0 2px var(--white)!important;
+    }
+    .protlys-app .bottom-nav .nav-btn:active {
+      transform:scale(.96)!important;
+      transition-duration:100ms!important;
+    }
+    .protlys-app .bottom-nav .nav-btn.active {
+      color:var(--green)!important;
+      font-weight:500!important;
+    }
+    .protlys-app .bottom-nav .nav-btn.active svg {
+      stroke-width:2.2;
+    }
+    .protlys-app .bottom-nav .nav-btn svg {
+      flex:0 0 24px!important;
+      width:24px!important;
+      height:24px!important;
+      display:block!important;
+      margin:0!important;
+      stroke-width:2;
+    }
+    .protlys-app .bottom-nav .nav-label {
+      display:block;
+      max-width:100%;
+      overflow:hidden;
+      text-overflow:clip;
+      white-space:nowrap;
+    }
+    .protlys-app .bottom-nav .nav-badge {
+      position:absolute;
+      top:7px;
+      right:calc(50% - 22px);
+      width:6px;
+      height:6px;
+      border-radius:50%;
+      background:var(--green);
+      border:1.5px solid var(--white);
+      display:none;
+    }
     @media (max-width:899px) {
       .protlys-app .bottom-nav {
-        position:fixed!important; left:50%!important; right:auto!important; bottom:0!important; width:min(432px,100vw)!important; transform:translateX(-50%)!important; z-index:9999!important;
-        padding-bottom:calc(12px + env(safe-area-inset-bottom))!important;
+        position:fixed!important;
+        left:50%!important;
+        right:auto!important;
+        bottom:0!important;
+        width:min(432px,100vw)!important;
+        transform:translateX(-50%)!important;
+        z-index:9999!important;
+        padding:7px 4px calc(12px + env(safe-area-inset-bottom))!important;
       }
-      .protlys-app .app-shell { height:100dvh!important; min-height:100dvh!important; overflow:hidden!important; }
-      .protlys-app .screen { flex:1 1 auto!important; min-height:0!important; height:auto!important; overflow-y:auto!important; overflow-x:hidden!important; padding-bottom:calc(112px + env(safe-area-inset-bottom))!important; scroll-padding-bottom:calc(112px + env(safe-area-inset-bottom))!important; -webkit-overflow-scrolling:touch!important; }
+      .protlys-app .app-shell {
+        height:100dvh!important;
+        min-height:100dvh!important;
+        overflow:hidden!important;
+      }
+      .protlys-app .screen {
+        flex:1 1 auto!important;
+        min-height:0!important;
+        height:auto!important;
+        overflow-y:auto!important;
+        overflow-x:hidden!important;
+        padding-bottom:calc(87px + env(safe-area-inset-bottom) + 12px)!important;
+        scroll-padding-bottom:calc(87px + env(safe-area-inset-bottom) + 12px)!important;
+        -webkit-overflow-scrolling:touch!important;
+      }
     }
-    .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:68px!important;padding:7px 2px 6px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-family:'Manrope',sans-serif!important;font-size:10.5px!important;font-weight:700!important;line-height:1.05!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important;color:var(--ink-45);text-decoration:none; }
-    .protlys-app .bottom-nav .nav-btn.active { color:var(--green-dark)!important;font-weight:800!important; }
-    .protlys-app .bottom-nav .nav-btn svg { flex:0 0 22px!important;width:22px!important;height:22px!important;display:block!important;margin:0!important; }
+    @media (prefers-reduced-motion:reduce) {
+      .protlys-app .bottom-nav .nav-active-slot {
+        transition:none!important;
+      }
+      .protlys-app .bottom-nav .nav-btn {
+        transition:none!important;
+      }
+      .protlys-app .bottom-nav .nav-btn:active {
+        transform:none!important;
+      }
+    }
     .protlys-app .disclaimer { display:none!important; }
     .protlys-app .desktop-sidebar { display:none; }
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
@@ -136,9 +265,17 @@ export default function AppShell({ children }) {
 
     <section className="screen active">{children}</section>
 
-    <div className="bottom-nav">
-      {NAV_ITEMS.map(item=>item.href === '/challenges' ? <a key={item.href} href="/challenges" onClick={e=>{e.stopPropagation();}} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
-    </div>
+    <nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" style={{'--nav-index':Math.max(0,NAV_ITEMS.findIndex(item=>item.href===pathname))}}>
+      <span className="nav-active-slot" aria-hidden="true" />
+      {NAV_ITEMS.map(item=>{
+        const isActive=pathname===item.href;
+        const commonProps={key:item.href,className:`nav-btn${isActive?' active':''}`, 'aria-current':isActive?'page':undefined};
+        const content=<>{item.icon}<span className="nav-label">{item.label}</span>{item.badge ? <span className="nav-badge" aria-hidden="true" /> : null}</>;
+        return item.href==='/challenges'
+          ? <a {...commonProps} href="/challenges" onClick={e=>{e.stopPropagation();}}>{content}</a>
+          : <Link {...commonProps} href={item.href}>{content}</Link>;
+      })}
+    </nav>
   </div>
 </div>;
 }
