@@ -1,0 +1,43 @@
+name: Generate Protlys dark logo
+
+on:
+  push:
+    branches:
+      - main
+    paths:
+      - public/protlys-logo-exact.png
+      - scripts/generate-logo-dark.py
+      - .github/workflows/generate-logo-dark.yml
+
+permissions:
+  contents: write
+
+jobs:
+  generate:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - uses: actions/setup-python@v6
+        with:
+          python-version: "3.12"
+
+      - name: Install Pillow
+        run: python -m pip install --disable-pip-version-check Pillow
+
+      - name: Generate dark logo
+        run: python scripts/generate-logo-dark.py
+
+      - name: Commit dark logo
+        run: |
+          if git diff --quiet -- public/protlys-logo-dark.png; then
+            echo "Dark logo is already up to date."
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/protlys-logo-dark.png
+          git commit -m "Generate Protlys dark logo variant"
+          git push
