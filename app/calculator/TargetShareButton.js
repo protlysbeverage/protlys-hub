@@ -7,10 +7,11 @@ const SHARE_URL = 'https://hub.protlys.com/calculator?src=share';
 
 export default function TargetShareButton({ target, activity, goal }) {
   const [busy, setBusy] = useState(false);
+  const [message, setMessage] = useState('');
   async function share(){
     if(busy)return;
     const n=Number(target);
-    if(!Number.isFinite(n)||n<=0){setToast('Your protein target is missing. Calculate it again before sharing.');window.setTimeout(()=>setToast(''),2800);return;}
+    if(!Number.isFinite(n)||n<=0){setMessage('Your protein target is missing. Calculate it again before sharing.');window.setTimeout(()=>setMessage(''),2800);return;}
     setBusy(true);
     try{
       if(document.fonts?.ready)await document.fonts.ready;
@@ -39,10 +40,10 @@ export default function TargetShareButton({ target, activity, goal }) {
         await navigator[shareKey]({files:[file],title:'My Protlys protein target',text:'My daily protein target is '+Math.round(n)+'g. Calculate yours: '+link,url:link});
       }else{
         const u=URL.createObjectURL(png);const a=document.createElement('a');a.href=u;a.download='protlys-protein-target.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);
-        if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(link);setToast('Image downloaded. Calculator link copied.');}else setToast('Image downloaded. Share the calculator link from the caption.');
-        window.setTimeout(()=>setToast(''),2800);
+        if(navigator.clipboard?.writeText){await navigator.clipboard.writeText(link);setMessage('Image downloaded. Calculator link copied.');}else setMessage('Image downloaded. Share the calculator link from the caption.');
+        window.setTimeout(()=>setMessage(''),2800);
       }
-    }catch(e){if(e?.name!=='AbortError'){console.error(e);setToast('Could not create the share card. Please try again.');window.setTimeout(()=>setToast(''),2800);}}finally{setBusy(false);}
+    }catch(e){if(e?.name!=='AbortError'){console.error(e);setMessage('Could not create the share card. Please try again.');window.setTimeout(()=>setMessage(''),2800);}}finally{setBusy(false);}
   }
 
   return <button type="button" onClick={share} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
