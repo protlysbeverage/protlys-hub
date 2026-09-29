@@ -6,14 +6,13 @@ import ProteinTargetCard from './ProteinTargetCard';
 import TargetHistory from './TargetHistory';
 
 function localDateStr(date = new Date()) {
-  const y=date.getFullYear(), m=String(date.getMonth()+1).padStart(2,'0'), d=String(date.getDate()).padStart(2,'0');
-  return `${y}-${m}-${d}`;
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 function getShopUrl(){return 'https://protlys.com/collections/all';}
 
 export default async function AccountPage(){
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
-  const today=localDateStr(); const weekAgoDate=new Date(); weekAgoDate.setDate(weekAgoDate.getDate()-6); const weekAgo=localDateStr(weekAgoDate);
+  const today=localDateStr(); const weekAgoDate=new Date(today + 'T12:00:00+03:00'); weekAgoDate.setUTCDate(weekAgoDate.getUTCDate()-6); const weekAgo=localDateStr(weekAgoDate);
   const [{data:profile},{data:achievements},{data:todaySteps},{data:weekSteps},{data:targetHistory}]=await Promise.all([
     supabase.from('profiles').select('id,display_name,avatar_url,streak,target_g,step_streak,total_steps,step_goal').eq('id',user.id).single(),
     supabase.from('user_achievements').select('earned_at,achievements(slug,name,icon,description)').eq('user_id',user.id).order('earned_at',{ascending:false}),
