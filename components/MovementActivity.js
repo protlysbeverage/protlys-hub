@@ -188,7 +188,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     }
     loadMonth();
     return () => { cancelled = true; };
-  }, [expanded, currentMonthKey, calendarMonth, monthCache, userId]);
+  }, [expanded, currentMonthKey, calendarMonth, userId]);
 
   useEffect(() => {
     if (!sheetOpen) return;
