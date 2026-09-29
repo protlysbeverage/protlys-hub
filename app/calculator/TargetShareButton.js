@@ -186,6 +186,7 @@ export default function TargetShareButton({ target, activity, goal, profile }) {
           text: prefix + 'daily protein target is ' + Math.round(n) + 'g. Calculate yours: ' + SHARE_URL,
           url:SHARE_URL
         });
+        setMessage('Share card ready.');
       } else {
         const u = URL.createObjectURL(png);
         const a = document.createElement('a'); a.href=u; a.download='protlys-protein-target.png';
