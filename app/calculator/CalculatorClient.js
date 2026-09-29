@@ -4,6 +4,8 @@ import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { saveTargetAction } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
+import TargetShareButton from './TargetShareButton';
+import { PROTLYS_CALCULATOR_PRODUCTS } from '@/config/protlys-products';
 
 const SEX = [
   { label: 'Male', v: 'male', icon:'male' },
@@ -98,7 +100,7 @@ export default function CalculatorClient({ savedTarget }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><span className="eyebrow">Your daily protein target</span><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
+    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
       <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={()=>{
         if(!result||isPending||saved)return;
         start(async()=>{
@@ -111,6 +113,15 @@ export default function CalculatorClient({ savedTarget }) {
         });
       }} disabled={isPending||saved}>{saved?'Saved!':isPending?'Saving…':'Save my protein target'}</button>
       {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
+      {PROTLYS_CALCULATOR_PRODUCTS.length>0&&<div style={{marginTop:14}}>
+        <div style={{fontSize:11,fontWeight:800,color:'var(--ink-45)',textTransform:'uppercase',letterSpacing:'.08em'}}>Shop Protlys</div>
+        <div className="row-scroll" style={{padding:'10px 0 3px',margin:0}}>
+          {PROTLYS_CALCULATOR_PRODUCTS.slice(0,3).map(product=><a key={product.url} href={product.url} target="_blank" rel="noopener noreferrer" style={{minWidth:150,maxWidth:180,flex:'0 0 150px',textDecoration:'none',background:'var(--white)',border:'1px solid var(--line)',borderRadius:14,padding:10}}>
+            <div style={{height:82,borderRadius:10,overflow:'hidden',background:'var(--green-soft)',marginBottom:8}}>{product.image&&<img src={product.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
+            <div style={{fontSize:12,fontWeight:800,lineHeight:1.25}}>{product.title}</div>
+          </a>)}
+        </div>
+      </div>}
       {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
       <p className="disclaimer" style={{marginTop:14}}>This is a starting estimate, not medical advice. Speak with a registered dietitian for personalised guidance.</p></div>}
     {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button></section>}
