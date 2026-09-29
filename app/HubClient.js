@@ -2,7 +2,7 @@
 
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
-import { completeOnboardingAction, logProteinAction, saveTargetAction } from './actions';
+import { completeOnboardingAction, confirmCalculatorTargetAction, logProteinAction, saveTargetAction } from './actions';
 
 const QUICK = [15,20,25,30];
 
@@ -15,30 +15,34 @@ function timeLabel(value) {
   return new Intl.DateTimeFormat('en-GB', { timeZone:'Africa/Nairobi', hour:'numeric', minute:'2-digit' }).format(new Date(value));
 }
 
-export default function HubClient({ profile, todayG, logs, movementDays = [], foundingCount = 0 }) {
+export default function HubClient({ profile, calculatorTarget = null, todayG, logs, movementDays = [], foundingCount = 0 }) {
   const router = useRouter();
   const [panel, setPanel] = useState(null);
   const [onboarding, setOnboarding] = useState(!profile?.onboarding_complete);
   const [target, setTarget] = useState(Number(profile?.target_g) || 120);
-  const [calculatorTarget, setCalculatorTarget] = useState(null);
+  const [calculatorCarryTarget, setCalculatorCarryTarget] = useState(Number(calculatorTarget) || null);
   const [custom, setCustom] = useState('');
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState('');
 
   useEffect(() => {
     try {
-      const raw = localStorage.getItem('protlys_calculator_target');
+      const raw = localStorage.getItem('pendingTarget');
       if (raw) {
         const data = JSON.parse(raw);
-        const value = Number(data?.target);
+        const value = Number(data?.target_g);
         if (value >= 20 && value <= 500) {
-          setCalculatorTarget(value);
+          setCalculatorCarryTarget(value);
           setTarget(value);
           setOnboarding(true);
         }
       }
+      if (Number(calculatorTarget) >= 20 && Number(calculatorTarget) <= 500) {
+        setCalculatorCarryTarget(Number(calculatorTarget));
+        setTarget(Number(calculatorTarget));
+      }
     } catch {}
-  }, []);
+  }, [calculatorTarget]);
 
   const remaining = Math.max(0, target - Number(todayG || 0));
   const progress = target > 0 ? Math.min(100, Math.round((Number(todayG || 0) / target) * 100)) : 0;
@@ -55,8 +59,19 @@ export default function HubClient({ profile, todayG, logs, movementDays = [], fo
       const result = await saveTargetAction({ targetG:value });
       if (result?.error) return flash(result.error);
       setTarget(value);
-      setCalculatorTarget(null);
+      setCalculatorCarryTarget(null);
       try { localStorage.removeItem('protlys_calculator_target'); } catch {}
+    });
+  }
+
+  function confirmCalculatorTarget() {
+    startTransition(async () => {
+      const result = await confirmCalculatorTargetAction({ targetG:target });
+      if (result?.error) return flash(result.error);
+      setOnboarding(false);
+      setCalculatorCarryTarget(null);
+      try { localStorage.removeItem('pendingTarget'); } catch {}
+      router.refresh();
     });
   }
 
@@ -64,7 +79,7 @@ export default function HubClient({ profile, todayG, logs, movementDays = [], fo
     startTransition(async () => {
       await completeOnboardingAction();
       setOnboarding(false);
-      try { localStorage.removeItem('protlys_calculator_target'); } catch {}
+      try { localStorage.removeItem('pendingTarget'); } catch {}
       router.refresh();
     });
   }
@@ -93,10 +108,10 @@ export default function HubClient({ profile, todayG, logs, movementDays = [], fo
       <section className="section-card" style={{marginTop:20,textAlign:'center',padding:'26px 18px'}}>
         <div style={{fontSize:12,color:'var(--ink-45)',fontWeight:700}}>Your daily target</div>
         <div className="mono" style={{fontSize:58,fontWeight:800,lineHeight:1,marginTop:6}}>{target}<span style={{fontSize:20,opacity:.5}}> g</span></div>
-        <p style={{fontSize:13,color:'var(--ink-70)',margin:'10px auto 18px',maxWidth:390}}>{calculatorTarget ? 'This came from the calculator. Want to keep it or change it?' : 'This is your starting target. You can change it any time.'}</p>
+        <p style={{fontSize:13,color:'var(--ink-70)',margin:'10px auto 18px',maxWidth:390}}>{calculatorCarryTarget ? 'Your target: '+target+'g. Looks right?' : 'This is your starting target. You can change it any time.'}</p>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9}}>
-          <button className="btn-primary" onClick={() => saveTarget(target)} disabled={pending}>Keep {target} g</button>
-          <button className="btn-secondary" onClick={() => setPanel('edit-target')} disabled={pending}>Edit</button>
+          <button className="btn-primary" onClick={calculatorCarryTarget ? confirmCalculatorTarget : () => saveTarget(target)} disabled={pending}>{calculatorCarryTarget ? 'Confirm' : 'Keep '+target+' g'}</button>
+          <button className="btn-secondary" onClick={() => setPanel('edit-target')} disabled={pending}>{calculatorCarryTarget ? 'Change' : 'Edit'}</button>
         </div>
         {panel === 'edit-target' && <div style={{marginTop:16,textAlign:'left'}}><label className="field-label">DAILY TARGET (GRAMS)</label><input className="field-input mono" inputMode="numeric" type="number" min="20" max="500" value={target} onChange={e=>setTarget(e.target.value)} style={{fontSize:24,fontWeight:700}}/><button className="btn-primary" style={{marginTop:9}} onClick={()=>saveTarget(target)} disabled={pending}>Save target</button></div>}
       </section>
@@ -109,7 +124,7 @@ export default function HubClient({ profile, todayG, logs, movementDays = [], fo
         {panel === 'custom' && <div style={{marginTop:12}}><input className="field-input mono" inputMode="decimal" type="number" min="1" max="300" placeholder="Protein grams" value={custom} onChange={e=>setCustom(e.target.value)}/><button className="btn-primary" style={{marginTop:9}} onClick={()=>{const v=Number(custom);if(v>0)log(v,'Custom protein')}} disabled={pending}>Log protein</button></div>}
       </section>
 
-      <button className="btn-secondary" style={{marginTop:14,width:'100%'}} onClick={finishOnboarding} disabled={pending}>Skip for now → Go to Today</button>
+      {!calculatorCarryTarget&&<button className="btn-secondary" style={{marginTop:14,width:'100%'}} onClick={finishOnboarding} disabled={pending}>Skip for now → Go to Today</button>}
     </div>
   </>;
 
