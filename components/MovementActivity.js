@@ -1,5 +1,7 @@
 'use client';
 
+import MilestoneShareCard from '@/components/MilestoneShareCard';
+
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
@@ -104,7 +106,7 @@ function ProgressRing({ steps, goal }) {
   );
 }
 
-export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0 }) {
+export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null }) {
   const [expanded, setExpanded] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
@@ -397,8 +399,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
             })}
           </div>
           <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
-            <div className="hub-card" style={{ padding:12, margin:0 }}><div className="t">Current streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{current} {current === 1 ? 'day' : 'days'}</div></div>
-            <div className="hub-card" style={{ padding:12, margin:0 }}><div className="t">Best streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{best} {best === 1 ? 'day' : 'days'}</div></div>
+            <div className="hub-card" style={{ padding:12, margin:0 }}><div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}><div><div className="t">Current streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{current} {current === 1 ? 'day' : 'days'}</div></div>{current > 0 && <MilestoneShareCard milestone={{key:'current-streak',type:'streak',value:current,label:'Day streak',subline:current+' days of movement in a row',accent:'flame',title:current+'-day movement streak',shareText:(who='') => (who ? who+' just hit a ' : 'I just hit a ') + current+'-day movement streak on Protlys. Join me: https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}</div></div>
+            <div className="hub-card" style={{ padding:12, margin:0 }}><div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}><div><div className="t">Best streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{best} {best === 1 ? 'day' : 'days'}</div></div>{best > 0 && <MilestoneShareCard milestone={{key:'best-streak',type:'streak',value:best,label:'Best streak',subline:best+' days of movement in a row',accent:'trophy',title:'Best movement streak',shareText:(who='') => (who ? who+' reached a best movement streak of '+best+' days on Protlys. Join me: ' : 'I reached a best movement streak of '+best+' days on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}</div></div>
           </div>
         </div>
       )}
