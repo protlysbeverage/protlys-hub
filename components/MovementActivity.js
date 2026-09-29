@@ -93,7 +93,7 @@ function ProgressRing({ steps, goal }) {
   );
 }
 
-export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500 }) {
+export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0 }) {
   const [expanded, setExpanded] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
   const [monthCache, setMonthCache] = useState({});
@@ -104,7 +104,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
   const movementKeys = useMemo(() => days.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [days]);
-  const { current, best } = useMemo(() => streaks(movementKeys), [movementKeys]);
+  const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
+  const current = Number(currentStreak || recentStreaks.current || 0);
+  const best = Math.max(Number(currentStreak || 0), recentStreaks.best || 0);
 
   const today = new Date();
   const todayKey = dateKey(today);
@@ -119,11 +121,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
-  const calendarBounds = useMemo(() => {
-    const available = movementKeys.length ? movementKeys.map(parseKey) : [today];
-    const earliest = available.reduce((min, d) => d < min ? d : min, available[0]);
-    return { min: new Date(earliest.getFullYear(), earliest.getMonth(), 1), max: new Date(today.getFullYear(), today.getMonth(), 1) };
-  }, [movementKeys.join('|')]);
+  const calendarBounds = useMemo(() => ({ max: new Date(today.getFullYear(), today.getMonth(), 1) }), [todayKey]);
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -164,6 +162,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       const { data, error } = await supabase
         .from('daily_steps')
         .select('step_date, steps, source, synced_at')
+        .eq('user_id', userId)
         .gte('step_date', start)
         .lte('step_date', end)
         .order('step_date', { ascending: true });
@@ -173,7 +172,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     }
     loadMonth();
     return () => { cancelled = true; };
-  }, [expanded, currentMonthKey, calendarMonth, monthCache]);
+  }, [expanded, currentMonthKey, calendarMonth, monthCache, userId]);
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -334,7 +333,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
               <div className="movement-sheet-empty"><strong>No movement recorded</strong><span>There are no recorded steps for this day yet.</span></div>
             )}
             <div className="movement-sheet-nav">
-              <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey <= calendarBounds.min.toISOString().slice(0,7)+'-01'} aria-label="Previous day">‹</button>
+              <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey.slice(0,7) !== currentMonthKey || selectedKey <= currentMonthKey + '-01'} aria-label="Previous day">‹</button>
               <span style={{fontSize:10.5,color:'var(--ink-45)'}}>Day details</span>
               <button type="button" onClick={() => moveSelected(1)} disabled={!selectedKey || selectedKey >= todayKey} aria-label="Next day">›</button>
             </div>
