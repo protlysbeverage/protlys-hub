@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ShareSheet from '@/components/ShareSheet';
 import QRCode from 'qrcode';
 
 const SHARE_URL='https://hub.protlys.com/calculator?src=milestone';
@@ -17,8 +18,13 @@ async function image(src, anonymous=false){
 
 export default function MilestoneShareCard({milestone,profile}){
   const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[showIdentity,setShowIdentity]=useState(true),[open,setOpen]=useState(false);
+  const [previewUrl,setPreviewUrl]=useState(''),[previewLoading,setPreviewLoading]=useState(false),[previewError,setPreviewError]=useState('');
   useEffect(()=>{try{const v=localStorage.getItem(IDENTITY_KEY);if(v!==null)setShowIdentity(v==='true')}catch{}},[]);
   function identity(v){setShowIdentity(v);try{localStorage.setItem(IDENTITY_KEY,String(v))}catch{}}
+  async function renderPreview(){setPreviewLoading(true);setPreviewError('');setPreviewUrl('');try{const c=await draw();setPreviewUrl(c.toDataURL('image/png'))}catch(e){console.error(e);setPreviewError('Could not create preview.')}finally{setPreviewLoading(false)}}
+  useEffect(()=>{if(open)renderPreview()},[open,showIdentity]);
+  async function saveImage(){if(busy||previewLoading)return;try{const c=await draw(),png=await new Promise(r=>c.toBlob(r,'image/png'));if(!png)throw Error('Could not create share image.');const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setMessage('Image saved.')}catch(e){console.error(e);setMessage('Could not save the image.')}}
+  async function copyLink(){try{if(!navigator.clipboard?.writeText)throw Error('clipboard');await navigator.clipboard.writeText(SHARE_URL);setMessage('Link copied.')}catch(e){console.error(e);setMessage('Could not copy the link.')}}
 
   async function draw(){
     if(!milestone?.label||milestone?.value===undefined)throw new Error('missing-milestone');
@@ -47,5 +53,9 @@ export default function MilestoneShareCard({milestone,profile}){
     return c;
   }
   async function share(){if(busy)return;setBusy(true);setMessage('');try{const c=await draw(),png=await new Promise(r=>c.toBlob(r,'image/png'));if(!png)throw Error('Could not create share image.');const file=new File([png],'protlys-milestone.png',{type:'image/png'});const name=showIdentity&&profile?.display_name?.trim()?profile.display_name.trim():'';if(typeof navigator.share==='function'&&typeof navigator.canShare==='function'&&navigator.canShare({files:[file]})){await navigator.share({files:[file],title:milestone.title,text:milestone.shareText(name),url:SHARE_URL});setMessage('Milestone shared.')}else{const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(SHARE_URL);setMessage('Image downloaded. Link copied.')}}catch(e){if(e?.name!=='AbortError'){console.error(e);setMessage('Could not create or share the milestone card. Please try again.')}}finally{setBusy(false)}}
-  return <div style={{position:'relative',display:'inline-block'}}><button type="button" className="motion-tap" onClick={()=>setOpen(v=>!v)} disabled={busy} style={{minHeight:40,padding:'7px 10px',border:'1px solid var(--line)',borderRadius:10,background:'var(--white)',color:'var(--green-dark)',fontWeight:800}}>Share</button>{open&&<div style={{position:'absolute',right:0,top:48,width:260,zIndex:50,padding:14,borderRadius:14,border:'1px solid var(--line)',background:'var(--paper)',boxShadow:'0 12px 30px rgba(0,0,0,.15)'}}><div style={{fontSize:11,fontWeight:800,marginBottom:10}}>Share preview</div><label style={{display:'flex',alignItems:'center',gap:9,fontSize:11.5,color:'var(--ink-70)'}}><input type="checkbox" checked={showIdentity} onChange={e=>identity(e.target.checked)} style={{width:18,height:18,accentColor:'var(--green)'}}/>Show my name and photo</label><button type="button" className="btn-primary" onClick={share} disabled={busy} style={{marginTop:12,width:'100%',minHeight:44}}>{busy?'Creating…':'Share card'}</button>{message&&<div role="status" aria-live="polite" style={{fontSize:11,color:'var(--ink-70)',marginTop:8}}>{message}</div>}</div>}</div>;
-}
+  return <>
+    <button type="button" className="motion-tap" onClick={()=>setOpen(true)} disabled={busy} aria-label={`Share ${milestone?.type === 'streak' ? 'streak' : 'milestone'}`} style={{width:36,height:36,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}} title="Share">
+      <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>
+    </button>
+    <ShareSheet open={open} title={milestone?.type === 'streak' ? 'Share your streak' : 'Share your milestone'} previewUrl={previewUrl} previewLoading={previewLoading} previewError={previewError} onRetry={renderPreview} showIdentity={showIdentity} onToggleIdentity={identity} onShare={share} onSave={saveImage} onCopy={copyLink} busy={busy} message={message} onClose={()=>setOpen(false)} />
+  </>;
