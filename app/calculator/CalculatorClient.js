@@ -42,6 +42,13 @@ export default function CalculatorClient({ savedTarget }) {
   const resultRef = useRef(null);
 
   useEffect(()=>{
+    try{
+      const src=new URLSearchParams(window.location.search).get('src');
+      if(src) localStorage.setItem('src',src);
+    }catch{}
+  },[]);
+
+  useEffect(()=>{
     if(!result || !resultRef.current)return;
     requestAnimationFrame(()=>{
       resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -100,7 +107,7 @@ export default function CalculatorClient({ savedTarget }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
+    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target} activity={activityLabel(result.activity) + ' activity'} goal={GOALS.find(g=>g.id===goal)?.label}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
       <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={()=>{
         if(!result||isPending||saved)return;
         start(async()=>{
