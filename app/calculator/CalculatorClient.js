@@ -37,7 +37,7 @@ function OptionGrid({items,value,onChange,getValue,height}){return <div style={{
 export default function CalculatorClient({ savedTarget, profile }) {
   const router = useRouter();
   const [weight,setWeight]=useState(70); const [sex,setSex]=useState('male'); const [activity,setActivity]=useState(1.375); const [goal,setGoal]=useState('maintain');
-  const [result,setResult]=useState(null); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
+  const [result,setResult]=useState(null); const [displayTarget,setDisplayTarget]=useState(0); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
   const [saveMessage,setSaveMessage]=useState('');
   const resultRef = useRef(null);
 
@@ -47,6 +47,23 @@ export default function CalculatorClient({ savedTarget, profile }) {
       if(src) localStorage.setItem('src',src);
     }catch{}
   },[]);
+
+  useEffect(()=>{
+    if(!result)return;
+    const finalValue=Number(result.target)||0;
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){ setDisplayTarget(finalValue); return; }
+    let raf=0;
+    const started=performance.now();
+    const duration=800;
+    const ease=t=>1-Math.pow(1-t,3);
+    const tick=now=>{
+      const progress=Math.min(1,(now-started)/duration);
+      setDisplayTarget(Math.round(finalValue*ease(progress)));
+      if(progress<1) raf=requestAnimationFrame(tick);
+    };
+    raf=requestAnimationFrame(tick);
+    return()=>cancelAnimationFrame(raf);
+  },[result]);
 
   useEffect(()=>{
     if(!result || !resultRef.current)return;
@@ -107,8 +124,8 @@ export default function CalculatorClient({ savedTarget, profile }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target} activity={activityLabel(result.activity)} goal={GOALS.find(g=>g.id===goal)?.label} profile={profile}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
-      <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={()=>{
+    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target} activity={activityLabel(result.activity)} goal={GOALS.find(g=>g.id===goal)?.label} profile={profile}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono motion-count" style={{fontSize:52,fontWeight:700,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{displayTarget}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
+      <button className="btn-secondary motion-tap" aria-live="polite" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)',width:'100%',minWidth:0}} onClick={()=>{
         if(!result||isPending||saved)return;
         start(async()=>{
           const supabase=createClient();
@@ -118,7 +135,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
           setSaveMessage('Create a free account or sign in to save your target.');
           window.setTimeout(()=>router.push('/login?next=/calculator'),100);
         });
-      }} disabled={isPending||saved}>{saved?'Saved!':isPending?'Saving…':'Save my protein target'}</button>
+      }} disabled={isPending||saved}>{saved?<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Saved</span>:isPending?'Saving…':'Save my protein target'}</button>
       {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
       {PROTLYS_CALCULATOR_PRODUCTS.length>0&&<div style={{marginTop:14}}>
         <div style={{fontSize:11,fontWeight:800,color:'var(--ink-45)',textTransform:'uppercase',letterSpacing:'.08em'}}>Shop Protlys</div>
