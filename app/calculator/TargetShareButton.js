@@ -46,7 +46,7 @@ export default function TargetShareButton({ target, activity, goal }) {
     }catch(e){if(e?.name!=='AbortError'){console.error(e);setMessage('Could not create the share card. Please try again.');window.setTimeout(()=>setMessage(''),2800);}}finally{setBusy(false);}
   }
 
-  return <button type="button" onClick={share} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
+  return <div><button type="button" onClick={share} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>
-  </button>;
+  </button>{message&&<span role="status" aria-live="polite" style={{marginLeft:8,fontSize:11,color:'var(--green-dark)'}}>{message}</span>}</div>;
 }
