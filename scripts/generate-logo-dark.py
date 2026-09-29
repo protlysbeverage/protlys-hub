@@ -74,25 +74,33 @@ green_bbox = (min(gx), min(gy), max(gx), max(gy))
 green_area = len(green_points)
 
 # The P is the small black component enclosed by the green cup.
-# Choose the strongest enclosed candidate; never recolor that component.
+# Select the small component closest to the green cup's center and keep it black.
+gx_center = (green_bbox[0] + green_bbox[2]) / 2
+gy_center = (green_bbox[1] + green_bbox[3]) / 2
+green_w = max(1, green_bbox[2] - green_bbox[0])
+green_h = max(1, green_bbox[3] - green_bbox[1])
+
 candidates = []
 for idx, c in enumerate(components):
+    if c["area"] < 4 or c["area"] > green_area * 0.25:
+        continue
     x0, y0, x1, y1 = c["bbox"]
-    enclosed = (
-        x0 >= green_bbox[0] - 8 and
-        y0 >= green_bbox[1] - 8 and
-        x1 <= green_bbox[2] + 8 and
-        y1 <= green_bbox[3] + 8
+    cx = (x0 + x1) / 2
+    cy = (y0 + y1) / 2
+    inside = (
+        green_bbox[0] - green_w * 0.12 <= cx <= green_bbox[2] + green_w * 0.12 and
+        green_bbox[1] - green_h * 0.12 <= cy <= green_bbox[3] + green_h * 0.12
     )
-    small = c["area"] < green_area * 0.20
-    if enclosed and small and c["green_adj"]:
-        candidates.append((c["green_adj"] / c["area"], c["area"], idx))
+    if not inside:
+        continue
+    distance = ((cx - gx_center) / green_w) ** 2 + ((cy - gy_center) / green_h) ** 2
+    green_score = c["green_adj"] / max(1, c["area"])
+    candidates.append((distance - green_score * 0.15, -green_score, c["area"], idx))
 
 if not candidates:
     raise RuntimeError("Could not safely isolate the black P inside the green cup.")
 
-p_component = max(candidates)[2]
-p_pixels = set(components[p_component]["pixels"])
+p_component = min(candidates)[3]
 
 # Recolor black artwork while preserving alpha. Include nearby dark antialias pixels
 # only when they are connected to selected black artwork, avoiding hard-edged halos.
