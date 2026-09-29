@@ -22,16 +22,54 @@ function dateLabel(key) {
   return new Intl.DateTimeFormat('en-US', { timeZone:'Africa/Nairobi', weekday:'short', month:'short', day:'numeric' }).format(new Date(key + 'T12:00:00+03:00'));
 }
 
-function CircularProgress({ steps, goal }) {
+function CircularProgress({ steps, goal, dayKey }) {
   const size=40, stroke=4, radius=16, circumference=2*Math.PI*radius;
   const reached=goal>0 && steps>=goal;
   const progress=goal>0 ? Math.min(1,steps/goal) : 0;
-  const dash=circumference*progress;
-  return <div aria-label={reached ? 'Step goal reached' : String(Math.round(progress*100)) + '% of step goal'} style={{width:size,height:size,position:'relative',flex:'0 0 auto'}}>
+  const dashOffset=circumference*(1-progress);
+  const [visible,setVisible]=useState(false);
+  const [goalPulse,setGoalPulse]=useState(false);
+  const ref=useRef(null);
+  const previousProgress=useRef(progress);
+
+  useEffect(()=>{
+    const node=ref.current;
+    if(!node)return;
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setVisible(true);return;}
+    const observer=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)){
+        setVisible(true);
+        observer.disconnect();
+      }
+    },{threshold:.15});
+    observer.observe(node);
+    return()=>observer.disconnect();
+  },[]);
+
+  useEffect(()=>{
+    if(!reached || !dayKey)return;
+    let shouldPulse=false;
+    try{
+      const key='protlys-goal-reached:'+dayKey;
+      if(localStorage.getItem(key)!=='1'){
+        localStorage.setItem(key,'1');
+        shouldPulse=true;
+      }
+    }catch{}
+    if(shouldPulse && !window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){
+      setGoalPulse(true);
+      const timer=window.setTimeout(()=>setGoalPulse(false),420);
+      return()=>window.clearTimeout(timer);
+    }
+  },[reached,dayKey]);
+
+  useEffect(()=>{ previousProgress.current=progress; },[progress]);
+
+  return <div ref={ref} aria-label={reached ? 'Step goal reached' : String(Math.round(progress*100)) + '% of step goal'} style={{width:size,height:size,position:'relative',flex:'0 0 auto',transform:goalPulse?'scale(1.06)':'scale(1)',transition:'transform 200ms var(--ease-out)'}}>
     <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
       <circle cx="20" cy="20" r={radius} stroke="var(--green-soft)" strokeWidth={stroke}/>
-      <circle cx="20" cy="20" r={radius} stroke="var(--green-dark)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={dash + ' ' + (circumference-dash)} transform="rotate(-90 20 20)"/>
-      {reached && <path d="m14.5 20.5 3.5 3.5 7-8" stroke="var(--green-dark)" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>}
+      <circle cx="20" cy="20" r={radius} stroke="var(--green-dark)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={visible ? dashOffset : circumference} style={{transition:'stroke-dashoffset 700ms var(--ease-out)',willChange:visible?'auto':'stroke-dashoffset'}} transform="rotate(-90 20 20)"/>
+      {reached && <path className="goal-check-draw" d="m14.5 20.5 3.5 3.5 7-8" stroke="var(--green-dark)" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>}
     </svg>
   </div>;
 }
@@ -158,22 +196,22 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <section className="hub-card" style={{padding:14,marginBottom:10,boxSizing:'border-box',overflow:'hidden'}}>
         <div role="button" tabIndex={0} aria-expanded={activityOpen} aria-controls="recent-activity-details" onClick={() => setActivityOpen(v => !v)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') { event.preventDefault(); setActivityOpen(v => !v); } }} style={{display:'block',width:'100%',minHeight:44,padding:0,margin:0,border:0,background:'transparent',color:'inherit',textAlign:'left',cursor:'pointer'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}><div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
-            <span aria-hidden="true" style={{width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',flex:'0 0 28px',color:'var(--ink-45)',transform:`rotate(${activityOpen ? 180 : 0}deg)`,transition:'transform 250ms ease'}}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
+            <span aria-hidden="true" style={{width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',flex:'0 0 28px',color:'var(--ink-45)',transform:`rotate(${activityOpen ? 180 : 0}deg)`,transition:'transform 200ms var(--ease-out)'}}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
           </div>
           <div className="week-strip" style={{boxSizing:'border-box',width:'100%',marginTop:10}}>
-            {activeDays.map(day => <button key={day.key} className="week-strip-item" type="button" onClick={event => { event.stopPropagation(); scrollToActivityDay(day.key); }} aria-label={`${dateLabel(day.key)}: ${day.steps.toLocaleString()} steps`} style={{minWidth:0,width:'100%',padding:0,border:0,margin:0,background:'transparent',color:'inherit',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderRadius:10,textAlign:'center'}}>
+            {activeDays.map(day => <button key={day.key} className="week-strip-item motion-tap" type="button" onClick={event => { event.stopPropagation(); scrollToActivityDay(day.key); }} aria-label={`${dateLabel(day.key)}: ${day.steps.toLocaleString()} steps`} style={{minWidth:0,width:'100%',padding:0,border:0,margin:0,background:'transparent',color:'inherit',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderRadius:10,textAlign:'center'}}>
               <span style={{display:'block',width:'100%',minWidth:0,fontSize:9.5,color:'var(--ink-45)',marginBottom:5,textAlign:'center'}}>{new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',weekday:'short'}).format(new Date(day.key + 'T12:00:00+03:00')).slice(0,1)}</span>
               <span className="capsule" style={{display:'block',width:'100%',maxWidth:'100%',height:10,minWidth:0,borderRadius:999,background:day.steps > 0 ? 'var(--green-dark)' : 'var(--green-soft)',border:day.steps > 0 ? '0' : '1px solid var(--line)',boxSizing:'border-box'}} />
             </button>)}</div>
         </div>
-        <div id="recent-activity-details" style={{display:'grid',gridTemplateRows:activityOpen ? '1fr' : '0fr',transition:'grid-template-rows 250ms ease',overflow:'hidden'}}>
+        <div id="recent-activity-details" style={{display:'grid',gridTemplateRows:activityOpen ? '1fr' : '0fr',transition:'grid-template-rows 250ms var(--ease-out)',overflow:'hidden'}}>
           <div style={{minHeight:0}}><div style={{paddingTop:14}}>
             {activeRows.length === 0 ? <div style={{padding:'14px 12px',borderRadius:14,background:'var(--paper)',color:'var(--ink-70)',fontSize:12.5}}>No movement yet this week. Your first steps will show up here.</div> : <div style={{display:'grid',gap:8}}>
-              {activeRows.map(day => { const distance=(day.steps*0.75)/1000; const isToday=day.key===todayKey; return <div key={day.key} ref={node => { if(node) activityRowsRef.current[day.key]=node; else delete activityRowsRef.current[day.key]; }} style={{padding:'11px 12px 10px',borderRadius:14,border:'1px solid var(--line)',background:'var(--card)',boxShadow:highlightedDay===day.key ? '0 0 0 2px var(--green)' : 'none',transition:'box-shadow 250ms ease'}}>
+              {activeRows.map(day => { const distance=(day.steps*0.75)/1000; const isToday=day.key===todayKey; return <div key={day.key} ref={node => { if(node) activityRowsRef.current[day.key]=node; else delete activityRowsRef.current[day.key]; }} style={{padding:'11px 12px 10px',borderRadius:14,border:'1px solid var(--line)',background:'var(--card)',boxShadow:highlightedDay===day.key ? '0 0 0 2px var(--green)' : 'none',transition:'box-shadow 250ms var(--ease-out)'}}>
                 <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.05fr) minmax(0,1.35fr) auto',alignItems:'center',gap:8}}>
                   <div style={{minWidth:0}}><div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}><span style={{fontSize:12.5,fontWeight:800}}>{dateLabel(day.key)}</span>{isToday && <span style={{fontSize:9,padding:'3px 7px',borderRadius:999,background:'var(--green-soft)',color:'var(--green-dark)',fontWeight:800}}>Today</span>}</div></div>
                   <div style={{minWidth:0}}><div className="mono" style={{fontSize:13,fontWeight:800}}>{day.steps.toLocaleString()} steps</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>{formatDistance(distance)} · est.</div></div>
-                  <CircularProgress steps={day.steps} goal={stepGoal}/>
+                  <CircularProgress steps={day.steps} goal={stepGoal} dayKey={day.key}/>
                 </div>
                 <div style={{height:4,background:'var(--green-soft)',borderRadius:999,overflow:'hidden',marginTop:9}}><div style={{height:'100%',width:`${stepGoal > 0 ? Math.min(100,(day.steps/stepGoal)*100) : 0}%`,background:'var(--green)',borderRadius:999}} /></div>
               </div>})}
