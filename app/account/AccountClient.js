@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MilestoneShareCard from '@/components/MilestoneShareCard';
@@ -106,25 +106,63 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const weekTotalSteps = activeDays.reduce((sum,day)=>sum+day.steps,0);
   const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
-  const achievementRows = (achievements || []).map(row => ({ ...(row?.achievements || row), earned_at: row?.earned_at }));
-  const reachedStreakMilestones = [3,7,14,30,60,100].filter(n => Number(profile?.step_streak || 0) >= n);
-  const goalAchievement = achievementRows.find(a => /first.*goal|goal.*first|first.*target|target.*first/i.test(String(a?.slug || '') + ' ' + String(a?.name || '')));
-  const challengeAchievements = achievementRows.filter(a => /challenge/i.test(String(a?.slug || '') + ' ' + String(a?.name || '')) && /complete|completed|finish|finished|earned/i.test(String(a?.slug || '') + ' ' + String(a?.name || '') + ' ' + String(a?.description || '')));
-  const milestoneOptions = [
-    ...reachedStreakMilestones.map(n => ({ key:'streak-' + n, type:'streak', value:n, label:'Day streak', subline:n + ' days of movement in a row', accent:'flame', title:n + '-day movement streak', shareText:(who='') => (who ? who + ' just hit a ' : 'I just hit a ') + n + '-day movement streak on Protlys. Join me: ' + 'https://hub.protlys.com/calculator?src=milestone' })),
-    ...(goalAchievement ? [{ key:'first-goal', type:'goal', value:Math.max(1,Number(profile?.step_goal || 0)), label:'First goal reached', subline:'Your first day reaching your step goal', accent:'flag', title:'First movement goal reached', shareText:(who='') => (who ? who + ' reached their first movement goal on Protlys. Join me: ' : 'I reached my first movement goal on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone' }] : []),
-    ...challengeAchievements.map(a => ({ key:'challenge-' + String(a.slug || a.name || 'completed').toLowerCase().replace(/[^a-z0-9]+/g,'-'), type:'challenge', value:'✓', label:'Challenge completed', subline:String(a.name || 'Movement challenge completed'), accent:'trophy', title:'Protlys challenge completed', shareText:(who='') => (who ? who + ' completed a movement challenge on Protlys. Join me: ' : 'I completed a movement challenge on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone' })))
-  ];
-  const [milestoneBanner,setMilestoneBanner] = useState(null);
+  const milestoneOptions = useMemo(() => {
+    const rows = (achievements || []).map(row => row?.achievements || row).filter(Boolean);
+    const text = row => String(row?.slug || '') + ' ' + String(row?.name || '') + ' ' + String(row?.description || '');
+    const options = [3, 7, 14, 30, 60, 100]
+      .filter(n => Number(profile?.step_streak || 0) >= n)
+      .map(n => ({
+        key: 'streak-' + n,
+        type: 'streak',
+        value: n,
+        label: 'Day streak',
+        subline: n + ' days of movement in a row',
+        accent: 'flame',
+        title: n + '-day movement streak',
+        shareText: (who = '') => (who ? who + ' just hit a ' : 'I just hit a ') + n + '-day movement streak on Protlys. Join me: https://hub.protlys.com/calculator?src=milestone'
+      }));
+    if (rows.some(row => /first.*(goal|target)|(goal|target).*first/i.test(text(row)))) {
+      options.push({
+        key: 'first-goal',
+        type: 'goal',
+        value: Math.max(1, Number(profile?.step_goal || 0)),
+        label: 'First goal reached',
+        subline: 'Your first day reaching your step goal',
+        accent: 'flag',
+        title: 'First movement goal reached',
+        shareText: (who = '') => (who ? who + ' reached their first movement goal on Protlys. Join me: ' : 'I reached my first movement goal on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'
+      });
+    }
+    rows.filter(row => /challenge/i.test(text(row)) && /complete|finish|earned/i.test(text(row))).forEach(row => {
+      const slug = String(row?.slug || row?.name || 'completed').toLowerCase().replace(/[^a-z0-9]+/g, '-');
+      options.push({
+        key: 'challenge-' + slug,
+        type: 'challenge',
+        value: '✓',
+        label: 'Challenge completed',
+        subline: String(row?.name || 'Movement challenge completed'),
+        accent: 'trophy',
+        title: 'Protlys challenge completed',
+        shareText: (who = '') => (who ? who + ' completed a movement challenge on Protlys. Join me: ' : 'I completed a movement challenge on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'
+      });
+    });
+    return options;
+  }, [achievements, profile?.step_streak, profile?.step_goal]);
+
+  const [milestoneBanner, setMilestoneBanner] = useState(null);
   useEffect(() => {
     if (!profile?.id || milestoneOptions.length === 0) return;
     try {
-      const key='protlys-shown-milestones:' + profile.id;
-      const shown=new Set(JSON.parse(localStorage.getItem(key) || '[]'));
-      const next=milestoneOptions.find(m => !shown.has(m.key));
-      if (next) { shown.add(next.key); localStorage.setItem(key,JSON.stringify([...shown])); setMilestoneBanner(next); }
+      const key = 'protlys-shown-milestones:' + profile.id;
+      const shown = new Set(JSON.parse(localStorage.getItem(key) || '[]'));
+      const next = milestoneOptions.find(m => !shown.has(m.key));
+      if (next) {
+        shown.add(next.key);
+        localStorage.setItem(key, JSON.stringify([...shown]));
+        setMilestoneBanner(next);
+      }
     } catch {}
-  }, [profile?.id, profile?.step_streak, profile?.step_goal, achievementRows.length]);
+  }, [profile?.id, milestoneOptions]);
 
   useEffect(() => () => { if (highlightTimer.current) window.clearTimeout(highlightTimer.current); }, []);
   function scrollToActivityDay(key) { setActivityOpen(true); window.setTimeout(()=>{ const row=activityRowsRef.current[key]; if(!row)return; const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); setHighlightedDay(key); if(highlightTimer.current)window.clearTimeout(highlightTimer.current); highlightTimer.current=window.setTimeout(()=>setHighlightedDay(''),1200); },260); }
