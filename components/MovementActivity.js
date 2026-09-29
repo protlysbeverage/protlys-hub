@@ -77,13 +77,27 @@ function ProgressRing({ steps, goal }) {
   const pct = Math.min(Number(steps || 0) / safeGoal, 1);
   const radius = 43;
   const circumference = 2 * Math.PI * radius;
-  const dash = circumference * pct;
+  const dashOffset = circumference * (1 - pct);
   const met = Number(steps || 0) >= safeGoal;
+  const [visible,setVisible]=useState(false);
+  const ref=useRef(null);
+
+  useEffect(()=>{
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){setVisible(true);return;}
+    const node=ref.current;
+    if(!node)return;
+    const observer=new IntersectionObserver(entries=>{
+      if(entries.some(entry=>entry.isIntersecting)){setVisible(true);observer.disconnect();}
+    },{threshold:.15});
+    observer.observe(node);
+    return()=>observer.disconnect();
+  },[]);
+
   return (
-    <div className="movement-day-ring" aria-label={`${Number(steps || 0).toLocaleString()} of ${safeGoal.toLocaleString()} steps`}>
+    <div ref={ref} className="movement-day-ring" aria-label={`${Number(steps || 0).toLocaleString()} of ${safeGoal.toLocaleString()} steps`}>
       <svg viewBox="0 0 104 104" width="104" height="104" aria-hidden="true">
         <circle cx="52" cy="52" r={radius} fill="none" stroke="var(--line)" strokeWidth="8" />
-        <circle cx="52" cy="52" r={radius} fill="none" stroke="var(--green)" strokeWidth="8" strokeLinecap="round" strokeDasharray={`${dash} ${circumference - dash}`} transform="rotate(-90 52 52)" />
+        <circle cx="52" cy="52" r={radius} fill="none" stroke="var(--green)" strokeWidth="8" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={visible ? dashOffset : circumference} style={{transition:'stroke-dashoffset 700ms var(--ease-out)',willChange:visible?'auto':'stroke-dashoffset'}} transform="rotate(-90 52 52)" />
       </svg>
       <div className="movement-day-ring-center">{met ? '✓' : `${Math.round(pct * 100)}%`}</div>
     </div>
