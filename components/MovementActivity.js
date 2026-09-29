@@ -309,6 +309,15 @@ export default function MovementActivity({ days = [], compact = false, title = '
     <div className="hub-card movement-activity-card" style={{ marginTop: 10 }}>
       <style>{`
         .movement-activity-card{position:relative;overflow:hidden;box-sizing:border-box;}
+        .movement-streak-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}
+        .movement-streak-tile{position:relative;min-width:0;min-height:92px;padding:14px 12px;border-radius:16px;background:var(--white);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;}
+        .movement-streak-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.2;font-weight:800;letter-spacing:.8px;color:var(--ink-45);white-space:nowrap;padding-right:38px;}
+        .streak-label-short{display:none;}
+        .movement-streak-tile > .motion-tap{position:absolute;top:9px;right:9px;}
+        .movement-streak-value{display:flex;align-items:baseline;gap:6px;white-space:nowrap;line-height:1;margin-top:10px;}
+        .movement-streak-value span{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:800;letter-spacing:-.045em;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
+        .movement-streak-value small{font-size:12px;font-weight:700;color:var(--ink-45);white-space:nowrap;}
+        @media (max-width:340px){.movement-streak-label{padding-right:38px}.streak-label-long{display:none}.streak-label-short{display:inline}}
         .movement-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
         .movement-calendar-day{min-width:44px;min-height:44px;width:100%;aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;position:relative;}
         .movement-calendar-day.empty{min-width:0;min-height:0;aspect-ratio:auto;}
@@ -398,9 +407,17 @@ export default function MovementActivity({ days = [], compact = false, title = '
               </button>;
             })}
           </div>
-          <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, marginTop:12 }}>
-            <div className="hub-card" style={{ padding:12, margin:0 }}><div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}><div><div className="t">Current streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{current} {current === 1 ? 'day' : 'days'}</div></div>{current > 0 && <MilestoneShareCard milestone={{key:'current-streak',type:'streak',value:current,label:'Day streak',subline:current+' days of movement in a row',accent:'flame',title:current+'-day movement streak',shareText:(who='') => (who ? who+' just hit a ' : 'I just hit a ') + current+'-day movement streak on Protlys. Join me: https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}</div></div>
-            <div className="hub-card" style={{ padding:12, margin:0 }}><div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:8}}><div><div className="t">Best streak</div><div className="mono" style={{ fontSize:22, fontWeight:800 }}>{best} {best === 1 ? 'day' : 'days'}</div></div>{best > 0 && <MilestoneShareCard milestone={{key:'best-streak',type:'streak',value:best,label:'Best streak',subline:best+' days of movement in a row',accent:'trophy',title:'Best movement streak',shareText:(who='') => (who ? who+' reached a best movement streak of '+best+' days on Protlys. Join me: ' : 'I reached a best movement streak of '+best+' days on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}</div></div>
+          <div className="movement-streak-grid">
+            <div className="movement-streak-tile">
+              <div className="movement-streak-label"><span className="streak-label-long">CURRENT STREAK</span><span className="streak-label-short">CURRENT</span></div>
+              {current > 0 && <MilestoneShareCard shareLabel="Share current streak" milestone={{key:'current-streak',type:'streak',value:current,label:'Day streak',subline:current+' days of movement in a row',accent:'flame',title:current+'-day movement streak',shareText:(who='') => (who ? who+' just hit a ' : 'I just hit a ') + current+'-day movement streak on Protlys. Join me: https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}
+              <div className="movement-streak-value"><span>{current}</span><small>{current === 1 ? 'day' : 'days'}</small></div>
+            </div>
+            <div className="movement-streak-tile">
+              <div className="movement-streak-label"><span className="streak-label-long">BEST STREAK</span><span className="streak-label-short">BEST</span></div>
+              {best > 0 && <MilestoneShareCard shareLabel="Share best streak" milestone={{key:'best-streak',type:'streak',value:best,label:'Best streak',subline:best+' days of movement in a row',accent:'trophy',title:'Best movement streak',shareText:(who='') => (who ? who+' reached a best movement streak of '+best+' days on Protlys. Join me: ' : 'I reached a best movement streak of '+best+' days on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}
+              <div className="movement-streak-value"><span>{best}</span><small>{best === 1 ? 'day' : 'days'}</small></div>
+            </div>
           </div>
         </div>
       )}
