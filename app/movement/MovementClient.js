@@ -20,7 +20,7 @@ function formatDateLabel(dateStr) {
 function caloriesForSteps(steps) { return Math.round(Number(steps || 0) * 0.04); }
 function distanceForSteps(steps) { return Number(steps || 0) * 0.00075; }
 
-export default function MovementClient({ profile, todaySteps = 0, lastSync, source, weekSteps = [], movementDays = [] }) {
+export default function MovementClient({ profile, todaySteps = 0, lastSync, source, weekSteps = [], movementDays = [], userId = null, currentStreak = 0, currentGoal = 7500 }) {
   const router = useRouter();
   const [isPending, start] = useTransition();
   const [manualSteps, setManualSteps] = useState('');
@@ -106,7 +106,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
         </div>
 
-        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" />
+        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} />
       </div>
     </>
   );
