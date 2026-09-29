@@ -96,7 +96,7 @@ function ProgressRing({ steps, goal }) {
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0 }) {
   const [expanded, setExpanded] = useState(false);
   const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
-  const [monthCache, setMonthCache] = useState({});
+  const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
