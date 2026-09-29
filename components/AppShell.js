@@ -72,7 +72,6 @@ export default function AppShell({ children }) {
     .protlys-app .bottom-nav {
       align-items:stretch!important;
       position:relative;
-      isolation:isolate;
       background:var(--white)!important;
       border-top:1px solid var(--line)!important;
       box-shadow:0 -4px 14px rgba(15,42,74,.06);
@@ -200,9 +199,6 @@ export default function AppShell({ children }) {
       }
     }
     @media (prefers-reduced-motion:reduce) {
-      .protlys-app .bottom-nav .nav-active-slot {
-        transition:none!important;
-      }
       .protlys-app .bottom-nav .nav-btn {
         transition:none!important;
       }
@@ -265,8 +261,7 @@ export default function AppShell({ children }) {
 
     <section className="screen active">{children}</section>
 
-    <nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" style={{'--nav-index':Math.max(0,NAV_ITEMS.findIndex(item=>item.href===pathname))}}>
-      <span className="nav-active-slot" aria-hidden="true" />
+    <nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
       {NAV_ITEMS.map(item=>{
         const isActive=pathname===item.href;
         const commonProps={key:item.href,className:`nav-btn${isActive?' active':''}`, 'aria-current':isActive?'page':undefined};
