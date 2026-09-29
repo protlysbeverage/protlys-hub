@@ -122,7 +122,7 @@ export default function AppShell({ children }) {
         <Link href="/" aria-label="Protlys Hub home"><img className="logo" src={logoSrc} alt="Protlys" width="2000" height="973" /></Link>
       </div>
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(item => <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
+        {NAV_ITEMS.map(item => item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
       </nav>
       <div className="sidebar-spacer" />
     </aside>
@@ -136,7 +136,7 @@ export default function AppShell({ children }) {
     <section className="screen active">{children}</section>
 
     <div className="bottom-nav">
-      {NAV_ITEMS.map(item=><Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
+      {NAV_ITEMS.map(item=>item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a>)}
     </div>
   </div>
 </div>;
