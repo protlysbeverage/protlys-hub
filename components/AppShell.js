@@ -1,7 +1,7 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
 
 const NAV_ITEMS = [
@@ -20,6 +20,7 @@ function CartIcon({ size = 19 }) {
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
   const shopUrl = getShopUrl();
   const logoSrc = '/protlys-logo-exact.png';
 
