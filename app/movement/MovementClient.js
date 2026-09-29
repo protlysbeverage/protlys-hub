@@ -6,10 +6,7 @@ import { logStepsAction } from '@/app/movement-actions';
 import MovementActivity from '@/components/MovementActivity';
 
 function localDateStr(date = new Date()) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 
 function formatDateLabel(dateStr) {
