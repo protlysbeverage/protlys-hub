@@ -291,9 +291,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .movement-calendar-day.empty{min-width:0;min-height:0;aspect-ratio:auto;}
         .movement-calendar-day:not(:disabled){cursor:pointer;}
         .movement-calendar-day:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
-        .movement-calendar-day.selected{box-shadow:inset 0 0 0 2px var(--green-dark),0 0 0 1px var(--green);}
-        .movement-sheet-backdrop{position:fixed;inset:0;background:rgba(7,15,12,.42);z-index:10000;display:flex;align-items:flex-end;justify-content:center;}
-        .movement-sheet{width:min(760px,100%);max-height:min(78dvh,680px);overflow:auto;background:var(--paper);border-radius:24px 24px 0 0;padding:9px 18px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box;box-shadow:0 -18px 50px rgba(0,0,0,.18);animation:movement-sheet-in .25s ease-out;}
+        .movement-calendar-day.selected{box-shadow:inset 0 0 0 2px var(--green-dark),0 0 0 1px var(--green);transition:box-shadow 150ms var(--ease-out),transform 100ms var(--ease-out);}
+        .movement-sheet-backdrop{position:fixed;inset:0;background:rgba(7,15,12,.42);z-index:10000;display:flex;align-items:flex-end;justify-content:center;animation:movement-backdrop-in 200ms ease-out;transition:opacity 200ms ease-out;}
+        .movement-sheet{width:min(760px,100%);max-height:min(78dvh,680px);overflow:auto;background:var(--paper);border-radius:24px 24px 0 0;padding:9px 18px calc(24px + env(safe-area-inset-bottom));box-sizing:border-box;box-shadow:0 -18px 50px rgba(0,0,0,.18);animation:movement-sheet-in .25s var(--ease-out);transition:transform 200ms var(--ease-out);touch-action:pan-y;}
         .movement-sheet-handle{width:42px;height:5px;border-radius:999px;background:var(--line);margin:0 auto 14px;}
         .movement-sheet-header{display:flex;align-items:center;justify-content:space-between;gap:10px;}
         .movement-sheet-title{font-family:'Space Grotesk',sans-serif;font-size:18px;font-weight:800;color:var(--ink);}
