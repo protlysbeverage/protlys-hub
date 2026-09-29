@@ -40,6 +40,18 @@ export async function saveTargetAction({ targetG, source = 'custom', effectiveDa
   return { ok:true, historySaved:!historyError };
 }
 
+export async function confirmCalculatorTargetAction({ targetG }) {
+  const supabase = await createClient();
+  const { data: { user } } = await supabase.auth.getUser();
+  if (!user) return { error:'Not signed in' };
+  const target = Math.round(Number(targetG));
+  if (!Number.isFinite(target) || target < 20 || target > 500) return { error:'Target must be between 20g and 500g.' };
+  const { error } = await supabase.from('profiles').update({ target_g:target, onboarding_complete:true }).eq('id', user.id);
+  if (error) return { error:error.message };
+  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/account');
+  return { ok:true };
+}
+
 export async function completeOnboardingAction() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
