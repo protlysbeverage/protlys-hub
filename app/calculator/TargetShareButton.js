@@ -48,5 +48,5 @@ export default function TargetShareButton({ target, activity, goal }) {
 
   return <div><button type="button" onClick={share} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
     <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>
-  </button>{message&&<span role="status" aria-live="polite" style={{marginLeft:8,fontSize:11,color:'var(--green-dark)'}}>{message}</span>}</div>;
+  </button>{message&&<span role="status" aria-live="polite" style={{position:'absolute',right:0,top:46,zIndex:20,padding:'9px 12px',borderRadius:10,background:'var(--ink)',color:'#fff',fontSize:11,fontWeight:700,whiteSpace:'nowrap'}}>{message}</span>}</div>;
 }
