@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -44,11 +44,16 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [activityOpen, setActivityOpen] = useState(false);
+  const [highlightedDay, setHighlightedDay] = useState('');
+  const activityRowsRef = useRef({});
+  const highlightTimer = useRef(null);
 
   const name = profile?.display_name || email || 'Member';
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
   const totalSteps = Number(profile?.total_steps || 0);
+  const stepGoal = Number(profile?.step_goal || 0);
   const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/member/${profile?.id}` : `/member/${profile?.id}`;
   const activeDays = Array.from({ length:7 }, (_, index) => {
     const date = new Date(); date.setDate(date.getDate() - (6 - index));
@@ -57,8 +62,13 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     return { key, steps:Number(row?.steps || 0) };
   });
   const activeDayCount = activeDays.filter(day => day.steps > 0).length;
+  const activeRows = activeDays.filter(day => day.steps > 0).slice().reverse();
+  const weekTotalSteps = activeDays.reduce((sum,day)=>sum+day.steps,0);
   const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
+
+  useEffect(() => () => { if (highlightTimer.current) window.clearTimeout(highlightTimer.current); }, []);
+  function scrollToActivityDay(key) { setActivityOpen(true); window.setTimeout(()=>{ const row=activityRowsRef.current[key]; if(!row)return; const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); setHighlightedDay(key); if(highlightTimer.current)window.clearTimeout(highlightTimer.current); highlightTimer.current=window.setTimeout(()=>setHighlightedDay(''),1200); },260); }
 
   async function handleShareProfile() {
     if (!profile?.id) return;
