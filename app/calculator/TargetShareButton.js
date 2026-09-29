@@ -113,7 +113,7 @@ export default function TargetShareButton({ target, activity, goal, profile }) {
     ctx.fillText('PER DAY', 96, dividerY + 42);
 
     const activityText = activity ? String(activity).replace(/\s*activity\s*$/i, '') : '';
-    const goalText = goal === 'Maintain & stay active' || goal === 'Maintain & stay active' ? 'Maintain and stay active' : (goal || '');
+    const goalText = goal ? String(goal).replace(/&/g, 'and') : '';
     if (activityText || goalText) {
       ctx.fillStyle = '#1F7A45'; ctx.font = '600 24px Manrope,sans-serif';
       if (activityText) ctx.fillText(activityText, 96, dividerY + 104);
