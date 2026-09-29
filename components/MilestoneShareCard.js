@@ -16,7 +16,7 @@ async function image(src, anonymous=false){
   return img;
 }
 
-export default function MilestoneShareCard({milestone,profile}){
+export default function MilestoneShareCard({milestone,profile,shareLabel='Share'}){
   const [busy,setBusy]=useState(false),[message,setMessage]=useState(''),[showIdentity,setShowIdentity]=useState(true),[open,setOpen]=useState(false);
   const [previewUrl,setPreviewUrl]=useState(''),[previewLoading,setPreviewLoading]=useState(false),[previewError,setPreviewError]=useState('');
   useEffect(()=>{try{const v=localStorage.getItem(IDENTITY_KEY);if(v!==null)setShowIdentity(v==='true')}catch{}},[]);
