@@ -136,7 +136,7 @@ export default function AppShell({ children }) {
     <section className="screen active">{children}</section>
 
     <div className="bottom-nav">
-      {NAV_ITEMS.map(item=>item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a>)}
+      {NAV_ITEMS.map(item=>item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
     </div>
   </div>
 </div>;
