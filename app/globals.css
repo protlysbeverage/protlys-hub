@@ -214,3 +214,13 @@
     .protlys-app button:active,
     .protlys-app [role="button"]:active{transform:none!important;}
   }
+
+  @keyframes protlys-goal-check{from{stroke-dashoffset:30}to{stroke-dashoffset:0}}
+  @keyframes protlys-goal-pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.06)}}
+  .protlys-app .goal-check-draw{stroke-dasharray:30;stroke-dashoffset:0;animation:protlys-goal-check 300ms var(--ease-out) both;}
+  .protlys-app .motion-progress-fill{transform-origin:left;transform:scaleX(0);transition:transform var(--dur-slow) var(--ease-out);}
+  .protlys-app .motion-progress-fill.is-visible{transform:scaleX(var(--progress,1));}
+  @media (prefers-reduced-motion:reduce){
+    .protlys-app .goal-check-draw{animation:none;stroke-dashoffset:0;}
+    .protlys-app .motion-progress-fill{transition:none;transform:scaleX(var(--progress,1));}
+  }
