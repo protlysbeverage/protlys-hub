@@ -47,8 +47,9 @@ export async function proxy(request) {
   }
 
   const isCalculatorPath = request.nextUrl.pathname === '/calculator' || request.nextUrl.pathname === '/c';
+  const isChallengesPath = request.nextUrl.pathname === '/challenges' || request.nextUrl.pathname.startsWith('/challenges/');
 
-  if (user && isPublicPath && !isCalculatorPath) {
+  if (user && isPublicPath && !isCalculatorPath && !isChallengesPath) {
     const url = request.nextUrl.clone();
     url.pathname = '/';
     url.search = '';
