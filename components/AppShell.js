@@ -69,33 +69,13 @@ export default function AppShell({ children }) {
     .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
     .protlys-app .profile-comment a:hover { text-decoration:underline!important; }
     .protlys-app .bottom-nav { align-items:stretch!important; }
-    /* Mobile navigation must stay attached to the viewport, never the scrolling content. */
     @media (max-width:899px) {
       .protlys-app .bottom-nav {
-        position:fixed!important;
-        left:50%!important;
-        right:auto!important;
-        bottom:0!important;
-        width:min(432px,100vw)!important;
-        transform:translateX(-50%)!important;
-        z-index:9999!important;
+        position:fixed!important; left:50%!important; right:auto!important; bottom:0!important; width:min(432px,100vw)!important; transform:translateX(-50%)!important; z-index:9999!important;
         padding-bottom:calc(12px + env(safe-area-inset-bottom))!important;
       }
-      .protlys-app .app-shell {
-        height:100dvh!important;
-        min-height:100dvh!important;
-        overflow:hidden!important;
-      }
-      .protlys-app .screen {
-        flex:1 1 auto!important;
-        min-height:0!important;
-        height:auto!important;
-        overflow-y:auto!important;
-        overflow-x:hidden!important;
-        padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
-        scroll-padding-bottom:calc(112px + env(safe-area-inset-bottom))!important;
-        -webkit-overflow-scrolling:touch!important;
-      }
+      .protlys-app .app-shell { height:100dvh!important; min-height:100dvh!important; overflow:hidden!important; }
+      .protlys-app .screen { flex:1 1 auto!important; min-height:0!important; height:auto!important; overflow-y:auto!important; overflow-x:hidden!important; padding-bottom:calc(112px + env(safe-area-inset-bottom))!important; scroll-padding-bottom:calc(112px + env(safe-area-inset-bottom))!important; -webkit-overflow-scrolling:touch!important; }
     }
     .protlys-app .bottom-nav .nav-btn,.protlys-app .bottom-nav .nav-btn:link,.protlys-app .bottom-nav .nav-btn:visited,.protlys-app .bottom-nav .nav-btn:active { box-sizing:border-box!important;display:flex!important;flex:1 1 0!important;min-width:0!important;height:68px!important;padding:7px 2px 6px!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:5px!important;font-family:'Manrope',sans-serif!important;font-size:10.5px!important;font-weight:700!important;line-height:1.05!important;letter-spacing:0!important;text-transform:none!important;text-align:center!important;white-space:nowrap!important;font-style:normal!important;font-variant:normal!important;margin:0!important;transform:none!important;color:var(--ink-45);text-decoration:none; }
     .protlys-app .bottom-nav .nav-btn.active { color:var(--green-dark)!important;font-weight:800!important; }
@@ -104,8 +84,12 @@ export default function AppShell({ children }) {
     .protlys-app .desktop-sidebar { display:none; }
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
     .protlys-app .brand-link img { height:50px;width:auto;object-fit:contain;display:block; }
-    .protlys-app .brand-link img { transition:filter .15s ease; }
-    html.protlys-dark .protlys-app .brand-link img { filter:brightness(0) invert(1); }
+    .protlys-app .brand-link img { transition:none!important;filter:none!important; }
+    .protlys-app .logo-wrap { display:flex;align-items:center;justify-content:center;box-sizing:border-box; }
+    html.protlys-dark .protlys-app .logo-wrap { background:#EEF5F0; border-radius:999px; padding:6px 16px; }
+    html.protlys-dark .protlys-app .brand-link img,
+    html:not(.protlys-dark) .protlys-app .brand-link img,
+    .protlys-app .brand-link img { filter:none!important; -webkit-filter:none!important; mix-blend-mode:normal!important; }
     @media (min-width:900px) {
       .protlys-app { min-height:100vh!important;background:#E4E3D6!important;display:flex!important;justify-content:center!important;align-items:flex-start!important;padding:28px!important; }
       .protlys-app .app-shell { width:min(1180px,100%)!important;max-width:none!important;min-height:calc(100vh - 56px)!important;height:auto!important;border-radius:28px!important;overflow:hidden!important;box-shadow:0 30px 70px -28px rgba(15,42,74,.35)!important;background:var(--paper)!important;display:grid!important;grid-template-columns:220px minmax(0,1fr)!important;grid-template-rows:auto 1fr!important; }
@@ -126,8 +110,6 @@ export default function AppShell({ children }) {
       .protlys-app .app-header > .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
       .protlys-app .app-header > .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link img { height:54px!important; }
-      .protlys-app .screen { grid-column:2;grid-row:2;display:block!important;width:100%;max-width:760px;margin:0 auto;overflow-y:auto;padding:0 24px 40px!important; }
-      .protlys-app .bottom-nav { display:none!important; }
     }
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
@@ -152,7 +134,7 @@ export default function AppShell({ children }) {
 
     <div className="app-header">
       <ThemeToggle />
-      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img src={logoSrc} alt="Protlys" /></Link>
+      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><span className="logo-wrap"><img src={logoSrc} alt="Protlys" /></span></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
     </div>
 
@@ -163,4 +145,4 @@ export default function AppShell({ children }) {
     </div>
   </div>
 </div>;
-} 
+}
