@@ -18,6 +18,23 @@ function Icon({ name, size = 19 }) {
 }
 
 function formatDistance(km) { if (km < 1) return `${Math.round(km * 1000)} m`; return `${km.toFixed(1)} km`; }
+function dateLabel(key) {
+  return new Intl.DateTimeFormat('en-US', { timeZone:'Africa/Nairobi', weekday:'short', month:'short', day:'numeric' }).format(new Date(key + 'T12:00:00+03:00'));
+}
+
+function CircularProgress({ steps, goal }) {
+  const size=40, stroke=4, radius=16, circumference=2*Math.PI*radius;
+  const reached=goal>0 && steps>=goal;
+  const progress=goal>0 ? Math.min(1,steps/goal) : 0;
+  const dash=circumference*progress;
+  return <div aria-label={reached ? 'Step goal reached' : String(Math.round(progress*100)) + '% of step goal'} style={{width:size,height:size,position:'relative',flex:'0 0 auto'}}>
+    <svg width={size} height={size} viewBox="0 0 40 40" fill="none" aria-hidden="true">
+      <circle cx="20" cy="20" r={radius} stroke="var(--green-soft)" strokeWidth={stroke}/>
+      <circle cx="20" cy="20" r={radius} stroke="var(--green-dark)" strokeWidth={stroke} strokeLinecap="round" strokeDasharray={dash + ' ' + (circumference-dash)} transform="rotate(-90 20 20)"/>
+      {reached && <path d="m14.5 20.5 3.5 3.5 7-8" stroke="var(--green-dark)" strokeWidth="2.3" strokeLinecap="round" strokeLinejoin="round"/>}
+    </svg>
+  </div>;
+}
 
 export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], shopUrl, email }) {
   const router = useRouter();
