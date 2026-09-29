@@ -32,12 +32,12 @@ jobs:
 
       - name: Commit dark logo
         run: |
-          if git diff --quiet -- public/protlys-logo-dark.png; then
+          git add -f public/protlys-logo-dark.png
+          if git diff --cached --quiet -- public/protlys-logo-dark.png; then
             echo "Dark logo is already up to date."
             exit 0
           fi
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add -f public/protlys-logo-dark.png
           git commit -m "Generate Protlys dark logo variant"
           git push
