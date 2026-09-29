@@ -88,8 +88,10 @@ for idx, c in enumerate(components):
     cx = (x0 + x1) / 2
     cy = (y0 + y1) / 2
     inside = (
-        green_bbox[0] - green_w * 0.12 <= cx <= green_bbox[2] + green_w * 0.12 and
-        green_bbox[1] - green_h * 0.12 <= cy <= green_bbox[3] + green_h * 0.12
+        x0 >= green_bbox[0] - 4 and
+        y0 >= green_bbox[1] - 4 and
+        x1 <= green_bbox[2] + 4 and
+        y1 <= green_bbox[3] + 4
     )
     if not inside:
         continue
