@@ -103,7 +103,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
         </div>
 
-        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} />
+        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} />
       </div>
     </>
   );
