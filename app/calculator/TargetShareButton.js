@@ -1,8 +1,11 @@
 'use client';
 
 import { useState } from 'react';
+import QRCode from 'qrcode';
 
-export default function TargetShareButton({ target }) {
+const SHARE_URL = 'https://hub.protlys.com/calculator?src=share';
+
+export default function TargetShareButton({ target, activity, goal }) {
   const [busy, setBusy] = useState(false);
   async function share() {
     if (busy) return;
