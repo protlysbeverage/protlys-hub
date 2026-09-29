@@ -178,3 +178,39 @@
 .protlys-app .tag-select option{font-family:'Manrope',sans-serif;color:var(--ink);background:var(--white);}
 .protlys-app .feed-category-menu,
 .protlys-app .feed-category-option{all:revert;}
+
+
+  /* Motion system: transform/opacity only, with reduced-motion fallback. */
+  .protlys-app{
+    --ease-out:cubic-bezier(0.22,1,0.36,1);
+    --dur-fast:150ms;
+    --dur-base:250ms;
+    --dur-slow:700ms;
+  }
+  .protlys-app .motion-tap,
+  .protlys-app button,
+  .protlys-app [role="button"]{
+    -webkit-tap-highlight-color:transparent;
+  }
+  .protlys-app .motion-tap:active,
+  .protlys-app button:active,
+  .protlys-app [role="button"]:active{
+    transform:scale(.97);
+    transition:transform 100ms var(--ease-out);
+  }
+  .protlys-app .motion-transform{will-change:transform;}
+  .protlys-app .motion-opacity{will-change:opacity;}
+  .protlys-app .motion-count{font-variant-numeric:tabular-nums;}
+  @media (prefers-reduced-motion:reduce){
+    .protlys-app *,
+    .protlys-app *::before,
+    .protlys-app *::after{
+      animation-duration:0.01ms!important;
+      animation-iteration-count:1!important;
+      transition-duration:0.01ms!important;
+      scroll-behavior:auto!important;
+    }
+    .protlys-app .motion-tap:active,
+    .protlys-app button:active,
+    .protlys-app [role="button"]:active{transform:none!important;}
+  }
