@@ -197,7 +197,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
     const next = new Date(parseKey(selectedKey));
     next.setDate(next.getDate() + offset);
     const key = dateKey(next);
-    if (key > todayKey || key.slice(0, 7) !== currentMonthKey) return;
+    if (key > todayKey) return;
+    const targetMonth = new Date(next.getFullYear(), next.getMonth(), 1);
+    if (monthKey(targetMonth) !== currentMonthKey) setCalendarMonth(targetMonth);
     setSelectedKey(key);
   }
 
@@ -333,7 +335,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
               <div className="movement-sheet-empty"><strong>No movement recorded</strong><span>There are no recorded steps for this day yet.</span></div>
             )}
             <div className="movement-sheet-nav">
-              <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey.slice(0,7) !== currentMonthKey || selectedKey <= currentMonthKey + '-01'} aria-label="Previous day">‹</button>
+              <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey <= '2000-01-01'} aria-label="Previous day">‹</button>
               <span style={{fontSize:10.5,color:'var(--ink-45)'}}>Day details</span>
               <button type="button" onClick={() => moveSelected(1)} disabled={!selectedKey || selectedKey >= todayKey} aria-label="Next day">›</button>
             </div>
