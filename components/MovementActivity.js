@@ -96,7 +96,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
-  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetOpen, setSheetOpen] = useState(false);\n  const [sheetClosing, setSheetClosing] = useState(false);\n  const [sheetDirection, setSheetDirection] = useState(1);\n  const sheetRef = useRef(null);\n  const returnFocusRef = useRef(null);\n  const sheetDragY = useRef(0);\n  const sheetDragStart = useRef(null);\n  const sheetDragRaf = useRef(0);
   const sheetTouchStart = useRef(null);
 
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
@@ -192,19 +192,42 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   useEffect(() => {
     if (!sheetOpen) return;
-    const onKey = (event) => { if (event.key === 'Escape') setSheetOpen(false); };
+    const onKey = (event) => {
+      if (event.key === 'Escape') { event.preventDefault(); closeSheet(); return; }
+      if (event.key !== 'Tab') return;
+      const root=sheetRef.current;
+      if(!root)return;
+      const focusables=[...root.querySelectorAll('button:not([disabled]),[href],input,select,textarea,[tabindex]:not([tabindex="-1"])')];
+      if(!focusables.length)return;
+      const first=focusables[0], last=focusables[focusables.length-1];
+      if(event.shiftKey && document.activeElement===first){event.preventDefault();last.focus();}
+      else if(!event.shiftKey && document.activeElement===last){event.preventDefault();first.focus();}
+    };
     document.addEventListener('keydown', onKey);
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
+    window.requestAnimationFrame(()=>sheetRef.current?.querySelector('button')?.focus());
     return () => {
       document.removeEventListener('keydown', onKey);
       document.body.style.overflow = previousOverflow;
     };
   }, [sheetOpen]);
 
-  function openDay(key) {
+  useEffect(()=>{
+    if(sheetOpen || !returnFocusRef.current)return;
+    const node=returnFocusRef.current;
+    window.requestAnimationFrame(()=>node?.focus?.());
+    returnFocusRef.current=null;
+  },[sheetOpen]);
+
+  useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
+
+  function openDay(key, element) {
     if (!key || key > todayKey || !monthCache[currentMonthKey]) return;
+    returnFocusRef.current=element||document.activeElement;
     setSelectedKey(key);
+    setSheetDirection(1);
+    setSheetClosing(false);
     setSheetOpen(true);
   }
 
@@ -216,10 +239,48 @@ export default function MovementActivity({ days = [], compact = false, title = '
     if (key > todayKey) return;
     const targetMonth = new Date(next.getFullYear(), next.getMonth(), 1);
     if (monthKey(targetMonth) !== currentMonthKey) setCalendarMonth(targetMonth);
+    setSheetDirection(offset > 0 ? 1 : -1);
     setSelectedKey(key);
   }
 
-  const closeSheet = () => setSheetOpen(false);
+  function closeSheet() {
+    if(!sheetOpen || sheetClosing)return;
+    setSheetClosing(true);
+    window.setTimeout(()=>{setSheetOpen(false);setSheetClosing(false);sheetDragY.current=0;},200);
+  }
+
+  function handleSheetTouchStart(event){
+    if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches)return;
+    sheetDragStart.current={y:event.touches[0].clientY,time:performance.now()};
+    sheetDragY.current=0;
+    sheetRef.current?.style.setProperty('will-change','transform');
+  }
+
+  function handleSheetTouchMove(event){
+    if(!sheetDragStart.current || !sheetRef.current)return;
+    const dy=Math.max(0,event.touches[0].clientY-sheetDragStart.current.y);
+    sheetDragY.current=dy;
+    if(sheetDragRaf.current)return;
+    sheetDragRaf.current=requestAnimationFrame(()=>{
+      sheetDragRaf.current=0;
+      if(sheetRef.current)sheetRef.current.style.transform='translateY('+sheetDragY.current+'px)';
+    });
+  }
+
+  function handleSheetTouchEnd(event){
+    if(!sheetDragStart.current)return;
+    const start=sheetDragStart.current;
+    const dy=Math.max(0,event.changedTouches[0].clientY-start.y);
+    const dt=Math.max(1,performance.now()-start.time);
+    const velocity=dy/dt;
+    sheetDragStart.current=null;
+    if(dy>110 || velocity>.65){ sheetRef.current?.style.removeProperty('will-change'); closeSheet(); }
+    else {
+      const node=sheetRef.current;
+      if(node){node.style.removeProperty('will-change');node.style.transition='transform 200ms var(--ease-out)';node.style.transform='translateY(0)';window.setTimeout(()=>node?.style.removeProperty('transition'),210);}
+    }
+    sheetDragY.current=0;
+  }
 
   return (
     <div className="hub-card movement-activity-card" style={{ marginTop: 10 }}>
@@ -309,7 +370,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
               const isToday = key === todayKey;
               const future = key > todayKey;
               const selectedClass = selectedKey === key ? ' selected' : '';
-              return <button key={key} type="button" className={`movement-calendar-day${selectedClass}`} disabled={future || monthLoading} onClick={() => openDay(key)} aria-label={future ? `${formatLongDate(key)}, future` : `${formatLongDate(key)}, ${steps.toLocaleString()} steps`} style={{background:active?'var(--green-soft)':'var(--surface)',border:isToday?'2px solid var(--green)':'1px solid var(--line)',color:active?'var(--green-dark)':'var(--ink-45)',fontWeight:active||isToday?800:500,opacity:future?.38:1}}>
+              return <button key={key} type="button" className={`movement-calendar-day${selectedClass}`} disabled={future || monthLoading} onClick={(event) => openDay(key,event.currentTarget)} aria-label={future ? `${formatLongDate(key)}, future` : `${formatLongDate(key)}, ${steps.toLocaleString()} steps`} style={{background:active?'var(--green-soft)':'var(--surface)',border:isToday?'2px solid var(--green)':'1px solid var(--line)',color:active?'var(--green-dark)':'var(--ink-45)',fontWeight:active||isToday?800:500,opacity:future?.38:1}}>
                 {d.getDate()}
               </button>;
             })}
@@ -324,14 +385,14 @@ export default function MovementActivity({ days = [], compact = false, title = '
       {!compact && <div style={{fontSize:10,color:'var(--ink-45)',marginTop:9}}>Calories are an estimate based on recorded steps and an average adult energy cost. They are not a medical measurement.</div>}
 
       {sheetOpen && selectedKey && (
-        <div className="movement-sheet-backdrop" role="presentation" onClick={closeSheet}>
-          <div className="movement-sheet" role="dialog" aria-modal="true" aria-label={formatLongDate(selectedKey)} onClick={e => e.stopPropagation()} onTouchStart={e => { sheetTouchStart.current = e.touches[0].clientY; }} onTouchEnd={e => { if (sheetTouchStart.current != null && e.changedTouches[0].clientY - sheetTouchStart.current > 70) closeSheet(); sheetTouchStart.current = null; }}>
+        <div className={`movement-sheet-backdrop${sheetClosing?' closing':''}`} role="presentation" onClick={closeSheet}>
+          <div ref={sheetRef} className={`movement-sheet${sheetClosing?' closing':''}`} role="dialog" aria-modal="true" aria-label={formatLongDate(selectedKey)} onClick={e => e.stopPropagation()} onTouchStart={handleSheetTouchStart} onTouchMove={handleSheetTouchMove} onTouchEnd={handleSheetTouchEnd}>
             <div className="movement-sheet-handle" aria-hidden="true" />
             <div className="movement-sheet-header">
               <div className="movement-sheet-title">{formatLongDate(selectedKey)}{selectedKey === todayKey && <span className="movement-today-pill">Today</span>}</div>
               <button type="button" className="movement-sheet-close" onClick={closeSheet} aria-label="Close day details">×</button>
             </div>
-            {selectedSteps > 0 ? (
+            <div className={`movement-sheet-content movement-sheet-content-${sheetDirection > 0 ? 'next' : 'prev'}`} key={selectedKey}>\n            {selectedSteps > 0 ? (
               <>
                 <div className="movement-sheet-main">
                   <ProgressRing steps={selectedSteps} goal={stepGoal} />
@@ -350,7 +411,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
             ) : (
               <div className="movement-sheet-empty"><strong>No movement recorded</strong><span>There are no recorded steps for this day yet.</span></div>
             )}
-            <div className="movement-sheet-nav">
+            </div>\n            <div className="movement-sheet-nav">
               <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey <= '2000-01-01'} aria-label="Previous day">‹</button>
               <span style={{fontSize:10.5,color:'var(--ink-45)'}}>Day details</span>
               <button type="button" onClick={() => moveSelected(1)} disabled={!selectedKey || selectedKey >= todayKey} aria-label="Next day">›</button>
