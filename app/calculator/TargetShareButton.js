@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import ShareSheet from '@/components/ShareSheet';
 import QRCode from 'qrcode';
 
 const SHARE_URL = 'https://hub.protlys.com/calculator?src=share';
@@ -10,6 +11,9 @@ export default function TargetShareButton({ target, activity, goal, profile }) {
   const [message, setMessage] = useState('');
   const [showIdentity, setShowIdentity] = useState(true);
   const [previewOpen, setPreviewOpen] = useState(false);
+  const [previewUrl, setPreviewUrl] = useState('');
+  const [previewLoading, setPreviewLoading] = useState(false);
+  const [previewError, setPreviewError] = useState('');
 
   useEffect(() => {
     try {
@@ -21,6 +25,26 @@ export default function TargetShareButton({ target, activity, goal, profile }) {
   function toggleIdentity(value) {
     setShowIdentity(value);
     try { localStorage.setItem('protlysShareIdentity', String(value)); } catch {}
+  }
+
+  async function renderPreview() {
+    setPreviewLoading(true); setPreviewError(''); setPreviewUrl('');
+    try { const canvas = await drawShareCard(); setPreviewUrl(canvas.toDataURL('image/png')); }
+    catch (e) { console.error(e); setPreviewError('Could not create preview.'); }
+    finally { setPreviewLoading(false); }
+  }
+
+  useEffect(() => { if (previewOpen) renderPreview(); }, [previewOpen, showIdentity]);
+
+  async function saveImage() {
+    if (busy || previewLoading) return;
+    try { const canvas = await drawShareCard(); const png = await new Promise(resolve => canvas.toBlob(resolve, 'image/png')); if (!png) throw new Error('Could not create share image.'); const u=URL.createObjectURL(png); const a=document.createElement('a'); a.href=u; a.download='protlys-protein-target.png'; document.body.appendChild(a); a.click(); a.remove(); setTimeout(()=>URL.revokeObjectURL(u),1000); setMessage('Image saved.'); }
+    catch (e) { console.error(e); setMessage('Could not save the image.'); }
+  }
+
+  async function copyLink() {
+    try { if (!navigator.clipboard?.writeText) throw new Error('clipboard'); await navigator.clipboard.writeText(SHARE_URL); setMessage('Link copied.'); }
+    catch (e) { console.error(e); setMessage('Could not copy the link.'); }
   }
 
   async function loadImage(src, anonymous = false) {
@@ -180,19 +204,26 @@ export default function TargetShareButton({ target, activity, goal, profile }) {
   }
 
   return (
-    <div style={{ position:'relative' }}>
-      <button type="button" onClick={() => setPreviewOpen(v => !v)} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
+    <>
+      <button type="button" onClick={() => setPreviewOpen(true)} disabled={busy} aria-label="Share protein target" title="Share protein target" style={{width:40,height:40,borderRadius:'50%',border:'1px solid var(--line)',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}}>
         <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2"/><circle cx="6" cy="12" r="2"/><circle cx="18" cy="19" r="2"/><path d="m8 11 8-5M8 13l8 5"/></svg>
       </button>
-      {previewOpen && <div style={{position:'absolute',right:0,top:48,width:250,zIndex:30,padding:14,borderRadius:14,border:'1px solid var(--line)',background:'var(--paper)',boxShadow:'0 12px 30px rgba(0,0,0,.15)'}}>
-        <div style={{fontSize:11,fontWeight:800,color:'var(--ink)',marginBottom:10}}>Share preview</div>
-        <label style={{display:'flex',alignItems:'center',gap:9,fontSize:11.5,color:'var(--ink-70)',lineHeight:1.3,cursor:'pointer'}}>
-          <input type="checkbox" checked={showIdentity} onChange={e => toggleIdentity(e.target.checked)} style={{width:18,height:18,accentColor:'var(--green)'}} />
-          Show my name and photo
-        </label>
-        <button type="button" onClick={share} disabled={busy} style={{marginTop:12,width:'100%',minHeight:44,border:0,borderRadius:10,background:'var(--green)',color:'white',fontWeight:800,cursor:busy?'default':'pointer'}}>{busy?'Creating…':'Share card'}</button>
-      </div>}
-      {message && <span role="status" aria-live="polite" style={{position:'absolute',right:0,top:48,zIndex:40,padding:'9px 12px',borderRadius:10,background:'var(--ink)',color:'#fff',fontSize:11,fontWeight:700,whiteSpace:'nowrap'}}>{message}</span>}
-    </div>
+      <ShareSheet
+        open={previewOpen}
+        title="Share your target"
+        previewUrl={previewUrl}
+        previewLoading={previewLoading}
+        previewError={previewError}
+        onRetry={renderPreview}
+        showIdentity={showIdentity}
+        onToggleIdentity={toggleIdentity}
+        onShare={share}
+        onSave={saveImage}
+        onCopy={copyLink}
+        busy={busy}
+        message={message}
+        onClose={() => setPreviewOpen(false)}
+      />
+    </>
   );
 }
