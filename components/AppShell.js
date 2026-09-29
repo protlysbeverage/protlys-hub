@@ -85,9 +85,6 @@ export default function AppShell({ children }) {
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
     .protlys-app .brand-link { position:relative; }
     .protlys-app .brand-link .logo { height:50px;width:auto;object-fit:contain;display:block; }
-    .protlys-app .logo--dark { display:none; }
-    html.protlys-dark .protlys-app .logo--light { display:none; }
-    html.protlys-dark .protlys-app .logo--dark { display:block; }
     @media (min-width:900px) {
       .protlys-app { min-height:100vh!important;background:#E4E3D6!important;display:flex!important;justify-content:center!important;align-items:flex-start!important;padding:28px!important; }
       .protlys-app .app-shell { width:min(1180px,100%)!important;max-width:none!important;min-height:calc(100vh - 56px)!important;height:auto!important;border-radius:28px!important;overflow:hidden!important;box-shadow:0 30px 70px -28px rgba(15,42,74,.35)!important;background:var(--paper)!important;display:grid!important;grid-template-columns:220px minmax(0,1fr)!important;grid-template-rows:auto 1fr!important; }
