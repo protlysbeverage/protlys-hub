@@ -224,3 +224,6 @@
     .protlys-app .goal-check-draw{animation:none;stroke-dashoffset:0;}
     .protlys-app .motion-progress-fill{transition:none;transform:scaleX(var(--progress,1));}
   }
+
+  @keyframes account-activity-row-in{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+  @media (prefers-reduced-motion:reduce){.protlys-app .account-activity-row-in{animation:none!important;opacity:1;transform:none;}}
