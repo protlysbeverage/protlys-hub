@@ -98,6 +98,8 @@ for idx, c in enumerate(components):
     candidates.append((distance - green_score * 0.15, -green_score, c["area"], idx))
 
 if not candidates:
+    print("DEBUG green bbox:", green_bbox, "green area:", green_area)
+    print("DEBUG components:", sorted([(c["area"], c["bbox"], c["green_adj"]) for c in components], reverse=True)[:40])
     raise RuntimeError("Could not safely isolate the black P inside the green cup.")
 
 p_component = min(candidates)[3]
