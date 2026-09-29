@@ -9,9 +9,9 @@ export const metadata = {
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
   manifest: '/manifest.webmanifest',
   icons: {
-    icon: '/protlys-logo-exact.png',
-    shortcut: '/protlys-logo-exact.png',
-    apple: '/protlys-logo-exact.png',
+    icon: '/protlys-logo-exact.png?v=3',
+    shortcut: '/protlys-logo-exact.png?v=3',
+    apple: '/protlys-logo-exact.png?v=3',
   },
   openGraph: {
     title: 'Protlys Hub',
