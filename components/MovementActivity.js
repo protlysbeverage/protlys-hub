@@ -4,10 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 function dateKey(date) {
-  const y = date.getFullYear();
-  const m = String(date.getMonth() + 1).padStart(2, '0');
-  const d = String(date.getDate()).padStart(2, '0');
-  return `${y}-${m}-${d}`;
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 
 function parseKey(key) {
@@ -164,7 +161,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   }, [selectedKey, selectedSteps, monthRows]);
 
   useEffect(() => {
-    if (!expanded || monthCache[currentMonthKey] || !userId) return;
+    if (!expanded || !userId) return;
     let cancelled = false;
     async function loadMonth() {
       setMonthLoading(true);
@@ -178,7 +175,15 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .lte('step_date', end)
         .order('step_date', { ascending: true });
       if (cancelled) return;
-      if (!error) setMonthCache(prev => ({ ...prev, [currentMonthKey]: data || [] }));
+      if (!error) {
+        const incoming = data || [];
+        setMonthCache(prev => {
+          const existing = prev[currentMonthKey] || [];
+          const merged = new Map(existing.map(row => [row.step_date, row]));
+          incoming.forEach(row => merged.set(row.step_date, row));
+          return { ...prev, [currentMonthKey]: [...merged.values()].sort((x,y) => String(x.step_date).localeCompare(String(y.step_date))) };
+        });
+      }
       setMonthLoading(false);
     }
     loadMonth();
