@@ -110,7 +110,14 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
-  const [sheetOpen, setSheetOpen] = useState(false);\n  const [sheetClosing, setSheetClosing] = useState(false);\n  const [sheetDirection, setSheetDirection] = useState(1);\n  const sheetRef = useRef(null);\n  const returnFocusRef = useRef(null);\n  const sheetDragY = useRef(0);\n  const sheetDragStart = useRef(null);\n  const sheetDragRaf = useRef(0);
+  const [sheetOpen, setSheetOpen] = useState(false);
+  const [sheetClosing, setSheetClosing] = useState(false);
+  const [sheetDirection, setSheetDirection] = useState(1);
+  const sheetRef = useRef(null);
+  const returnFocusRef = useRef(null);
+  const sheetDragY = useRef(0);
+  const sheetDragStart = useRef(null);
+  const sheetDragRaf = useRef(0);
   const sheetTouchStart = useRef(null);
 
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
@@ -406,7 +413,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
               <div className="movement-sheet-title">{formatLongDate(selectedKey)}{selectedKey === todayKey && <span className="movement-today-pill">Today</span>}</div>
               <button type="button" className="movement-sheet-close" onClick={closeSheet} aria-label="Close day details">×</button>
             </div>
-            <div className={`movement-sheet-content movement-sheet-content-${sheetDirection > 0 ? 'next' : 'prev'}`} key={selectedKey}>\n            {selectedSteps > 0 ? (
+            <div className={`movement-sheet-content movement-sheet-content-${sheetDirection > 0 ? 'next' : 'prev'}`} key={selectedKey}>
+            {selectedSteps > 0 ? (
               <>
                 <div className="movement-sheet-main">
                   <ProgressRing steps={selectedSteps} goal={stepGoal} />
@@ -425,7 +433,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
             ) : (
               <div className="movement-sheet-empty"><strong>No movement recorded</strong><span>There are no recorded steps for this day yet.</span></div>
             )}
-            </div>\n            <div className="movement-sheet-nav">
+            </div>
+            <div className="movement-sheet-nav">
               <button type="button" onClick={() => moveSelected(-1)} disabled={!selectedKey || selectedKey <= '2000-01-01'} aria-label="Previous day">‹</button>
               <span style={{fontSize:10.5,color:'var(--ink-45)'}}>Day details</span>
               <button type="button" onClick={() => moveSelected(1)} disabled={!selectedKey || selectedKey >= todayKey} aria-label="Next day">›</button>
