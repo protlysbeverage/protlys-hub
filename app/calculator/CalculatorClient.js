@@ -1,7 +1,9 @@
 'use client';
 
 import { useEffect, useRef, useState, useTransition } from 'react';
+import { useRouter } from 'next/navigation';
 import { saveTargetAction } from '@/app/actions';
+import { createClient } from '@/lib/supabase/client';
 
 const SEX = [
   { label: 'Male', v: 'male', icon:'male' },
@@ -31,8 +33,11 @@ function OptionGrid({items,value,onChange,getValue,height}){return <div style={{
 
 
 export default function CalculatorClient({ savedTarget }) {
+  const router = useRouter();
   const [weight,setWeight]=useState(70); const [sex,setSex]=useState('male'); const [activity,setActivity]=useState(1.375); const [goal,setGoal]=useState('maintain');
   const [result,setResult]=useState(null); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
+  const [saveMessage,setSaveMessage]=useState('');
+  const [authChecked,setAuthChecked]=useState(false);
   const resultRef = useRef(null);
 
   useEffect(()=>{
@@ -49,17 +54,46 @@ export default function CalculatorClient({ savedTarget }) {
     setResult({target,min,max,pct,goal:selected.v,activity,sex,weight:w}); setSaved(false);
   }
 
-  function saveTarget(){
-    if(!result)return;
-    if(!savedTarget){
-      try{localStorage.setItem('protlys_calculator_target',JSON.stringify({target:result.target,weight:result.weight,activity:result.activity,sex:result.sex,goal:result.goal,savedAt:Date.now()}));}catch{}
-      window.location.assign('/login?next=/hub'); return;
+  async function saveTarget(targetG){
+    const target = Math.min(500, Math.max(20, Math.round(Number(targetG))));
+    if(!Number.isFinite(target)) return false;
+    const response = await saveTargetAction({targetG:target, source:'calculator'});
+    if(response?.error){
+      setSaveMessage(response.error);
+      return false;
     }
-    start(async()=>{const response=await saveTargetAction({targetG:result.target}); if(response?.error)return; setSaved(true);});
+    setSaved(true);
+    setSaveMessage('Saved!');
+    return true;
   }
 
+  useEffect(()=>{
+    let cancelled=false;
+    async function loadPendingTarget(){
+      const supabase=createClient();
+      const {data:{session}}=await supabase.auth.getSession();
+      if(cancelled)return;
+      setAuthChecked(true);
+      if(!session)return;
+      let pending=null;
+      try{
+        const raw=localStorage.getItem('pendingTarget');
+        if(raw) pending=JSON.parse(raw);
+      }catch{}
+      const target=Number(pending?.target_g);
+      if(!Number.isFinite(target))return;
+      const clamped=Math.min(500,Math.max(20,Math.round(target)));
+      const ok=await saveTarget(clamped);
+      if(ok){
+        try{localStorage.removeItem('pendingTarget');}catch{}
+      }
+    }
+    loadPendingTarget();
+    return()=>{cancelled=true;};
+  },[]);
+
   const step={fontSize:14,fontWeight:900,letterSpacing:'.05em'};
-  return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto'}}>
+  return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom))'}}>
     <span className="eyebrow">Protlys</span><h1 style={{fontSize:26}}>Find your daily protein target</h1><p className="subhead">Get a clear number you can actually use. Takes about 30 seconds.</p>
     <section className="section-card" style={{marginTop:18}}><span className="field-label calculator-step-label" style={step}>STEP 1 — YOUR WEIGHT</span><div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><input id="weight" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input mono" style={{fontSize:28,fontWeight:700,flex:1}}/><span className="mono" style={{fontSize:18,opacity:.55}}>kg</span></div></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={2}/><span className="field-label calculator-step-label" style={step}>STEP 2 — BIOLOGICAL SEX</span><OptionGrid items={SEX} value={sex} onChange={setSex} getValue={i=>i.v} height={112}/></section>
@@ -67,9 +101,20 @@ export default function CalculatorClient({ savedTarget }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
     {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><span className="eyebrow">Your daily protein target</span><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono" style={{fontSize:52,fontWeight:700,lineHeight:1}}>{result.target}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
-      <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={saveTarget} disabled={isPending||saved}>{saved?'Target saved to your Hub':isPending?'Saving…':'Save this target in the Hub →'}</button>
-      {!savedTarget&&!saved&&<p className="disclaimer" style={{marginTop:9}}>We’ll carry this number into your Hub so you don’t have to enter it again.</p>}
-      {savedTarget&&<button className="link-btn" style={{marginTop:12}} onClick={()=>{window.location.assign('/hub')}}>Just show me the number</button>}
+      <button className="btn-secondary" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)'}} onClick={()=>{
+        if(!result||isPending||saved)return;
+        start(async()=>{
+          const supabase=createClient();
+          const {data:{session}}=await supabase.auth.getSession();
+          if(session){await saveTarget(result.target);return;}
+          try{localStorage.setItem('pendingTarget',JSON.stringify({target_g:Math.min(500,Math.max(20,Math.round(result.target))),savedAt:Date.now()}));}catch{}
+          setSaveMessage('Create a free account or sign in to save your target.');
+          window.setTimeout(()=>router.push('/login?next=/calculator'),100);
+        });
+      }} disabled={isPending||saved}>{saved?'Saved!':isPending?'Saving…':'Save my protein target'}</button>
+      {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
+      {!authChecked&&!saved&&<p className="disclaimer" style={{marginTop:9}}>Checking your account…</p>}
+      {saved&&!saveMessage.includes('account')&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
       <p className="disclaimer" style={{marginTop:14}}>This is a starting estimate, not medical advice. Speak with a registered dietitian for personalised guidance.</p></div>}
     {savedTarget&&!result&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
   </div>;
