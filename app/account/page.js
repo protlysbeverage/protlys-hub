@@ -18,7 +18,7 @@ export default async function AccountPage(){
     supabase.from('user_achievements').select('earned_at,achievements(slug,name,icon,description)').eq('user_id',user.id).order('earned_at',{ascending:false}),
     supabase.from('daily_steps').select('steps,source,synced_at').eq('user_id',user.id).eq('step_date',today).single(),
     supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).gte('step_date',weekAgo).lte('step_date',today).order('step_date'),
-    supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).order('step_date'),
+    supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).order('step_date',{ascending:false}).limit(365),
     supabase.from('protein_target_history').select('target_g,effective_from,source').eq('user_id',user.id).order('effective_from',{ascending:true}).order('created_at',{ascending:true}),
   ]);
   return <AppShell><div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div><ProteinTargetCard targetG={profile?.target_g}/><div className="screen-pad" style={{paddingTop:0,paddingBottom:0}}><TargetHistory rows={targetHistory||[]}/></div><AccountClient profile={profile||{}} achievements={achievements||[]} todaySteps={todaySteps?.steps||0} weekSteps={weekSteps||[]} movementDays={movementDays||[]} shopUrl={getShopUrl()} email={user.email}/></AppShell>;
