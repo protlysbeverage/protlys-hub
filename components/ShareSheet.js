@@ -127,8 +127,8 @@ export default function ShareSheet({
       <div className="protlys-share-backdrop" onClick={() => requestClose()} aria-hidden="true" />
       <div ref={sheetRef} className={'protlys-share-sheet' + (closing ? ' is-closing' : '') + (reduced ? ' is-reduced-motion' : '')}
         role="dialog" aria-modal="true" aria-labelledby="protlys-share-title"
-        onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd}>
-        <div className="protlys-share-handle" aria-hidden="true" />
+        >
+        <div className="protlys-share-drag-zone" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} aria-hidden="true"><div className="protlys-share-handle" /></div>
         <div className="protlys-share-header">
           <h2 id="protlys-share-title">{title}</h2>
           <button type="button" className="protlys-share-close" onClick={() => requestClose()} aria-label="Close share sheet">×</button>
@@ -160,7 +160,7 @@ export default function ShareSheet({
         .protlys-share-sheet{position:absolute;left:0;right:0;bottom:0;width:min(760px,100%);max-height:88dvh;margin:0 auto;background:var(--share-paper);border-radius:24px 24px 0 0;padding:9px 18px calc(env(safe-area-inset-bottom) + 16px);box-sizing:border-box;box-shadow:0 -18px 50px rgba(0,0,0,.2);animation:protlys-share-sheet-in 250ms cubic-bezier(.22,1,.36,1);display:flex;flex-direction:column;overflow:hidden;touch-action:pan-y;}
         .protlys-share-sheet.is-closing{animation:protlys-share-sheet-out 250ms cubic-bezier(.22,1,.36,1) forwards;}
         .protlys-share-sheet.is-reduced-motion,.protlys-share-sheet.is-reduced-motion.is-closing{animation:none!important;}
-        .protlys-share-handle{width:42px;height:5px;border-radius:999px;background:var(--share-line);margin:0 auto 12px;flex:0 0 auto;}
+        .protlys-share-drag-zone{min-height:26px;display:flex;align-items:flex-start;justify-content:center;touch-action:none;cursor:grab;flex:0 0 auto;}.protlys-share-handle{width:42px;height:5px;border-radius:999px;background:var(--share-line);margin:0 auto 12px;}
         .protlys-share-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto;}
         .protlys-share-header h2{font-family:Space Grotesk,sans-serif;font-size:19px;line-height:1.2;margin:0;color:var(--share-ink);}
         .protlys-share-close{width:44px;height:44px;min-width:44px;border:1px solid var(--share-line);border-radius:50%;background:var(--share-white);color:var(--share-ink);font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;}
