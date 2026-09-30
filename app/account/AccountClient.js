@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MilestoneShareCard from '@/components/MilestoneShareCard';
+import MovementStatsExperience from '@/components/MovementStatsExperience';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -75,7 +76,7 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], shopUrl, email }) {
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -244,44 +245,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     </div>
 
     {milestoneBanner && <div className="screen-pad" style={{paddingTop:8,paddingBottom:0}}><div role="status" style={{display:'flex',alignItems:'center',gap:10,padding:'10px 12px',border:'1px solid var(--line)',borderRadius:14,background:'var(--green-soft)'}}><div style={{minWidth:0,flex:1,fontSize:12,fontWeight:800,color:'var(--ink)'}}>{milestoneBanner.type==='streak' ? milestoneBanner.value + '-day streak! Share your milestone' : milestoneBanner.type==='goal' ? 'First goal reached! Share your milestone' : 'Challenge completed! Share your milestone'}</div><MilestoneShareCard milestone={milestoneBanner} profile={profile}/><button type="button" onClick={()=>setMilestoneBanner(null)} aria-label="Dismiss milestone" style={{width:32,height:32,border:0,background:'transparent',color:'var(--ink-45)',fontSize:20}}>×</button></div></div>}
-    <div className="screen-pad" style={{paddingTop:4,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
-      <div className="hub-card" style={{padding:16,marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
-      </div>
-
-
-      <style>{`.week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box}.week-strip>*{min-width:0;text-align:center}.week-strip .capsule{width:100%;max-width:100%;height:10px;border-radius:999px}.week-strip-item{box-sizing:border-box}`}</style>
-      <section className="hub-card" style={{padding:14,marginBottom:10,boxSizing:'border-box',overflow:'hidden'}}>
-        <div role="button" tabIndex={0} aria-expanded={activityOpen} aria-controls="recent-activity-details" onClick={() => setActivityOpen(v => !v)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') { event.preventDefault(); setActivityOpen(v => !v); } }} style={{display:'block',width:'100%',minHeight:44,padding:0,margin:0,border:0,background:'transparent',color:'inherit',textAlign:'left',cursor:'pointer'}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}><div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
-            <span aria-hidden="true" style={{width:28,height:28,display:'flex',alignItems:'center',justifyContent:'center',flex:'0 0 28px',color:'var(--ink-45)',transform:`rotate(${activityOpen ? 180 : 0}deg)`,transition:'transform 200ms var(--ease-out)'}}><svg viewBox="0 0 24 24" width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg></span>
-          </div>
-          <div className="week-strip" style={{boxSizing:'border-box',width:'100%',marginTop:10}}>
-            {activeDays.map(day => <button key={day.key} className="week-strip-item motion-tap" type="button" onClick={event => { event.stopPropagation(); scrollToActivityDay(day.key); }} aria-label={`${dateLabel(day.key)}: ${day.steps.toLocaleString()} steps`} style={{minWidth:0,width:'100%',padding:0,border:0,margin:0,background:'transparent',color:'inherit',cursor:'pointer',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',borderRadius:10,textAlign:'center'}}>
-              <span style={{display:'block',width:'100%',minWidth:0,fontSize:9.5,color:'var(--ink-45)',marginBottom:5,textAlign:'center'}}>{new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',weekday:'short'}).format(new Date(day.key + 'T12:00:00+03:00')).slice(0,1)}</span>
-              <span className="capsule" style={{display:'block',width:'100%',maxWidth:'100%',height:10,minWidth:0,borderRadius:999,background:day.steps > 0 ? 'var(--green-dark)' : 'var(--green-soft)',border:day.steps > 0 ? '0' : '1px solid var(--line)',boxSizing:'border-box'}} />
-            </button>)}</div>
-        </div>
-        <div id="recent-activity-details" style={{display:'grid',gridTemplateRows:activityOpen ? '1fr' : '0fr',transition:'grid-template-rows 250ms var(--ease-out)',overflow:'hidden'}}>
-          <div style={{minHeight:0}}><div style={{paddingTop:14}}>
-            {activeRows.length === 0 ? <div style={{padding:'14px 12px',borderRadius:14,background:'var(--paper)',color:'var(--ink-70)',fontSize:12.5}}>No movement yet this week. Your first steps will show up here.</div> : <div style={{display:'grid',gap:8}}>
-              {activeRows.map((day, rowIndex) => { const distance=(day.steps*0.75)/1000; const isToday=day.key===todayKey; return <div key={day.key} ref={node => { if(node) activityRowsRef.current[day.key]=node; else delete activityRowsRef.current[day.key]; }} style={{padding:'11px 12px 10px',borderRadius:14,border:'1px solid var(--line)',background:'var(--card)',boxShadow:highlightedDay===day.key ? '0 0 0 2px var(--green)' : 'none',transition:'box-shadow 200ms var(--ease-out)',animation:'account-activity-row-in 180ms var(--ease-out) both',animationDelay:`${rowIndex*40}ms`}}>
-                <div style={{display:'grid',gridTemplateColumns:'minmax(0,1.05fr) minmax(0,1.35fr) auto',alignItems:'center',gap:8}}>
-                  <div style={{minWidth:0}}><div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}><span style={{fontSize:12.5,fontWeight:800}}>{dateLabel(day.key)}</span>{isToday && <span style={{fontSize:9,padding:'3px 7px',borderRadius:999,background:'var(--green-soft)',color:'var(--green-dark)',fontWeight:800}}>Today</span>}</div></div>
-                  <div style={{minWidth:0}}><div className="mono" style={{fontSize:13,fontWeight:800}}>{day.steps.toLocaleString()} steps</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>{formatDistance(distance)} · est.</div></div>
-                  <CircularProgress steps={day.steps} goal={stepGoal} dayKey={day.key}/>
-                </div>
-                <div style={{height:4,background:'var(--green-soft)',borderRadius:999,overflow:'hidden',marginTop:9}}><div className="motion-progress-fill" style={{height:'100%',width:'100%',background:'var(--green)',borderRadius:999,'--progress':`${stepGoal > 0 ? Math.min(1,day.steps/stepGoal) : 0}`}} /></div>
-              </div>})}
-            </div>}
-            <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10,flexWrap:'wrap',marginTop:12}}><span style={{fontSize:11.5,color:'var(--ink-70)',fontWeight:700}}>{activeDayCount} of 7 days active · {weekTotalSteps.toLocaleString()} steps this week</span><button type="button" className="link-btn" style={{minHeight:44,padding:'8px 2px'}} onClick={() => router.push('/movement')}>View all in Movement</button></div>
-          </div></div>
-        </div>
-      </section>
-
-      <div className="hub-grid" style={{marginBottom:20}}><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Steps today</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{Number(todaySteps).toLocaleString()}</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Estimated distance</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{formatDistance(totalDistanceKm)}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded steps</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Movement days</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{activeDayCount}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>last 7 days</div></div><div className="hub-card" style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px'}}><div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>Lifetime steps</div><div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{totalSteps.toLocaleString()}</div><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>all recorded movement</div></div></div>
-      <p className="disclaimer" style={{marginTop:-8,marginBottom:20}}>Distance is an estimate using an average 0.75 m stride. Your actual distance may vary.</p>
+    <MovementStatsExperience profile={profile} todaySteps={todaySteps} weekSteps={weekSteps} movementDays={movementDays} />
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
       <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Shop Protlys products</a>
