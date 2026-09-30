@@ -458,7 +458,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 .sheet-day-pill i{display:block;height:10px;border-radius:99px;margin-top:6px;background:var(--green-soft);border:1px solid var(--line)}
 .sheet-day-pill i.on{background:var(--green-dark);border-color:var(--green-dark)}
 @media (prefers-reduced-motion:reduce){.dashboard-sheet{transition:none}}
-`.week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box}.week-strip>*{min-width:0;text-align:center}.week-strip .capsule{width:100%;max-width:100%;height:10px;border-radius:999px}.week-strip-item{box-sizing:border-box}`}</style>
+.week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box}.week-strip>*{min-width:0;text-align:center}.week-strip .capsule{width:100%;max-width:100%;height:10px;border-radius:999px}.week-strip-item{box-sizing:border-box}
+`}</style>
       <section className="hub-card" style={{padding:14,marginBottom:10,boxSizing:'border-box',overflow:'hidden'}}>
         <div role="button" tabIndex={0} aria-expanded={activityOpen} aria-controls="recent-activity-details" onClick={() => setActivityOpen(v => !v)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') { event.preventDefault(); setActivityOpen(v => !v); } }} style={{display:'block',width:'100%',minHeight:44,padding:0,margin:0,border:0,background:'transparent',color:'inherit',textAlign:'left',cursor:'pointer'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}><div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
