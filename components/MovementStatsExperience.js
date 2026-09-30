@@ -149,7 +149,7 @@ export default function MovementStatsExperience({ profile = {}, todaySteps = 0, 
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:10}}><b style={{fontFamily:'Space Grotesk',fontSize:18}}>Share your streak</b><button type="button" onClick={()=>setShareKind(null)} style={{width:34,height:34,border:0,borderRadius:'50%',background:'var(--green-soft)',color:'var(--ink)',display:'grid',placeItems:'center'}}><Icon name="close"/></button></div>
         <canvas ref={canvasRef} style={{width:'100%',borderRadius:18,border:'1px solid var(--line)',display:'block'}}/>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:10}}>{['feed','story'].map(size=><button key={size} type="button" onClick={async()=>{setShareSize(size);await drawShare(shareKind,size)}} style={{border:0,borderRadius:999,padding:12,fontWeight:800,background:shareSize===size?'var(--green)':'var(--green-soft)',color:shareSize===size?'#fff':'var(--ink)'}}>{size==='feed'?'Feed 4:5':'Story 9:16'}</button>)}</div>
-        <button type="button" disabled={sharing} onClick={()=>share(shareKind)} style={{width:'100%',border:0,borderRadius:999,padding:13,marginTop:8,fontWeight:800;background:'var(--green)',color:'#fff'}}>{sharing?'Preparing…':'Share image'}</button>
+        <button type="button" disabled={sharing} onClick={()=>share(shareKind)} style={{width:'100%',border:0,borderRadius:999,padding:13,marginTop:8,fontWeight:800,background:'var(--green)',color:'#fff'}}>{sharing?'Preparing…':'Share image'}</button>
       </div>
     </div>}
 
