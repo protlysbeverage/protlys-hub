@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MilestoneShareCard from '@/components/MilestoneShareCard';
@@ -14,6 +15,7 @@ function Icon({ name, size = 19 }) {
     share: <><circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="m8 11 7.8-4.6M8 13l7.8 4.6"/></>,
     box: <><path d="m4 8 8-4 8 4-8 4-8-4Z"/><path d="M4 8v9l8 4 8-4V8M12 12v9"/></>,
     camera: <><path d="M4 7h3l1.5-2h7L17 7h3v11H4V7Z"/><circle cx="12" cy="12.5" r="3.2"/></>,
+    chevronDown: <path d="m6 9 6 6 6-6"/>,
   };
   return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>;
 }
@@ -89,8 +91,12 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const sheetRef = useRef(null);
   const sheetCloseRef = useRef(null);
   const sheetTouchStartY = useRef(null);
+  const sheetTouchStartX = useRef(null);
   const sheetTouchDeltaY = useRef(0);
+  const sheetTouchDeltaX = useRef(0);
   const sheetLastFocus = useRef(null);
+  const [sheetReady, setSheetReady] = useState(false);
+  const [selectedBar, setSelectedBar] = useState(null);
   const activityRowsRef = useRef({});
   const highlightTimer = useRef(null);
 
@@ -98,7 +104,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
   const totalSteps = Number(profile?.total_steps || 0);
-  const stepGoal = Number(profile?.step_goal || 0);
+  const stepGoal = Number(profile?.step_goal || 0) || 8000;
   const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/member/${profile?.id}` : `/member/${profile?.id}`;
   const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi' }).format(new Date());
   const activeDays = Array.from({ length:7 }, (_, index) => {
@@ -143,13 +149,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     }
     return Math.max(longest, Number(profile?.step_streak || 0));
   }, [movementHistory, profile?.step_streak]);
-  const sheetWeek = activeDays.map(day => ({
-    label: new Intl.DateTimeFormat('en-US', { timeZone:'Africa/Nairobi', weekday:'short' })
-      .format(new Date(day.key + 'T12:00:00+03:00')).slice(0, 1),
-    km: (day.steps * 0.75) / 1000,
-    steps: day.steps,
-  }));
-  const hourlySteps = [];
+  const sheetWeek=activeDays.map(day=>({label:new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',weekday:'short'}).format(new Date(day.key+'T12:00:00+03:00')).slice(0,1),km:day.steps*.75/1000,steps:day.steps,key:day.key}));
+  const previousWeek=useMemo(()=>{const end=new Date(todayKey+'T12:00:00+03:00');return Array.from({length:7},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(13-i));const key=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi'}).format(d);return Number(movementHistory.find(row=>row.key===key)?.steps||0);});},[movementHistory,todayKey]);
+  const previousWeekTotal=previousWeek.reduce((s,v)=>s+v,0),previousWeekDays=previousWeek.filter(v=>v>0).length;
+  const sheetIds=['today','distance','days','lifetime'],sheetTitles={today:'Steps today',distance:'Estimated distance',days:'Movement days',lifetime:'Lifetime steps'};
   const milestoneOptions = useMemo(() => {
     const rows = (achievements || []).map(row => row?.achievements || row).filter(Boolean);
     const text = row => String(row?.slug || '') + ' ' + String(row?.name || '') + ' ' + String(row?.description || '');
@@ -211,146 +214,24 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   useEffect(() => () => { if (highlightTimer.current) window.clearTimeout(highlightTimer.current); }, []);
   function scrollToActivityDay(key) { setActivityOpen(true); window.setTimeout(()=>{ const row=activityRowsRef.current[key]; if(!row)return; const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); setHighlightedDay(key); if(highlightTimer.current)window.clearTimeout(highlightTimer.current); highlightTimer.current=window.setTimeout(()=>setHighlightedDay(''),1200); },260); }
 
-  function openSheet(id) {
-    sheetLastFocus.current = document.activeElement;
-    setSheet(id);
-    window.setTimeout(() => sheetCloseRef.current?.focus(), 0);
-  }
-
-  function closeSheet() {
-    setSheet(null);
-    sheetTouchDeltaY.current = 0;
-    if (sheetLastFocus.current && typeof sheetLastFocus.current.focus === 'function') {
-      window.setTimeout(() => sheetLastFocus.current?.focus(), 0);
-    }
-  }
-
-  function handleSheetKeyDown(event) {
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      closeSheet();
-    }
-  }
-
-  function handleSheetTouchStart(event) {
-    sheetTouchStartY.current = event.touches?.[0]?.clientY ?? null;
-    sheetTouchDeltaY.current = 0;
-  }
-
-  function handleSheetTouchMove(event) {
-    if (sheetTouchStartY.current == null) return;
-    const currentY = event.touches?.[0]?.clientY ?? sheetTouchStartY.current;
-    sheetTouchDeltaY.current = Math.max(0, currentY - sheetTouchStartY.current);
-    if (sheetTouchDeltaY.current > 0 && sheetRef.current) {
-      sheetRef.current.style.transform = `translateY(${Math.min(sheetTouchDeltaY.current, 160)}px)`;
-    }
-  }
-
-  function handleSheetTouchEnd() {
-    const delta = sheetTouchDeltaY.current;
-    sheetTouchStartY.current = null;
-    sheetTouchDeltaY.current = 0;
-    if (delta > 72) { closeSheet(); return; }
-    if (sheetRef.current) sheetRef.current.style.transform = '';
-  }
-
-  useEffect(() => {
-    if (!sheet) return;
-    document.addEventListener('keydown', handleSheetKeyDown);
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-    return () => {
-      document.removeEventListener('keydown', handleSheetKeyDown);
-      document.body.style.overflow = previousOverflow;
-      if (sheetRef.current) sheetRef.current.style.transform = '';
-    };
-  }, [sheet]);
+  function openSheet(id){sheetLastFocus.current=document.activeElement;setSelectedBar(null);setSheet(id);setSheetReady(false);if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(10);window.setTimeout(()=>setSheetReady(true),0);window.setTimeout(()=>sheetCloseRef.current?.focus(),0);}
+  function closeSheet(){setSheetReady(false);setSheet(null);setSelectedBar(null);if(sheetLastFocus.current&&typeof sheetLastFocus.current.focus==='function')window.setTimeout(()=>sheetLastFocus.current?.focus(),0);}
+  function handleSheetKeyDown(event){if(event.key==='Escape'){event.preventDefault();closeSheet();}}
+  function moveSheet(direction){const i=sheetIds.indexOf(sheet);if(i<0)return;setSelectedBar(null);setSheet(sheetIds[(i+direction+4)%4]);window.setTimeout(()=>sheetCloseRef.current?.focus(),0);}
+  function handleSheetTouchStart(event){const t=event.touches?.[0];sheetTouchStartY.current=t?.clientY??null;sheetTouchStartX.current=t?.clientX??null;sheetTouchDeltaY.current=0;sheetTouchDeltaX.current=0;}
+  function handleSheetTouchMove(event){if(sheetTouchStartY.current==null||sheetTouchStartX.current==null)return;const t=event.touches?.[0];if(!t)return;sheetTouchDeltaY.current=t.clientY-sheetTouchStartY.current;sheetTouchDeltaX.current=t.clientX-sheetTouchStartX.current;if(sheetTouchDeltaY.current>0&&Math.abs(sheetTouchDeltaY.current)>Math.abs(sheetTouchDeltaX.current)&&sheetRef.current)sheetRef.current.style.transform='translateY('+Math.min(sheetTouchDeltaY.current,160)+'px)';}
+  function handleSheetTouchEnd(){const dy=sheetTouchDeltaY.current,dx=sheetTouchDeltaX.current;sheetTouchStartY.current=null;sheetTouchStartX.current=null;sheetTouchDeltaY.current=0;sheetTouchDeltaX.current=0;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)){moveSheet(dx<0?1:-1);return;}if(dy>72){closeSheet();return;}if(sheetRef.current)sheetRef.current.style.transform='';}
+  useEffect(()=>{if(!sheet)return;document.addEventListener('keydown',handleSheetKeyDown);const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.removeEventListener('keydown',handleSheetKeyDown);document.body.style.overflow=previousOverflow;if(sheetRef.current)sheetRef.current.style.transform='';};},[sheet]);
 
   function fmt(value) {
     return Number(value || 0).toLocaleString();
   }
 
-  function BarChart({ values, labels }) {
-    const safeValues = values.map(value => Number(value || 0));
-    const max = Math.max(...safeValues, 1);
-    const W = 300, H = 120, bw = W / Math.max(safeValues.length, 1);
-    return <svg viewBox={`0 0 ${W} ${H}`} style={{width:'100%',display:'block'}} role="img" aria-label="Bar chart">
-      {safeValues.map((value, index) => {
-        const bh = Math.max((value / max) * (H - 22), value > 0 ? 3 : 0);
-        return <g key={index}>
-          <rect x={index * bw + bw * .18} y={H - 18 - bh} width={bw * .64} height={bh} rx="4" fill="var(--green-dark)" opacity={value ? 1 : .15}/>
-          {labels?.[index] ? <text x={index * bw + bw / 2} y={H - 4} fontSize="10" textAnchor="middle" fill="currentColor" opacity=".6">{labels[index]}</text> : null}
-        </g>;
-      })}
-    </svg>;
-  }
-
-  function Ring({ pct }) {
-    const safePct = Math.max(0, Math.min(1, Number(pct) || 0));
-    const r = 52, c = 2 * Math.PI * r;
-    return <svg viewBox="0 0 130 130" style={{width:150,display:'block',margin:'0 auto'}} role="img" aria-label={`${Math.round(safePct * 100)}% of daily goal`}>
-      <circle cx="65" cy="65" r={r} fill="none" stroke="currentColor" opacity=".12" strokeWidth="12"/>
-      <circle cx="65" cy="65" r={r} fill="none" stroke="var(--green-dark)" strokeWidth="12" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c * (1 - safePct)} transform="rotate(-90 65 65)"/>
-      <text x="65" y="71" textAnchor="middle" fontSize="22" fontWeight="800" fill="currentColor">{Math.round(safePct * 100)}%</text>
-    </svg>;
-  }
-
-  function SheetBody() {
-    if (sheet === 'today') {
-      const hasHourlyData = hourlySteps.some(Boolean);
-      return <>
-        <div className="sheet-big">{fmt(todaySteps)}</div>
-        <p className="sheet-sub">of {fmt(sheetGoal)} daily goal</p>
-        <Ring pct={Number(todaySteps) / sheetGoal}/>
-        <h4 style={{margin:'18px 0 8px'}}>By hour</h4>
-        {hasHourlyData
-          ? <BarChart values={hourlySteps} labels={hourlySteps.map((_, i) => i % 6 === 0 ? `${i}h` : '')}/>
-          : <div className="sheet-empty">No hourly step data is stored for today yet.</div>}
-      </>;
-    }
-    if (sheet === 'distance') {
-      const weekKm = sheetWeek.reduce((sum, day) => sum + day.km, 0);
-      const marathons = totalDistanceKm / 42.195;
-      return <>
-        <div className="sheet-big">{totalDistanceKm.toFixed(1)} km</div>
-        <p className="sheet-sub">based on recorded steps</p>
-        {sheetWeek.length ? <BarChart values={sheetWeek.map(day => day.km)} labels={sheetWeek.map(day => day.label)}/> : <div className="sheet-empty">No distance data recorded yet.</div>}
-        <div className="sheet-chips">
-          <span className="sheet-chip">{weekKm.toFixed(1)} km this week</span>
-          <span className="sheet-chip">≈ {marathons.toFixed(1)} marathons</span>
-        </div>
-      </>;
-    }
-    if (sheet === 'days') {
-      const count = sheetWeek.filter(day => day.steps > 0).length;
-      return <>
-        <div className="sheet-big">{count} of 7</div>
-        <p className="sheet-sub">days with movement this week</p>
-        <div className="sheet-week-pills">
-          {sheetWeek.map((day, index) => <div key={index} className="sheet-day-pill">
-            <span>{day.label}</span>
-            <i aria-hidden="true" className={day.steps > 0 ? 'on' : ''}/>
-          </div>)}
-        </div>
-        <div className="sheet-chips">
-          <span className="sheet-chip">{consistency30}% of last 30 days</span>
-          <span className="sheet-chip">Longest streak: {longestMovementStreak} days</span>
-        </div>
-      </>;
-    }
-    const milestones = [100000, 250000, 500000, 1000000];
-    const next = milestones.find(m => m > totalSteps);
-    const prev = [...milestones].reverse().find(m => m <= totalSteps) || 0;
-    const pct = next ? Math.round(((totalSteps - prev) / (next - prev)) * 100) : 100;
-    return <>
-      <div className="sheet-big">{fmt(totalSteps)}</div>
-      <p className="sheet-sub">{next ? `${fmt(next - totalSteps)} steps to ${fmt(next)}` : 'All milestones reached'}</p>
-      <div className="sheet-progress"><i style={{width:`${pct}%`}}/></div>
-      <div className="sheet-chips">
-        {milestones.map(m => <span key={m} className="sheet-chip">{totalSteps >= m ? '✓ ' : ''}{fmt(m)}</span>)}
-      </div>
-    </>;
-  }
+  function BarChart({values,labels,unit='',selected,onSelect,accentIndex=-1}){const safe=values.map(v=>Number(v||0)),max=Math.max(...safe,1),W=360,H=138,chartH=108,bw=W/Math.max(safe.length,1);return <div style={{position:'relative'}}>{selected!=null&&safe[selected]!=null&&<div style={{position:'absolute',left:'calc('+(((selected+.5)/safe.length)*100)+'% - 22px)',top:0,minWidth:44,textAlign:'center',fontSize:10.5,fontWeight:800,color:'var(--ink)',background:'var(--card)',border:'1px solid var(--line)',borderRadius:8,padding:'4px 6px',zIndex:2}}>{Number(safe[selected]).toFixed(unit==='km'?2:0)}{unit}</div>}<svg viewBox={'0 0 '+W+' '+H} style={{width:'100%',height:'auto',maxHeight:140,display:'block'}} role="img" aria-label="Bar chart">{safe.map((v,i)=>{const bh=v>0?Math.max(4,v/max*chartH):3,a=i===accentIndex;return <g key={i} onClick={()=>onSelect?.(i)}><rect x={i*bw+bw*.22} y={chartH-bh} width={bw*.56} height={bh} rx="4" fill={a?'var(--green-dark)':'var(--ink-45)'} opacity={v?(a?1:.42):.12}/>{labels?.[i]&&<text x={i*bw+bw/2} y={H-7} fontSize="10" textAnchor="middle" fill="currentColor" opacity=".62">{labels[i]}</text>}</g>})}</svg></div>;}
+  function Ring({value,goal}){const g=Math.max(1,Number(goal)||8000),v=Math.max(0,Number(value)||0),p=Math.min(1,v/g),r=45,c=2*Math.PI*r;return <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,margin:'2px 0'}}><svg viewBox="0 0 110 110" style={{width:112,height:112,display:'block'}}><circle cx="55" cy="55" r={r} fill="none" stroke="var(--green-soft)" strokeWidth="10"/><circle cx="55" cy="55" r={r} fill="none" stroke="var(--green-dark)" strokeWidth="10" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-p)} transform="rotate(-90 55 55)"/><text x="55" y="60" textAnchor="middle" fontSize="19" fontWeight="800" fill="var(--ink)">{Math.round(p*100)}%</text></svg><div><div style={{fontSize:16,fontWeight:800}}>{p>=1?'Goal reached':fmt(g-v)+' to go'}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:3}}>Daily goal · {fmt(g)} steps</div></div></div>;}
+  function Comparison({children,up}){return children?<div style={{fontSize:12,fontWeight:700,color:up?'var(--green-dark)':'var(--ink-45)',margin:'3px 0 8px'}}>{children}</div>:null;}
+  function EmptyState({text}){return <div style={{padding:'18px 0 2px'}}><p style={{fontSize:13,color:'var(--ink-70)',margin:'0 0 12px'}}>{text}</p><button type="button" onClick={()=>{closeSheet();router.push('/movement');}} style={{width:'100%',minHeight:44,border:0,borderRadius:999,padding:'12px 16px',background:'#2E9E5B',color:'#fff',fontWeight:800}}>Movement &amp; steps</button></div>;}
+  function SheetBody(){const today=Number(todaySteps)||0,weekTotal=sheetWeek.reduce((s,d)=>s+d.steps,0),weekKm=sheetWeek.reduce((s,d)=>s+d.km,0),days=sheetWeek.filter(d=>d.steps>0).length;if(sheet==='today')return today>0?<><div className="sheet-big">{fmt(today)}</div><Comparison up={Number(previousWeek[6]||0)>0&&today>=previousWeek[6]}>{Number(previousWeek[6]||0)>0?(today>=previousWeek[6]?'↑':'↓')+' '+Math.abs(today-previousWeek[6]).toLocaleString()+' vs yesterday':null}</Comparison><Ring value={today} goal={sheetGoal}/><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{Math.round(today/sheetGoal*100)}% of goal</span><span className="sheet-chip">{fmt(Math.max(0,sheetGoal-today))} remaining</span></div></>:<EmptyState text="No steps yet today. Record some in Movement."/>;if(sheet==='distance'){const last=previousWeekTotal*.75/1000,up=last>0&&weekKm>=last;return <><div className="sheet-big">{formatDistance(totalDistanceKm)}</div><Comparison up={up}>{last>0?(up?'↑':'↓')+' '+formatDistance(Math.abs(weekKm-last))+' this week vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.km)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6} unit="km"/><div className="sheet-chips"><span className="sheet-chip">{weekKm.toFixed(1)} km this week</span><span className="sheet-chip">{(totalDistanceKm/42.195).toFixed(1)} marathons</span></div></>;}if(sheet==='days'){const up=previousWeekDays>0&&days>=previousWeekDays;return <><div className="sheet-big">{days} of 7</div><Comparison up={up}>{previousWeekDays>0?(up?'↑':'↓')+' '+Math.abs(days-previousWeekDays)+' days vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps>0?1:0)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{consistency30}% active in 30 days</span><span className="sheet-chip">Longest: {longestMovementStreak} days</span></div></>;}if(totalSteps<=0)return <EmptyState text="No steps yet. Record some in Movement."/>;return <><div className="sheet-big">{fmt(totalSteps)}</div><Comparison up={weekTotal>0}>{weekTotal>0?'+'+fmt(weekTotal)+' steps added this week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{fmt(weekTotal)} added this week</span><span className="sheet-chip">{fmt(totalSteps)} total</span></div></>;}
 
   async function handleShareProfile() {
     if (!profile?.id) return;
@@ -438,18 +319,16 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 
       <style>{`
 .dashboard-stat-tile:active{transform:scale(.98)}
-.dashboard-sheet-layer{position:fixed;inset:0;z-index:75}
-.dashboard-sheet-scrim{position:absolute;inset:0;background:rgba(0,0,0,.45);opacity:1}
-.dashboard-sheet{position:absolute;left:0;right:0;bottom:0;max-height:86dvh;overflow:auto;background:var(--card);color:var(--ink);border-radius:28px 28px 0 0;padding:10px 20px calc(96px + env(safe-area-inset-bottom));transform:translateY(0);transition:transform .3s cubic-bezier(.2,.8,.2,1);touch-action:pan-y}
+.dashboard-sheet-layer{position:fixed;inset:0;z-index:90}.dashboard-sheet-scrim{position:absolute;inset:0;background:rgba(10,20,35,.45)}.dashboard-sheet{position:fixed;left:0;right:0;bottom:0;max-height:80dvh;overflow-y:auto;background:#FFFFFF;color:#0F2A4A;border:1px solid rgba(15,42,74,.12);border-bottom:0;border-radius:28px 28px 0 0;padding:10px 20px calc(96px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.18);transform:translateY(100%);transition:transform 250ms cubic-bezier(.2,.8,.2,1);touch-action:pan-y;overscroll-behavior:contain}.dashboard-sheet.is-open{transform:translateY(0)}html.protlys-dark .dashboard-sheet{background:#171D19;color:#F2F6F2;border-color:rgba(242,246,242,.13)}html.protlys-dark .dashboard-sheet .dashboard-sheet-close{background:#193A27;color:#F2F6F2}html.protlys-dark .dashboard-sheet .sheet-chip{background:#193A27;border-color:rgba(242,246,242,.13)}html.protlys-dark .dashboard-sheet .dashboard-sheet-dot{background:rgba(242,246,242,.48)}html.protlys-dark .dashboard-sheet .dashboard-sheet-dot.is-active{background:#76D89A}
 .dashboard-sheet-grab{width:44px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
 .dashboard-sheet-head{display:flex;justify-content:space-between;align-items:center}
 .dashboard-sheet-head h3{margin:0;font-size:18px}
 .dashboard-sheet-close{width:34px;height:34px;border:0;border-radius:50%;background:var(--green-soft);color:var(--ink);font-size:20px;line-height:1;display:grid;place-items:center;cursor:pointer}
-.dashboard-sheet-body{padding-bottom:4px}
+.dashboard-sheet-body{padding-bottom:4px}.dashboard-sheet-dots{display:flex;justify-content:center;gap:6px;margin:2px 0 10px}.dashboard-sheet-dot{width:6px;height:6px;border:0;border-radius:50%;padding:0;background:var(--ink-45);opacity:.3;cursor:pointer}.dashboard-sheet-dot.is-active{background:var(--green-dark);opacity:1}
 .sheet-big{font-size:38px;font-weight:800;margin:14px 0 2px;letter-spacing:-1px}
 .sheet-sub{opacity:.7;font-size:13px;margin:0 0 16px}
-.sheet-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
-.sheet-chip{border:1px solid var(--line);border-radius:99px;padding:8px 14px;font-size:13px;font-weight:600}
+.sheet-chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px}
+.sheet-chip{border:1px solid var(--line);border-radius:99px;padding:7px 12px;font-size:12px;font-weight:600;background:var(--green-soft)}
 .sheet-empty{padding:24px;text-align:center;opacity:.7;border:1px dashed var(--line);border-radius:16px}
 .sheet-progress{height:6px;border-radius:9px;background:currentColor;opacity:.12;overflow:hidden;margin-top:14px}
 .sheet-progress i{display:block;height:100%;background:var(--green-dark);border-radius:inherit;opacity:1}
@@ -494,26 +373,16 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           ['distance','Estimated distance',formatDistance(totalDistanceKm),'all recorded steps'],
           ['days','Movement days',String(activeDayCount),'last 7 days'],
           ['lifetime','Lifetime steps',totalSteps.toLocaleString(),'all recorded movement'],
-        ].map(([id,label,value,note]) => <div key={id} role="button" tabIndex={0} aria-haspopup="dialog" aria-label={`${label}: ${value}. Open details`} className="hub-card dashboard-stat-tile" onClick={() => openSheet(id)} onKeyDown={event => {
+        ].map(([id,label,value,note]) => <div key={id} role="button" tabIndex={0} aria-haspopup="dialog" aria-expanded={sheet === id} aria-label={label + ': ' + value + '. Open details'} className="hub-card dashboard-stat-tile" onClick={() => openSheet(id)} onKeyDown={event => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSheet(id); }
-        }} style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px',cursor:'pointer'}}>
+        }} style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px',cursor:'pointer',position:'relative'}}><span aria-hidden="true" style={{position:'absolute',top:12,right:12,width:28,height:28,display:'grid',placeItems:'center',color:'var(--ink-45)',transform:'rotate('+(sheet===id?180:0)+'deg)',transition:'transform 200ms var(--ease-out)'}}><Icon name="chevronDown" size={16}/></span>>
           <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>{label}</div>
           <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{value}</div>
           {note && <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>{note}</div>}
         </div>)}
       </div>
       <p className="disclaimer" style={{marginTop:-8,marginBottom:20}}>Distance is an estimate using an average 0.75 m stride. Your actual distance may vary.</p>
-      {sheet && <div className="dashboard-sheet-layer">
-        <div className="dashboard-sheet-scrim" onClick={closeSheet} aria-hidden="true"/>
-        <section ref={sheetRef} className="dashboard-sheet" role="dialog" aria-modal="true" aria-labelledby="dashboard-sheet-title" aria-describedby="dashboard-sheet-body" onClick={event => event.stopPropagation()} onTouchStart={handleSheetTouchStart} onTouchMove={handleSheetTouchMove} onTouchEnd={handleSheetTouchEnd}>
-          <div className="dashboard-sheet-grab" aria-hidden="true"/>
-          <div className="dashboard-sheet-head">
-            <h3 id="dashboard-sheet-title">{({today:'Steps today',distance:'Estimated distance',days:'Movement days',lifetime:'Lifetime steps'})[sheet]}</h3>
-            <button ref={sheetCloseRef} type="button" onClick={closeSheet} aria-label="Close details" className="dashboard-sheet-close">×</button>
-          </div>
-          <div id="dashboard-sheet-body" className="dashboard-sheet-body"><SheetBody/></div>
-        </section>
-      </div>}
+      {sheet && typeof document !== 'undefined' && createPortal(<div className="dashboard-sheet-layer"><div className="dashboard-sheet-scrim" onClick={closeSheet} aria-hidden="true"/><section ref={sheetRef} className={'dashboard-sheet'+(sheetReady?' is-open':'')} role="dialog" aria-modal="true" aria-labelledby="dashboard-sheet-title" aria-describedby="dashboard-sheet-body" onClick={event=>event.stopPropagation()} onTouchStart={handleSheetTouchStart} onTouchMove={handleSheetTouchMove} onTouchEnd={handleSheetTouchEnd}><div className="dashboard-sheet-grab" aria-hidden="true"/><div className="dashboard-sheet-dots" role="tablist" aria-label="Dashboard statistics">{sheetIds.map(id=><button key={id} type="button" role="tab" aria-selected={sheet===id} aria-label={sheetTitles[id]} className={'dashboard-sheet-dot'+(sheet===id?' is-active':'')} onClick={()=>{setSelectedBar(null);setSheet(id);}}/>)}</div><div className="dashboard-sheet-head"><h3 id="dashboard-sheet-title">{sheetTitles[sheet]}</h3><button ref={sheetCloseRef} type="button" onClick={closeSheet} aria-label="Close details" className="dashboard-sheet-close">×</button></div><div id="dashboard-sheet-body" className="dashboard-sheet-body"><SheetBody/></div></section></div>,document.body)}
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
