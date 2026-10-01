@@ -62,6 +62,10 @@ export default function PROTClient() {
         .protlys-prot-msg.prot{background:var(--green-soft,#e4f3ea);border-bottom-left-radius:5px}.protlys-prot-msg.user{margin-left:auto;background:var(--ink,#0f2a4a);color:#fff;border-bottom-right-radius:5px}
         .protlys-prot-starters{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.protlys-prot-starters button{border:1px solid var(--line,rgba(15,42,74,.12));background:transparent;color:inherit;border-radius:999px;padding:8px 10px;font-size:11px;cursor:pointer}
         .protlys-prot-compose{padding:10px;border-top:1px solid var(--line,rgba(15,42,74,.12));display:flex;gap:8px}.protlys-prot-compose textarea{flex:1;resize:none;min-height:42px;max-height:100px;border:1px solid var(--line,rgba(15,42,74,.12));border-radius:14px;padding:11px 12px;background:transparent;color:inherit;font:inherit;font-size:13px;outline:none}.protlys-prot-compose textarea:focus{border-color:var(--green,#2e9e5b)}.protlys-prot-send{width:44px;border:0;border-radius:14px;background:var(--green,#2e9e5b);color:#fff;font-weight:800;cursor:pointer}.protlys-prot-send:disabled{opacity:.45;cursor:default}
+        .protlys-dark .protlys-prot-launch{background:var(--card,#111820);color:var(--green,#4dbb75);border-color:rgba(255,255,255,.1);box-shadow:0 10px 28px rgba(0,0,0,.35)}
+        .protlys-dark .protlys-prot-panel{background:var(--card,#111820);color:var(--ink,#f2f5f7);border-color:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.45)}
+        .protlys-dark .protlys-prot-msg.user{background:var(--green,#2e9e5b);color:#07140c}
+        .protlys-dark .protlys-prot-starters button{border-color:rgba(255,255,255,.12)}
         @media(max-width:899px){.protlys-prot-launch{bottom:92px;right:14px}.protlys-prot-panel{right:12px;bottom:86px;width:calc(100vw - 24px);height:min(680px,calc(100dvh - 104px));border-radius:22px}}
         @media(prefers-reduced-motion:reduce){.protlys-prot-launch{transition:none}}
       `}</style>
