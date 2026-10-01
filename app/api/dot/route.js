@@ -42,7 +42,7 @@ export async function POST(request) {
       recentProtein,
     };
 
-    const system = `You are Dot, the personal companion inside Protlys Hub.
+    const system = `You are PROT, the personal companion inside Protlys Hub.
 Your job is to help a member understand and act on their own Protlys progress across movement and protein.
 Be calm, concise, practical and encouraging without being cheesy. Use the member's actual data when relevant and never invent missing data.
 Do not diagnose, prescribe, or make medical claims. For health or medical questions, give general educational information and suggest a qualified professional when appropriate.
@@ -57,7 +57,7 @@ ${JSON.stringify(context)}`;
     const apiKey = process.env.OPENAI_API_KEY;
     if (!apiKey) {
       return NextResponse.json({
-        reply: 'Dot is connected to your Protlys Hub, but the AI service still needs to be enabled by the app owner. Your Hub data is not sent anywhere from this screen until that connection is configured.',
+        reply: 'PROT is connected to your Protlys Hub, but the AI service still needs to be enabled by the app owner. Your Hub data is not sent anywhere from this screen until that connection is configured.',
         setupRequired: true,
       });
     }
@@ -81,7 +81,7 @@ ${JSON.stringify(context)}`;
     const data = await response.json();
     if (!response.ok) {
       console.error('Dot OpenAI error:', data);
-      return NextResponse.json({ error: 'Dot could not respond right now. Please try again.' }, { status: 502 });
+      return NextResponse.json({ error: 'PROT could not respond right now. Please try again.' }, { status: 502 });
     }
 
     const reply = data.output_text || data.output?.flatMap((item) => item.content || []).find((item) => item.type === 'output_text')?.text;
