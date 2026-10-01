@@ -180,8 +180,8 @@ export default function ShareSheet({
         .protlys-share-primary:disabled,.protlys-share-secondary button:disabled{opacity:.5;cursor:default;}
         .protlys-share-secondary{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:10px;}
         .protlys-share-secondary button{min-height:44px;border:1px solid var(--share-line);border-radius:999px;background:var(--share-white);color:var(--share-ink);font-weight:800;cursor:pointer;}
-        .protlys-share-toast{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--share-ink);color:#fff;text-align:center;font-size:11.5px;font-weight:700;}
-        @keyframes protlys-share-sheet-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
+        .protlys-share-toast{margin-top:10px;padding:10px 12px;border-radius:10px;background:var(--share-ink);color:#fff;text-align:center;font-size:11.5px;font-weight:700;animation:protlys-share-toast-in 420ms cubic-bezier(.18,1.25,.4,1) both;}
+        @keyframes protlys-share-toast-in{from{opacity:0;transform:translateY(10px) scale(.96)}70%{transform:translateY(-2px) scale(1.015)}to{opacity:1;transform:translateY(0) scale(1)}}\n        @keyframes protlys-share-sheet-in{from{transform:translateY(100%)}to{transform:translateY(0)}}
         @keyframes protlys-share-sheet-out{from{transform:translateY(0)}to{transform:translateY(100%)}}
         @keyframes protlys-share-backdrop-in{from{opacity:0}to{opacity:1}}
         @keyframes protlys-share-shimmer{from{background-position:200% 0}to{background-position:-200% 0}}
