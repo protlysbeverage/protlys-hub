@@ -33,7 +33,7 @@ export default function PROTClient() {
     setMessages((current) => [...current, { role: 'user', text: clean }]);
     setLoading(true);
     try {
-      const response = await fetch('/api/prot', {
+      const response = await fetch('/api/dot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ message: clean }),
