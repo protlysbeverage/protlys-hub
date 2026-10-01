@@ -1,0 +1,3 @@
+-- Protlys Dot is intentionally stateless in this first release.
+-- Conversation history stays in the browser for the session.
+-- Future versions can add explicit opt-in memory and agent action tables here.

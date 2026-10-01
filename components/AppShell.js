@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import ThemeToggle from '@/components/ThemeToggle';
+import DotClient from '@/app/dot/DotClient';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
@@ -260,6 +261,8 @@ export default function AppShell({ children }) {
     </div>
 
     <section className="screen active">{children}</section>
+
+    <DotClient />
 
     <nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
       {NAV_ITEMS.map(item=>{
