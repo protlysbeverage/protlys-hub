@@ -55,11 +55,69 @@ Member context (private to this signed-in user):
 ${JSON.stringify(context)}`;
 
     const apiKey = process.env.OPENAI_API_KEY;
-    if (!apiKey) {
-      return NextResponse.json({
-        reply: 'PROT is connected to your Protlys Hub, but the AI service still needs to be enabled by the app owner. Your Hub data is not sent anywhere from this screen until that connection is configured.',
-        setupRequired: true,
+
+    // Local intelligence mode: PROT remains useful without an external AI API.
+    // It answers common progress questions directly from the member's Hub data.
+    function localReply(text) {
+      const q = text.toLowerCase();
+      const name = profile?.display_name ? String(profile.display_name).split(/\\s+/)[0] : '';
+      const target = Number(profile?.target_g || 0);
+      const todaySteps = Number((steps || []).find((row) => row.step_date === today)?.steps || 0);
+      const weekRows = (steps || []).filter((row) => {
+        const d = new Date(`${row.step_date}T00:00:00`);
+        const now = new Date(`${today}T00:00:00`);
+        return (now - d) / 86400000 < 7;
       });
+      const weekStepTotal = weekRows.reduce((sum, row) => sum + Number(row.steps || 0), 0);
+      const proteinToday = (proteinLogs || [])
+        .filter((row) => row.log_date === today)
+        .reduce((sum, row) => sum + Number(row.grams || 0), 0);
+      const latestProtein = (proteinLogs || []).slice(0, 7).reduce((sum, row) => sum + Number(row.grams || 0), 0);
+      const activeDays = weekRows.filter((row) => Number(row.steps || 0) > 0).length;
+      const streak = Number(profile?.step_streak || profile?.streak || 0);
+
+      if (/\\b(hi|hello|hey|morning|good morning|good afternoon|good evening)\\b/.test(q)) {
+        return `Hi${name ? ` ${name}` : ''}. I’m PROT. Ask me about your steps, protein, streak, or what to focus on today.`;
+      }
+      if (/(protein).*(target|goal)|target.*protein|protein.*how much/.test(q)) {
+        return target > 0
+          ? `Your current protein target is ${target} g. Your logged intake today is ${Math.round(proteinToday)} g, so you have ${Math.max(0, Math.round(target - proteinToday))} g left to reach that target.`
+          : 'You have not set a protein target yet. Once you set one in your Hub profile, I can track your progress against it.';
+      }
+      if (/protein|intake|ate|eaten|grams|g\\b/.test(q)) {
+        return target > 0
+          ? `Today you’ve logged ${Math.round(proteinToday)} g of protein against your ${target} g target. That leaves ${Math.max(0, Math.round(target - proteinToday))} g to go.`
+          : `Today you’ve logged ${Math.round(proteinToday)} g of protein. Set a target if you want PROT to track progress against one.`;
+      }
+      if (/step|walk|movement|active|activity/.test(q)) {
+        return `Today you’ve logged ${todaySteps.toLocaleString()} steps. Over the last 7 days, you’ve logged ${weekStepTotal.toLocaleString()} steps across ${activeDays} active day${activeDays === 1 ? '' : 's'}.`;
+      }
+      if (/streak|consisten|habit/.test(q)) {
+        return streak > 0
+          ? `Your current streak is ${streak} day${streak === 1 ? '' : 's'}. Keep the next step simple: protect today’s activity and keep your routine going.`
+          : 'You do not currently have a recorded streak. Start with one manageable action today and build from there.';
+      }
+      if (/today|focus|do next|should i|what should/.test(q)) {
+        const proteinGap = target > 0 ? Math.max(0, target - proteinToday) : null;
+        if (todaySteps === 0 && proteinGap !== null && proteinGap > 0) {
+          return `Two useful wins for today: get some movement in, and aim for about ${Math.round(proteinGap)} g more protein to reach your current target.`;
+        }
+        if (todaySteps === 0) return 'A simple focus for today: get some movement in, even if it is just a short walk. You can check back here after you log it.';
+        if (proteinGap !== null && proteinGap > 0) return `You already have ${todaySteps.toLocaleString()} steps today. Your next useful focus is about ${Math.round(proteinGap)} g more protein to reach your target.`;
+        return `You’ve already logged ${todaySteps.toLocaleString()} steps today. If your protein target is covered too, focus on keeping the routine consistent rather than adding unnecessary work.`;
+      }
+      if (/week|progress|doing|summary/.test(q)) {
+        const proteinTargetDays = target > 0
+          ? (proteinLogs || []).filter((row) => row.log_date && Number(row.grams || 0) >= target).slice(0, 7).length
+          : null;
+        return `This week: ${weekStepTotal.toLocaleString()} steps across ${activeDays} active day${activeDays === 1 ? '' : 's'}.${target > 0 ? ` You’ve logged ${Math.round(latestProtein)} g across your latest 7 protein entries; ${proteinTargetDays} of those entries reached at least your ${target} g target.` : ''}`;
+      }
+
+      return 'I can currently give you data-based guidance on your Protlys steps, movement, protein intake, targets and streaks. Try asking “How am I doing this week?” or “What should I focus on today?”';
+    }
+
+    if (!apiKey) {
+      return NextResponse.json({ reply: localReply(message), mode: 'local' });
     }
 
     const response = await fetch('https://api.openai.com/v1/responses', {
