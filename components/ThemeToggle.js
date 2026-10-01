@@ -32,7 +32,7 @@ export default function ThemeToggle() {
 
   return (
     <button
-      className={`theme-toggle${dark ? ' is-dark' : ' is-light'}`}
+      className={`theme-toggle motion-theme-toggle${dark ? ' is-dark' : ' is-light'}`}
       type="button"
       onClick={toggle}
       aria-label={dark ? 'Switch to light mode' : 'Switch to dark mode'}
