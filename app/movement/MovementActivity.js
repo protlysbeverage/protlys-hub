@@ -145,7 +145,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const todayMonthKey = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
   const [calendarYear, calendarMonthIndex] = calendarMonthKey.split('-').map(Number);
   const calendarMonth = useMemo(() => new Date(calendarYear, calendarMonthIndex - 1, 1), [calendarYear, calendarMonthIndex]);
-  const canGoToNextMonth = calendarMonthKey < todayMonthKey;
+  const calendarMonthIndexNumber = calendarYear * 12 + (calendarMonthIndex - 1);
+  const todayMonthIndexNumber = today.getFullYear() * 12 + today.getMonth();
+  const canGoToNextMonth = calendarMonthIndexNumber < todayMonthIndexNumber;
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -364,9 +366,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
             {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
           </div>
         </div>
-        <button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:44 }}>
-          {expanded ? '7-day view' : 'View calendar'}
-        </button>
+        <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
+          <button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:40 }}>
+            {expanded ? '7-day view' : 'View calendar'}
+          </button>
+          <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
+        </div>
       </div>
 
       {!expanded ? (
@@ -419,12 +424,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
           <div className="movement-streak-grid">
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">CURRENT STREAK</span><span className="streak-label-short">CURRENT</span></div>
-              {current > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/></span>}
+              <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/></span>
               <div className="movement-streak-value"><span>{current}</span><small>{current === 1 ? 'day' : 'days'}</small></div>
             </div>
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">BEST STREAK</span><span className="streak-label-short">BEST</span></div>
-              {best > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/></span>}
+              <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/></span>
               <div className="movement-streak-value"><span>{best}</span><small>{best === 1 ? 'day' : 'days'}</small></div>
             </div>
           </div>
