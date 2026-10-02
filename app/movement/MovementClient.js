@@ -32,7 +32,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const totalSteps = Number(profile?.total_steps || 0);
   const today = new Date();
   const todayStr = localDateStr(today);
-  const shareContext = { rows: movementDays, todaySteps, lifetimeSteps: totalSteps, currentStreak, bestStreak: currentStreak };
+  const shareContext = { rows: movementDays, todaySteps, lifetimeSteps: totalSteps, currentStreak };
   const stepsShareData = getShareData('steps_today', shareContext);
   const activeDaysShareData = getShareData('movement_days', shareContext);
   const recent = stepsShareData.weeklyDays.map(d => ({ dateStr:d.key, steps:d.steps }));
@@ -107,7 +107,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
         </div>
 
-        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} />
+        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />
       </div>
       {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
     </>
