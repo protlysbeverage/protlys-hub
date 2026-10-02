@@ -171,6 +171,7 @@ export default function HubClient({ profile, calculatorTarget = null, todayG, lo
         <div style={{fontWeight:800,fontSize:18,marginTop:3}}>{count} of 250</div>
         <p style={{fontSize:12.5,lineHeight:1.45,color:'var(--ink-70)',margin:'6px 0 0'}}>Building the habit together — protein as a daily habit, not a gym-only thing.</p>
       </section>
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
     </div>
   </>;
 }
