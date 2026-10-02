@@ -270,7 +270,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   function openMovementShare() {
     const last30 = shareLast30Days();
     const activeDays = last30.filter(row => Number(row.steps || 0) > 0).length;
-    setShareData(getShareData('movement_days', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best }));
+    setShareData(getShareData('movement_days', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best, periodPreference: 'Last 30 days' }));
   }
   function openStreakShare(type) {
     setShareData(getShareData(type === 'current' ? 'current_streak' : 'best_streak', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best }));
