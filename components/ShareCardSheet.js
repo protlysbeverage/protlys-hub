@@ -68,9 +68,23 @@ export default function ShareCardSheet({ open, onClose, metric, value, unit, lab
       const data = await toPng(node, { cacheBust: true, pixelRatio: 3 });
       const blob = await (await fetch(data)).blob();
       const file = new File([blob], 'protlys-share-card.png', { type: 'image/png' });
-      if (navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }))) {
-        await navigator.share({ files: [file], title: 'My Protlys progress' });
-        setMessage('Shared.');
+      const shareUrl = 'https://hub.protlys.com/';
+      const sharePayload = { files: [file], title: 'My Protlys progress', text: 'My Protlys progress', url: shareUrl };
+      const canShareFiles = navigator.share && (!navigator.canShare || navigator.canShare({ files: [file] }));
+      if (canShareFiles) {
+        await navigator.share(sharePayload);
+        setMessage('Photo + Protlys link shared.');
+      } else if (navigator.share) {
+        await navigator.share({ title: 'My Protlys progress', text: 'My Protlys progress', url: shareUrl });
+        const u = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = u;
+        a.download = 'protlys-share-card.png';
+        document.body.appendChild(a);
+        a.click();
+        a.remove();
+        setTimeout(() => URL.revokeObjectURL(u), 1000);
+        setMessage('Link shared. Photo downloaded.');
       } else {
         const u = URL.createObjectURL(blob);
         const a = document.createElement('a');
@@ -80,7 +94,8 @@ export default function ShareCardSheet({ open, onClose, metric, value, unit, lab
         a.click();
         a.remove();
         setTimeout(() => URL.revokeObjectURL(u), 1000);
-        setMessage('Image downloaded.');
+        try { await navigator.clipboard.writeText(shareUrl); } catch {}
+        setMessage('Photo saved. Protlys link copied.');
       }
     } catch (e) {
       if (e?.name !== 'AbortError') {
@@ -96,18 +111,18 @@ export default function ShareCardSheet({ open, onClose, metric, value, unit, lab
 
   return createPortal(
     <div style={{ position: 'fixed', inset: 0, zIndex: 25000, fontFamily: 'Manrope,sans-serif' }}>
-      <div onClick={close} style={{ position: 'absolute', inset: 0, background: 'rgba(5,13,10,.52)' }} />
-      <section role="dialog" aria-modal="true" aria-label="Share progress" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '94dvh', overflow: 'auto', background: 'var(--paper)', borderRadius: '24px 24px 0 0', padding: '9px 16px calc(18px + env(safe-area-inset-bottom))', boxSizing: 'border-box', transform: closing ? 'translateY(100%)' : 'translateY(0)', transition: 'transform 170ms ease-out' }}>
+      <div onClick={close} style={{ position: 'absolute', inset: 0, background: 'rgba(5,13,10,.62)' }} />
+      <section role="dialog" aria-modal="true" aria-label="Share progress" style={{ position: 'absolute', left: 0, right: 0, bottom: 0, maxHeight: '94dvh', overflow: 'auto', background: 'var(--paper, #ffffff)', borderRadius: '24px 24px 0 0', boxShadow: '0 -18px 50px rgba(0,0,0,.20)', padding: '9px 16px calc(18px + env(safe-area-inset-bottom))', boxSizing: 'border-box', transform: closing ? 'translateY(100%)' : 'translateY(0)', transition: 'transform 170ms ease-out' }}>
         <div style={{ width: 42, height: 5, borderRadius: 99, background: 'var(--line)', margin: '0 auto 14px' }} />
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12 }}>
           <div>
             <div style={{ fontSize: 18, fontWeight: 800 }}>Share your progress</div>
-            <div style={{ fontSize: 10.5, color: 'var(--ink-45)', marginTop: 2 }}>Choose a look, then share the card</div>
+            <div style={{ fontSize: 10.5, color: 'var(--ink-45)', marginTop: 2 }}>Preview and choose a style</div>
           </div>
           <button type="button" onClick={close} aria-label="Close share sheet" style={{ width: 40, height: 40, border: '1px solid var(--line)', borderRadius: '50%', background: 'var(--surface)', color: 'var(--ink)', fontSize: 20 }}>×</button>
         </div>
 
-        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 18, padding: 10 }}>
+        <div style={{ marginTop: 14, display: 'flex', justifyContent: 'center', background: 'var(--surface)', border: '1px solid var(--line)', borderRadius: 18, padding: 10, minHeight: 250 }}>
           <div style={{ width: 'min(58vw, 250px)', aspectRatio: '360 / 640', overflow: 'hidden', borderRadius: 12, boxShadow: '0 8px 28px rgba(0,0,0,.14)' }}>
             <ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} theme={selected} qrDataUrl={qr} />
           </div>
@@ -121,10 +136,11 @@ export default function ShareCardSheet({ open, onClose, metric, value, unit, lab
           ))}
         </div>
 
-        <button type="button" onClick={share} disabled={busy} style={{ width: '100%', minHeight: 48, marginTop: 12, border: 0, borderRadius: 999, background: 'var(--green)', color: '#fff', fontWeight: 800, fontSize: 14 }}>
-          {busy ? 'Creating…' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}><ShareGlyph />Share {selected}</span>}
+        <button type="button" onClick={share} disabled={busy} style={{ width: '100%', minHeight: 48, marginTop: 14, border: 0, borderRadius: 999, background: 'var(--green)', color: '#fff', fontWeight: 800, fontSize: 14 }}>
+          {busy ? 'Preparing…' : <span style={{ display: 'inline-flex', alignItems: 'center', gap: 8, justifyContent: 'center' }}><ShareGlyph />Share photo + link</span>}
         </button>
         {message && <div role="status" style={{ textAlign: 'center', fontSize: 11.5, fontWeight: 700, color: 'var(--green-dark)', marginTop: 9 }}>{message}</div>}
+        <div style={{ textAlign:'center', fontSize:9.5, color:'var(--ink-45)', marginTop:8 }}>The share includes the image and a Protlys Hub link.</div>
 
         <div style={{ position: 'absolute', left: '-20000px', top: 0, pointerEvents: 'none' }} aria-hidden="true">
           {THEMES.map(theme => (
