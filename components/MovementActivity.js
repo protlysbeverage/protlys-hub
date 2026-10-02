@@ -131,8 +131,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
   const movementKeys = useMemo(() => days.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [days]);
   const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
-  const current = Number(currentStreak || recentStreaks.current || 0);
-  const best = Math.max(Number(currentStreak || 0), recentStreaks.best || 0);
+  const current = movementKeys.length ? recentStreaks.current : Number(currentStreak || 0);
+  const best = recentStreaks.best || Number(currentStreak || 0);
 
   const today = useMemo(() => parseKey(todayKey), [todayKey]);
   const recent = Array.from({ length: 7 }, (_, i) => {
