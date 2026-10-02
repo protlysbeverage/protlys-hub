@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboardingAction, confirmCalculatorTargetAction, logProteinAction, saveTargetAction } from './actions';
+import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 const QUICK = [15,20,25,30];
 
@@ -24,6 +25,7 @@ export default function HubClient({ profile, calculatorTarget = null, todayG, lo
   const [custom, setCustom] = useState('');
   const [pending, startTransition] = useTransition();
   const [toast, setToast] = useState('');
+  const [shareData, setShareData] = useState(null);
 
   useEffect(() => {
     try {
@@ -53,6 +55,8 @@ export default function HubClient({ profile, calculatorTarget = null, todayG, lo
     setToast(message);
     window.setTimeout(() => setToast(''), 2200);
   }
+
+  function openShare(metric,value,unit,label,subtext,progress=0) { setShareData({metric,value:String(value),unit,label,subtext,progress}); }
 
   function saveTarget(value) {
     startTransition(async () => {
@@ -133,7 +137,10 @@ export default function HubClient({ profile, calculatorTarget = null, todayG, lo
     <div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:22}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:14}}>
         <div><span className="eyebrow">Today</span><h1 style={{fontSize:18,marginTop:3}}>{nDate()}</h1></div>
-        <button className="link-btn" style={{fontSize:12}} onClick={()=>setPanel('edit-target')}>Target {target}g</button>
+        <div style={{display:'flex',alignItems:'center',gap:6}}>
+          <ShareIconButton label="Share protein target" onClick={()=>openShare('protein_target',target,'g','Daily protein target','Your current Protlys protein target',Math.min(1,Number(target||0)/220))}/>
+          <button className="link-btn" style={{fontSize:12}} onClick={()=>setPanel('edit-target')}>Target {target}g</button>
+        </div>
       </div>
 
       <section className="section-card" style={{marginTop:16,padding:'22px 18px'}}>
@@ -141,7 +148,7 @@ export default function HubClient({ profile, calculatorTarget = null, todayG, lo
         <div className="mono" style={{fontSize:'clamp(48px,13vw,68px)',fontWeight:800,lineHeight:.98,letterSpacing:'-.045em',marginTop:4}}>{remaining}<span style={{fontSize:20,opacity:.45}}> g</span></div>
         <div style={{fontSize:13,color:'var(--ink-70)',marginTop:7}}>of {target} g daily target</div>
         <div style={{height:9,background:'var(--green-soft)',borderRadius:999,overflow:'hidden',marginTop:17}}><div style={{height:'100%',width:`${progress}%`,background:'var(--green)',borderRadius:999,transition:'width .25s ease'}}/></div>
-        <div style={{display:'flex',justifyContent:'space-between',marginTop:7,fontSize:11,color:'var(--ink-45)'}}><span>{todayG} g logged</span><span>{progress}%</span></div>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginTop:7,fontSize:11,color:'var(--ink-45)'}}><span>{todayG} g logged</span><div style={{display:'flex',alignItems:'center',gap:7}}><span>{progress}%</span><ShareIconButton label="Share protein today" onClick={()=>openShare('protein_today',todayG,'g','Protein today',todayG+' g logged of '+target+' g target',progress/100)}/></div></div>
       </section>
 
       {panel === 'edit-target' && <section className="section-card" style={{marginTop:12}}><label className="field-label">CHANGE DAILY TARGET</label><div style={{display:'flex',gap:8,marginTop:7}}><input className="field-input mono" inputMode="numeric" type="number" min="20" max="500" value={target} onChange={e=>setTarget(e.target.value)} style={{fontSize:22,fontWeight:700}}/><button className="btn-primary" style={{margin:0,flex:'0 0 auto',width:'auto',padding:'10px 15px'}} onClick={()=>{saveTarget(target);setPanel(null)}} disabled={pending}>Save</button></div></section>}
