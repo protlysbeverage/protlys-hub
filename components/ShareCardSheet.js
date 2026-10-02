@@ -109,8 +109,6 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
         {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:60,height:96,padding:3,border:selected===look?'2px solid #4F9F35':'1px solid #D7DDD8',borderRadius:10,background:'#FFFFFF',overflow:'hidden',cursor:'pointer'}}><div style={{width:340,height:604,transform:'scale(.16)',transformOrigin:'top left',borderRadius:6,overflow:'hidden'}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={340}/></div></button>)}
       </div>
 
-      <div style={{position:'fixed',left:'-10000px',top:0,width:360,height:640,overflow:'hidden',pointerEvents:'none'}} aria-hidden="true"><div ref={exportRef}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={360}/></div></div>
-
       <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'2px 2px 8px',fontSize:13,fontWeight:700,flex:'0 0 auto'}}><span>Show my username</span><input type="checkbox" checked={showUsername} onChange={e=>setShowUsername(e.target.checked)} style={{width:20,height:20,accentColor:'var(--green)'}}/></label>
       {message&&<div role="status" style={{textAlign:'center',fontSize:11.5,fontWeight:700,color:'#4F9F35',margin:'0 0 7px',flex:'0 0 auto'}}>{message}</div>}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,flex:'0 0 auto'}}>
@@ -119,6 +117,7 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
         <button type="button" onClick={copyLink} disabled={busy} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><LinkGlyph/>Copy link</button>
       </div>
     </section>
+    <div style={{position:'fixed',left:'-10000px',top:0,width:360,height:640,overflow:'hidden',pointerEvents:'none'}} aria-hidden="true"><div ref={exportRef}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={360}/></div></div>
   </div>,document.body);
 }
 
