@@ -95,8 +95,18 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
         </div>
 
         <div className="hub-grid" style={{marginTop:10}}>
-          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Days with movement</div>{hasMovement && <ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/>} </div><div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the last 7 days</div></div>
-          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Lifetime steps</div>{hasMovement && <ShareIconButton label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/>} </div><div className="mono" style={{fontSize:20,fontWeight:800}}>{totalSteps >= 1000000 ? `${(totalSteps/1000000).toFixed(1)}M` : totalSteps >= 1000 ? `${Math.round(totalSteps/1000)}K` : totalSteps.toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded movement</div></div>
+          <div className="hub-card" style={{position:'relative',minWidth:0}}>
+            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/></div>}
+            <div className="t" style={{paddingRight:46}}>Days with movement</div>
+            <div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div>
+            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the last 7 days</div>
+          </div>
+          <div className="hub-card" style={{position:'relative',minWidth:0}}>
+            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/></div>}
+            <div className="t" style={{paddingRight:46}}>Lifetime steps</div>
+            <div className="mono" style={{fontSize:20,fontWeight:800}}>{totalSteps >= 1000000 ? `${(totalSteps/1000000).toFixed(1)}M` : totalSteps >= 1000 ? `${Math.round(totalSteps/1000)}K` : totalSteps.toLocaleString()}</div>
+            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded movement</div>
+          </div>
         </div>
 
         <div className="hub-card" style={{marginTop:10,padding:16}}>
