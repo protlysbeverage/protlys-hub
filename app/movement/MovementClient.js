@@ -1,10 +1,11 @@
 'use client';
 
-import { useState, useTransition } from 'react';
+import { useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { logStepsAction } from '@/app/movement-actions';
 import MovementActivity from '@/components/MovementActivity';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
+import { getShareData } from '@/lib/share-data';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -26,23 +27,23 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const [manualTime, setManualTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [toast, setToast] = useState('');
   const [shareData, setShareData] = useState(null);
+  const addStepsInputRef = useRef(null);
 
-  const totalSteps = profile?.total_steps || 0;
+  const totalSteps = Number(profile?.total_steps || 0);
   const today = new Date();
   const todayStr = localDateStr(today);
-  const recent = Array.from({ length:7 }, (_, i) => {
-    const d = new Date(today); d.setHours(12,0,0,0); d.setDate(d.getDate() - 6 + i);
-    const dateStr = localDateStr(d);
-    const found = weekSteps.find(w => w.step_date === dateStr);
-    return { dateStr, steps:Number(found?.steps || 0) };
-  });
+  const shareContext = { rows: movementDays, todaySteps, lifetimeSteps: totalSteps, currentStreak, bestStreak: currentStreak };
+  const stepsShareData = getShareData('steps_today', shareContext);
+  const activeDaysShareData = getShareData('movement_days', shareContext);
+  const recent = stepsShareData.weeklyDays.map(d => ({ dateStr:d.key, steps:d.steps }));
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
-  const recentActiveDays = recent.filter(d => d.steps > 0).length;
+  const recentActiveDays = activeDaysShareData.value;
   const todayCalories = caloriesForSteps(todaySteps);
   const todayDistance = distanceForSteps(todaySteps);
+  const hasMovement = stepsShareData.hasData;
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2800); }
-  function openShare(metric,value,unit,label,subtext,progress=0) { setShareData({metric,value:String(value),unit,label,subtext,progress}); }
+  function openShare(metric) { setShareData(getShareData(metric, shareContext)); }
 
   function handleLogSteps() {
     const steps = parseInt(manualSteps, 10);
@@ -71,12 +72,12 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       <div className="screen-pad" style={{paddingTop:6}}>
         <div className="hub-card" style={{padding:16}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div className="t">Steps today</div><ShareIconButton label="Share steps today" onClick={()=>openShare("steps_today",todaySteps,"steps","Steps today",todaySteps.toLocaleString()+" steps recorded today",Math.min(1,Number(todaySteps||0)/Math.max(Number(currentGoal||7500),1)))}/></div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div className="t">Steps today</div>{hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>} </div>
             {lastSync && <span style={{fontSize:10.5,color:'var(--ink-45)',fontWeight:500}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
           </div>
           <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:9}}>
-            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div className="t">Distance</div><ShareIconButton label="Share distance" onClick={()=>openShare("distance",todayDistance,"km","Distance covered",todayDistance.toFixed(1)+" km from today's steps",Math.min(1,todayDistance/5))}/></div><div className="mono" style={{fontSize:18,fontWeight:800}}>{todayDistance.toFixed(1)} km</div></div>
+            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div className="t">Distance</div>{hasMovement && <ShareIconButton label="Share distance" onClick={()=>openShare('distance')}/>} </div><div className="mono" style={{fontSize:18,fontWeight:800}}>{todayDistance.toFixed(1)} km</div></div>
             <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div className="t">Calories</div><div className="mono" style={{fontSize:18,fontWeight:800}}>≈ {todayCalories}</div></div>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
@@ -86,7 +87,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           <div style={{fontWeight:800,fontSize:15}}>Add movement</div>
           <div style={{fontSize:12,color:'var(--ink-45)',marginTop:3}}>Enter the steps you want to record. You can add more later.</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginTop:13}}>
-            <label style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)'}}>Steps<input inputMode="numeric" type="number" min="1" max="99999" value={manualSteps} onChange={e => setManualSteps(e.target.value)} placeholder="e.g. 4500" style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'11px 10px',fontSize:14,fontFamily:'inherit',outline:'none'}} /></label>
+            <label style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)'}}>Steps<input inputMode="numeric" type="number" min="1" max="99999" value={manualSteps} ref={addStepsInputRef} onChange={e => setManualSteps(e.target.value)} placeholder="e.g. 4500" style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'11px 10px',fontSize:14,fontFamily:'inherit',outline:'none'}} /></label>
             <label style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)'}}>Date<input type="date" value={manualDate} max={todayStr} onChange={e => setManualDate(e.target.value)} style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'10px 8px',fontSize:12,fontFamily:'inherit',outline:'none'}} /></label>
           </div>
           <label style={{display:'block',fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginTop:9}}>Time<input type="time" value={manualTime} onChange={e => setManualTime(e.target.value)} style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'10px',fontSize:12,fontFamily:'inherit',outline:'none'}} /></label>
@@ -94,8 +95,8 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
         </div>
 
         <div className="hub-grid" style={{marginTop:10}}>
-          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Days with movement</div><ShareIconButton label="Share active days" onClick={()=>openShare("movement_days",recentActiveDays,"days","Active days",recentActiveDays+" active days in the last 7 days",recentActiveDays/7)}/></div><div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the last 7 days</div></div>
-          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Lifetime steps</div><ShareIconButton label="Share lifetime steps" onClick={()=>openShare("lifetime_steps",totalSteps,"steps","Lifetime steps",Number(totalSteps||0).toLocaleString()+" steps recorded",0)}/></div><div className="mono" style={{fontSize:20,fontWeight:800}}>{totalSteps >= 1000000 ? `${(totalSteps/1000000).toFixed(1)}M` : totalSteps >= 1000 ? `${Math.round(totalSteps/1000)}K` : totalSteps.toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded movement</div></div>
+          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Days with movement</div>{hasMovement && <ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/>} </div><div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the last 7 days</div></div>
+          <div className="hub-card"><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:6}}><div className="t">Lifetime steps</div>{hasMovement && <ShareIconButton label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/>} </div><div className="mono" style={{fontSize:20,fontWeight:800}}>{totalSteps >= 1000000 ? `${(totalSteps/1000000).toFixed(1)}M` : totalSteps >= 1000 ? `${Math.round(totalSteps/1000)}K` : totalSteps.toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded movement</div></div>
         </div>
 
         <div className="hub-card" style={{marginTop:10,padding:16}}>
@@ -108,7 +109,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
 
         <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} />
       </div>
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
     </>
   );
 }
