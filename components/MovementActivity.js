@@ -4,14 +4,17 @@ import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
+import { getShareData } from '@/lib/share-data';
 
-function dateKey(date) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
+function dateKey(date = new Date()) {
+  const parts = new Intl.DateTimeFormat('en-CA', { year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
+  const get = type => parts.find(part => part.type === type)?.value || '';
+  return `${get('year')}-${get('month')}-${get('day')}`;
 }
 
 function parseKey(key) {
   const [y, m, d] = key.split('-').map(Number);
-  return new Date(y, m - 1, d);
+  return new Date(y, m - 1, d, 12, 0, 0, 0);
 }
 
 function dayDiff(a, b) {
@@ -108,7 +111,8 @@ function ProgressRing({ steps, goal }) {
 
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null }) {
   const [expanded, setExpanded] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [todayKey, setTodayKey] = useState(() => dateKey(new Date()));
+  const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -129,8 +133,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const current = Number(currentStreak || recentStreaks.current || 0);
   const best = Math.max(Number(currentStreak || 0), recentStreaks.best || 0);
 
-  const today = new Date();
-  const todayKey = dateKey(today);
+  const today = useMemo(() => parseKey(todayKey), [todayKey]);
   const recent = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setHours(12, 0, 0, 0);
@@ -142,18 +145,31 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
-  const currentMonthStart = useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), 1),
-    [todayKey]
-  );
-  const canGoPrev = calendarMonth.getFullYear() > currentMonthStart.getFullYear()
-    || (calendarMonth.getFullYear() === currentMonthStart.getFullYear() && calendarMonth.getMonth() > 0);
-  const canGoNext = calendarMonth.getFullYear() < currentMonthStart.getFullYear()
-    || (calendarMonth.getFullYear() === currentMonthStart.getFullYear() && calendarMonth.getMonth() < 0);
+  const [todayYear, todayMonth] = todayKey.split('-').map(Number);
+  const currentIndex = todayYear * 12 + (todayMonth - 1);
+  const firstLogKey = useMemo(() => {
+    if (!movementKeys.length) return todayKey;
+    return [...movementKeys].sort()[0];
+  }, [movementKeys, todayKey]);
+  const [firstLogYear, firstLogMonth] = firstLogKey.split('-').map(Number);
+  const firstLogIndex = firstLogYear * 12 + (firstLogMonth - 1);
+  const viewIndex = calendarMonth.getFullYear() * 12 + calendarMonth.getMonth();
+  const canGoPrev = viewIndex > firstLogIndex;
+  const canGoNext = viewIndex < currentIndex;
 
-  // Calendar is intentionally limited to the current month for now. The next arrow
-  // is therefore disabled; previous months remain available.
-  const canGoToNextMonth = false;
+  useEffect(() => {
+    const refreshToday = () => setTodayKey(dateKey(new Date()));
+    refreshToday();
+    document.addEventListener('visibilitychange', refreshToday);
+    const now = new Date();
+    const nextMidnight = new Date(now);
+    nextMidnight.setHours(24, 0, 5, 0);
+    const timer = window.setTimeout(refreshToday, Math.max(1000, nextMidnight.getTime() - now.getTime()));
+    return () => {
+      document.removeEventListener('visibilitychange', refreshToday);
+      window.clearTimeout(timer);
+    };
+  }, []);
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -247,7 +263,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
   function shareLast30Days() {
-    const end = new Date(); end.setHours(12,0,0,0);
+    const end = parseKey(todayKey);
     const start = new Date(end); start.setDate(end.getDate()-29);
     const byKey = new Map(days.map(row => [row.step_date, row]));
     return Array.from({length:30},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);const k=dateKey(d);return byKey.get(k)||{step_date:k,steps:0};});
@@ -255,11 +271,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
   function openMovementShare() {
     const last30 = shareLast30Days();
     const activeDays = last30.filter(row => Number(row.steps || 0) > 0).length;
-    setShareData({metric:'movement_days',value:String(activeDays),unit:'days',label:'Movement days',subtext:activeDays+' active days in the last 30 days',progress:Math.min(1,activeDays/30),heatmapDays:last30,weeklyDays:recent});
+    setShareData(getShareData('movement_days', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best }));
   }
   function openStreakShare(type) {
-    const value = type === 'current' ? current : best;
-    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0,heatmapDays:shareLast30Days(),highlightBestRun:true,weeklyDays:recent});
+    setShareData(getShareData(type === 'current' ? 'current_streak' : 'best_streak', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best }));
   }
 
   function openDay(key, element) {
