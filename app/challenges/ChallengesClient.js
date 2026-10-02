@@ -7,6 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+function messageTime(ts){if(!ts)return '';const d=new Date(ts);if(Number.isNaN(d.getTime()))return '';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',hour:'numeric',minute:'2-digit',hour12:true}).format(d);}
 function Card({children,featured=false,onClick}){return <section onClick={onClick} style={{background:'var(--white)',border:`1.5px solid ${featured?'rgba(46,158,91,.32)':'var(--line)'}`,borderRadius:18,padding:18,boxShadow:'0 2px 10px rgba(15,42,74,.035)',marginBottom:12,cursor:onClick?'pointer':'default'}}>{children}</section>}
 function Avatar({member,size=32}){const initial=(member?.name||'P').trim().charAt(0).toUpperCase();return member?.avatar?<img src={member.avatar} alt="" style={{width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'2px solid var(--white)'}}/>:<span style={{width:size,height:size,borderRadius:'50%',background:'var(--green-soft)',color:'var(--green-dark)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:Math.max(10,size/3),fontWeight:900,border:'2px solid var(--white)'}}>{initial}</span>}
 function calculateCurrentStepStreak(rows){const keys=[...new Set((rows||[]).filter(r=>Number(r.steps||0)>0).map(r=>r.step_date))].sort();if(!keys.length)return 0;const keyDate=k=>{const [y,m,d]=k.split('-').map(Number);return new Date(y,m-1,d)};const diff=(a,b)=>Math.round((keyDate(a)-keyDate(b))/86400000);const today=new Date();const key=`${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;const y=new Date(today);y.setDate(y.getDate()-1);const yKey=`${y.getFullYear()}-${String(y.getMonth()+1).padStart(2,'0')}-${String(y.getDate()).padStart(2,'0')}`;const last=keys[keys.length-1];if(last!==key&&last!==yKey)return 0;let run=1;for(let i=keys.length-1;i>0;i-=1){if(diff(keys[i],keys[i-1])===1)run+=1;else break;}return run;}
@@ -112,7 +113,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                           </BubbleContent>
                         </Bubble>}
                         <MessageFooter>
-                          <span>{timeAgo(m.created_at)}</span>
+                          <span>{messageTime(m.created_at)}</span>
                           {currentGroupAdmin&&!m.deleted_at&&<button type="button" onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:0}}>Remove</button>}
                         </MessageFooter>
                       </MessageContent>
