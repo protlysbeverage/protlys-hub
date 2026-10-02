@@ -99,7 +99,6 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
 
   if(!open||!mounted)return null;
 
-  const previewHeight = smallScreen ? 330 : 420;
   const actionHeight = shareData.hasData ? 100 : 56;
 
   return createPortal(
@@ -146,7 +145,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
               <button type="button" onClick={()=>setHideLooks(false)} style={{alignSelf:'center',border:0,background:'transparent',color:'var(--green-dark)',fontSize:12,fontWeight:800,padding:'4px 10px 8px',flex:'0 0 auto'}}>Change look</button>
             )}
 
-            <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'0 0 8px',fontSize:13,fontWeight:700,borderTop:'1px solid var(--line)',flex:'0 0 auto'}}>
+            <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'10px 16px 8px',margin:'0 -16px',fontSize:13,fontWeight:700,borderTop:'1px solid var(--line)',flex:'0 0 auto'}}>
               <span>Show my username</span>
               <input type="checkbox" checked={showUsername} onChange={e=>setShowUsername(e.target.checked)} style={{width:20,height:20,accentColor:'var(--green)'}}/>
             </label>
