@@ -40,7 +40,6 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const renderingRef=useRef(false);
   const [mounted,setMounted]=useState(false);
   const [smallScreen,setSmallScreen]=useState(false);
-  const [hideLooks,setHideLooks]=useState(false);
   const exportRef=useRef(null);
   const historyPushed=useRef(false);
   const touchStart=useRef(null);
@@ -50,7 +49,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     if(!open)return;
     let cancelled=false;
     setMessage('');setBusy(false);setShowUsername(true);
-    const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
+    const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);};
     updateSize();window.addEventListener('resize',updateSize);
     (async()=>{
       try{
@@ -70,7 +69,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   },[open,onClose]);
 
   function close(){if(!open)return;const shouldBack=historyPushed.current;historyPushed.current=false;onClose?.();if(shouldBack)window.history.back();}
-  function selectLook(look){setSelected(look);setHideLooks(false);}
+  function selectLook(look){setSelected(look);}
   function cacheKey(){
     return [selected,showUsername,shareData?.metric,shareData?.number,shareData?.unit,shareData?.label,shareData?.subtext,JSON.stringify(shareData?.visual||{}),JSON.stringify(shareData?.highlight||[])].join('|');
   }
@@ -163,7 +162,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
           <button type="button" onPointerUp={(event)=>{event.preventDefault();event.stopPropagation();close();}} aria-label="Close share sheet" style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',display:'grid',placeItems:'center'}}>×</button>
         </div>
 
-        <div style={{flex:'0 0 auto',width:'100%',height:'min(58dvh, calc((100dvw - 48px) * 16 / 9))',maxWidth:'100%',margin:'0 auto',position:'relative',containerType:'inline-size',overflow:'hidden',borderRadius:20}}>
+        <div style={{flex:'0 0 auto',width:'100%',aspectRatio:'9 / 16',height:'min(58dvh, calc((100dvw - 48px) * 16 / 9))',maxWidth:'100%',margin:'0 auto',position:'relative',containerType:'inline-size',overflow:'hidden',borderRadius:20}}>
           {shareData.hasData ? (
             <div style={{width:'100%',height:'100%',position:'relative'}}>
               <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
@@ -179,16 +178,13 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
           )}
         </div>
         {shareData.hasData && (
+          <div style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overflowX:'hidden',WebkitOverflowScrolling:'touch',paddingBottom:2}}>
           <>
-            {!hideLooks ? (
-              <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',height:44,flex:'0 0 auto',boxSizing:'border-box'}}>
+            <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',height:52,flex:'0 0 auto',boxSizing:'border-box'}}>
                 {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:64,height:44,padding:2,border:selected===look?'2px solid #4F9F35':'1px solid #D7DDD8',borderRadius:10,background:'#FFFFFF',overflow:'hidden',cursor:'pointer'}}>
                   <div style={{width:360,height:640,width:'100%',height:'100%',transform:'none',borderRadius:6,overflow:'hidden'}}><ShareCard metric={shareData.metric} data={shareData} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} cardWidth={360}/></div>
                 </button>)}
               </div>
-            ) : (
-              <button type="button" onClick={()=>setHideLooks(false)} style={{alignSelf:'center',border:0,background:'transparent',color:'var(--green-dark)',fontSize:12,fontWeight:800,padding:'4px 10px 8px',flex:'0 0 auto'}}>Change look</button>
-            )}
 
             <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'10px 16px 8px',margin:'0 -16px',fontSize:13,fontWeight:700,borderTop:'1px solid var(--line)',flex:'0 0 auto'}}>
               <span>Show my username</span>
@@ -204,6 +200,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
               <button type="button" onClick={copyLink} disabled={busy} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>
             </div>
           </>
+          </div>
         )}
       </section>
 
