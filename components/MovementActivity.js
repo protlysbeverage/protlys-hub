@@ -259,8 +259,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
   }
   function openStreakShare(type) {
     const value = type === 'current' ? current : best;
-    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0});
-,heatmapDays:shareLast30Days(),highlightBestRun:true,weeklyDays:recent  }
+    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0,heatmapDays:shareLast30Days(),highlightBestRun:true,weeklyDays:recent});
+  }
 
   function openDay(key, element) {
     if (!key || key > todayKey || !monthCache[currentMonthKey]) return;
