@@ -224,7 +224,10 @@ export default function AppShell({ children }) {
       .protlys-app .sidebar-nav .nav-btn:hover { background:var(--green-soft);color:var(--green-dark); }
       .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft);color:var(--green-dark);font-weight:850; }
       .protlys-app .sidebar-spacer { flex:1; }
-      .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
+      .protlys-app .logo-dark { display:none!important; }
+    html.protlys-dark .protlys-app .logo-light { display:none!important; }
+    html.protlys-dark .protlys-app .logo-dark { display:block!important; }
+    .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
       .protlys-app .app-header .theme-toggle { width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important;margin:0!important;position:relative!important; }
       .protlys-app .app-header .brand-link { flex:0 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important; }
       .protlys-app .app-header .shop-header-link { margin-left:auto!important;flex:0 0 auto!important; }
@@ -246,7 +249,7 @@ export default function AppShell({ children }) {
   <div className="app-shell">
     <aside className="desktop-sidebar" aria-label="Protlys Hub navigation">
       <div className="sidebar-brand">
-        <Link href="/" aria-label="Protlys Hub home"><img className="logo" src={logoSrc} alt="Protlys" width="2000" height="973" /></Link>
+        <Link href="/" aria-label="Protlys Hub home"><img className="logo logo-light" src={logoSrc} alt="Protlys" width="2000" height="973" /><img className="logo logo-dark" src="/protlys-logo-dark.png" alt="Protlys" width="2000" height="973" /></Link>
       </div>
       <nav className="sidebar-nav">
         {NAV_ITEMS.map(item => item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
@@ -256,7 +259,7 @@ export default function AppShell({ children }) {
 
     <div className="app-header">
       <ThemeToggle />
-      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={logoSrc} alt="Protlys" width="2000" height="973" /></Link>
+      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo logo-light" src={logoSrc} alt="Protlys" width="2000" height="973" /><img className="logo logo-dark" src="/protlys-logo-dark.png" alt="Protlys" width="2000" height="973" /></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
     </div>
 
