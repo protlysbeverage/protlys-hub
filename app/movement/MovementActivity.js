@@ -108,7 +108,7 @@ function ProgressRing({ steps, goal }) {
 
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null }) {
   const [expanded, setExpanded] = useState(false);
-  const [calendarMonth, setCalendarMonth] = useState(() => new Date(new Date().getFullYear(), new Date().getMonth(), 1));
+  const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
@@ -158,7 +158,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     return cells;
   }, [calendarMonth]);
 
-  const currentMonthKey = monthKey(calendarMonth);
+  const currentMonthKey = calendarMonthKey;
   const monthRows = monthCache[currentMonthKey] || [];
   const monthByDate = useMemo(() => new Map(monthRows.map(d => [d.step_date, d])), [monthRows]);
   const selected = selectedKey ? monthByDate.get(selectedKey) : null;
@@ -266,7 +266,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     const key = dateKey(next);
     if (key > todayKey) return;
     const targetMonth = new Date(next.getFullYear(), next.getMonth(), 1);
-    if (monthKey(targetMonth) !== currentMonthKey) setCalendarMonth(targetMonth);
+    if (monthKey(targetMonth) !== currentMonthKey) setCalendarMonthKey(monthKey(targetMonth));
     setSheetDirection(offset > 0 ? 1 : -1);
     setSelectedKey(key);
   }
@@ -392,12 +392,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
+            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex - 2, 1)))} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
             </div>
-            <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
+            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex, 1)))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : 'Green = movement logged'}</div>
           <div className="movement-calendar-grid">
