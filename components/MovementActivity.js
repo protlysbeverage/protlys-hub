@@ -426,7 +426,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
         </>
       ) : (
         <div style={{ marginTop:12 }}>
-          <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:10 }}>
+          <div className="movement-calendar-toolbar" style={{marginBottom:10}}>
             <button type="button" onClick={() => canGoPrev && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}><strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>{monthRows.filter(row => Number(row.steps || 0) > 0).length} logged days</div></div>
             <button type="button" onClick={() => canGoToNextMonth && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
