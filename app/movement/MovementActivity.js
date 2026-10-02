@@ -146,10 +146,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
     () => new Date(today.getFullYear(), today.getMonth(), 1),
     [todayKey]
   );
-  const canGoPrev = calendarMonth.getFullYear() > currentMonthStart.getFullYear()
-    || (calendarMonth.getFullYear() === currentMonthStart.getFullYear() && calendarMonth.getMonth() > 0);
-  const canGoToNextMonth = calendarMonth.getFullYear() < currentMonthStart.getFullYear()
-    || (calendarMonth.getFullYear() === currentMonthStart.getFullYear() && calendarMonth.getMonth() < currentMonthStart.getMonth());
+  const canGoPrev = calendarMonth.getTime() > currentMonthStart.getTime();
+  const canGoToNextMonth = calendarMonth.getTime() < currentMonthStart.getTime();
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -394,15 +392,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => canGoPrev && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
+            <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
             </div>
-            <div style={{display:'flex',alignItems:'center',gap:6}}>
-              <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
-              <button type="button" onClick={() => canGoToNextMonth && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
-            </div>
+            <button type="button" onClick={() => setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : 'Green = movement logged'}</div>
           <div className="movement-calendar-grid">
