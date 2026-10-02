@@ -220,7 +220,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     const values = {
       today: {metric:'steps_today', value:Number(todaySteps).toLocaleString(), unit:'steps', label:'Steps today', subtext:`${Math.round((Number(todaySteps)||0)/Math.max(sheetGoal,1)*100)}% of your daily step goal`, progress:Math.min(1,(Number(todaySteps)||0)/Math.max(sheetGoal,1))},
       distance: {metric:'distance', value:formatDistance(totalDistanceKm), unit:'', label:'Estimated distance', subtext:'Based on all recorded steps', progress:Math.min(1,totalDistanceKm/42.195)},
-      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7), heatmapDays:movementHistory},
+      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7), heatmapDays:movementHistory.filter(row => String(row.key || '').startsWith(todayKey.slice(0,7)))},
       lifetime: {metric:'lifetime_steps', value:totalSteps.toLocaleString(), unit:'steps', label:'Lifetime steps', subtext:'All recorded movement', progress:0}
     };
     setShareStat(values[id] || null);
