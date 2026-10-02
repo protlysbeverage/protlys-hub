@@ -246,15 +246,21 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
+  function shareLast30Days() {
+    const end = new Date(); end.setHours(12,0,0,0);
+    const start = new Date(end); start.setDate(end.getDate()-29);
+    const byKey = new Map(days.map(row => [row.step_date, row]));
+    return Array.from({length:30},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);const k=dateKey(d);return byKey.get(k)||{step_date:k,steps:0};});
+  }
   function openMovementShare() {
-    const activeMonthDays = monthRows.filter(row => Number(row.steps || 0) > 0).length;
-    const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
-    setShareData({metric:'movement_days',value:String(activeMonthDays),unit:'days',label:'Movement days',subtext:`${activeMonthDays} active days in ${calendarMonth.toLocaleDateString([], {month:'long',year:'numeric'})}`,progress:Math.min(1,activeMonthDays/Math.max(daysInMonth,1))});
+    const last30 = shareLast30Days();
+    const activeDays = last30.filter(row => Number(row.steps || 0) > 0).length;
+    setShareData({metric:'movement_days',value:String(activeDays),unit:'days',label:'Movement days',subtext:activeDays+' active days in the last 30 days',progress:Math.min(1,activeDays/30),heatmapDays:last30,weeklyDays:recent});
   }
   function openStreakShare(type) {
     const value = type === 'current' ? current : best;
     setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0});
-  }
+,heatmapDays:shareLast30Days(),highlightBestRun:true,weeklyDays:recent  }
 
   function openDay(key, element) {
     if (!key || key > todayKey || !monthCache[currentMonthKey]) return;
