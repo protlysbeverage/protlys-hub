@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MilestoneShareCard from '@/components/MilestoneShareCard';
+import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -85,6 +86,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [sharing, setSharing] = useState(false);
+  const [shareStat, setShareStat] = useState(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const [highlightedDay, setHighlightedDay] = useState('');
   const [sheet, setSheet] = useState(null);
@@ -213,6 +215,16 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 
   useEffect(() => () => { if (highlightTimer.current) window.clearTimeout(highlightTimer.current); }, []);
   function scrollToActivityDay(key) { setActivityOpen(true); window.setTimeout(()=>{ const row=activityRowsRef.current[key]; if(!row)return; const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); setHighlightedDay(key); if(highlightTimer.current)window.clearTimeout(highlightTimer.current); highlightTimer.current=window.setTimeout(()=>setHighlightedDay(''),1200); },260); }
+
+  function openStatShare(id) {
+    const values = {
+      today: {metric:'steps_today', value:Number(todaySteps).toLocaleString(), unit:'steps', label:'Steps today', subtext:`${Math.round((Number(todaySteps)||0)/Math.max(sheetGoal,1)*100)}% of your daily step goal`, progress:Math.min(1,(Number(todaySteps)||0)/Math.max(sheetGoal,1))},
+      distance: {metric:'distance', value:formatDistance(totalDistanceKm), unit:'', label:'Estimated distance', subtext:'Based on all recorded steps', progress:Math.min(1,totalDistanceKm/42.195)},
+      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7)},
+      lifetime: {metric:'lifetime_steps', value:totalSteps.toLocaleString(), unit:'steps', label:'Lifetime steps', subtext:'All recorded movement', progress:0}
+    };
+    setShareStat(values[id] || null);
+  }
 
   function openSheet(id){sheetLastFocus.current=document.activeElement;setSelectedBar(null);setSheet(id);setSheetReady(false);if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(10);window.setTimeout(()=>setSheetReady(true),0);window.setTimeout(()=>sheetCloseRef.current?.focus(),0);}
   function closeSheet(){setSheetReady(false);setSheet(null);setSelectedBar(null);if(sheetLastFocus.current&&typeof sheetLastFocus.current.focus==='function')window.setTimeout(()=>sheetLastFocus.current?.focus(),0);}
@@ -375,7 +387,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           ['lifetime','Lifetime steps',totalSteps.toLocaleString(),'all recorded movement'],
         ].map(([id,label,value,note]) => <div key={id} role="button" tabIndex={0} aria-haspopup="dialog" aria-expanded={sheet === id} aria-label={label + ': ' + value + '. Open details'} className="hub-card dashboard-stat-tile" onClick={() => openSheet(id)} onKeyDown={event => {
           if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSheet(id); }
-        }} style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px',cursor:'pointer',position:'relative'}}><span aria-hidden="true" style={{position:'absolute',top:12,right:12,width:28,height:28,display:'grid',placeItems:'center',color:'var(--ink-45)',transform:'rotate('+(sheet===id?180:0)+'deg)',transition:'transform 200ms var(--ease-out)'}}><Icon name="chevronDown" size={16}/></span>
+        }} style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px',cursor:'pointer',position:'relative'}}><span><ShareIconButton label={'Share '+label} onClick={()=>openStatShare(id)}/></span><span aria-hidden="true" style={{position:'absolute',top:12,right:12,width:28,height:28,display:'grid',placeItems:'center',color:'var(--ink-45)',transform:'rotate('+(sheet===id?180:0)+'deg)',transition:'transform 200ms var(--ease-out)'}}><Icon name="chevronDown" size={16}/></span>
           <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>{label}</div>
           <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{value}</div>
           {note && <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>{note}</div>}
@@ -391,5 +403,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
     </div>
+    {shareStat && <ShareCardSheet open={!!shareStat} onClose={()=>setShareStat(null)} metric={shareStat.metric} value={shareStat.value} unit={shareStat.unit} label={shareStat.label} subtext={shareStat.subtext} progress={shareStat.progress} username={profile?.display_name || email || 'protlys'} />}
   </>;
 }
