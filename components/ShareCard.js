@@ -1,164 +1,40 @@
 'use client';
 
-import { useLayoutEffect, useRef, useState } from 'react';
-import QRCode from 'qrcode';
-
 export const SHARE_METRICS=['protein_today','protein_target','steps_today','distance','movement_days','lifetime_steps','best_streak'];
 
 const LOOKS={
-  dark:{bg:'#232924',fg:'#FFFFFF',muted:'rgba(255,255,255,.62)',faint:'rgba(255,255,255,.12)',faded:'rgba(255,255,255,.20)',accent:'#6BCB45',logo:'/protlys-logo-dark.png'},
-  light:{bg:'#F7F8F6',fg:'#111111',muted:'rgba(17,17,17,.58)',faint:'rgba(17,17,17,.12)',faded:'rgba(17,17,17,.20)',accent:'#4F9F35',logo:'/protlys-logo-exact.png'},
-  surface:{bg:'#323A33',fg:'#FFFFFF',muted:'rgba(255,255,255,.62)',faint:'rgba(255,255,255,.12)',faded:'rgba(255,255,255,.20)',accent:'#6BCB45',logo:'/protlys-logo-dark.png'},
+ dark:{bg:'#232924',fg:'#FFFFFF',muted:'rgba(255,255,255,.62)',faint:'rgba(255,255,255,.12)',faded:'rgba(255,255,255,.20)',accent:'#6BCB45'},
+ light:{bg:'#F7F8F6',fg:'#111111',muted:'rgba(17,17,17,.58)',faint:'rgba(17,17,17,.12)',faded:'rgba(17,17,17,.20)',accent:'#4F9F35'},
+ surface:{bg:'#323A33',fg:'#FFFFFF',muted:'rgba(255,255,255,.62)',faint:'rgba(255,255,255,.12)',faded:'rgba(255,255,255,.20)',accent:'#6BCB45'}
 };
-const HEADLINES={
-  protein_today:['PROTEIN','TODAY'],protein_target:['PROTEIN','TARGET'],steps_today:['STEPS','TODAY'],
-  distance:['MOVED','DISTANCE'],movement_days:['ACTIVE','DAYS'],lifetime_steps:['TOTAL','STEPS'],best_streak:['BEST','STREAK']
-};
-const LABELS={
-  protein_today:'protein consumed',protein_target:'daily target',steps_today:'steps recorded',
-  distance:'distance moved',movement_days:'active days',lifetime_steps:'total movement',best_streak:'movement days in a row'
-};
+const HEADLINES={protein_today:['PROTEIN','TODAY'],protein_target:['PROTEIN','TARGET'],steps_today:['STEPS','TODAY'],distance:['MOVED','DISTANCE'],movement_days:['ACTIVE','DAYS'],lifetime_steps:['TOTAL','STEPS'],best_streak:['BEST','STREAK']};
+const LABELS={protein_today:'protein consumed',protein_target:'daily target',steps_today:'steps recorded',distance:'distance moved',movement_days:'active days',lifetime_steps:'total movement',best_streak:'movement days in a row'};
 const clamp=v=>Math.max(0,Math.min(1,Number(v)||0));
-const dayWord=n=>Number(n)===1?'day':'days';
+const fmt=(m,v,u)=>{const n=Number(v);if(m==='distance')return{v:Number.isFinite(n)?n.toFixed(1):'0.0',u:'km'};if(m==='movement_days'||m==='best_streak')return{v:Number.isFinite(n)?Math.round(n).toLocaleString():'0',u:n===1?'day':'days'};if(m==='steps_today'||m==='lifetime_steps')return{v:Number.isFinite(n)?Math.round(n).toLocaleString():'0',u:u||'steps'};if(m==='protein_today'||m==='protein_target')return{v:Number.isFinite(n)?Math.round(n).toLocaleString():'0',u:u||'g'};return{v:String(v??'0'),u:u||''}};
+const key=d=>new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(d);
+const todayKey=()=>key(new Date());
+const heat=days=>{const set=new Set((days||[]).map(x=>typeof x==='string'?x:x?.step_date||x?.key||x?.date).filter(Boolean));const e=new Date();e.setHours(12,0,0,0);return Array.from({length:35},(_,i)=>{const d=new Date(e);d.setDate(e.getDate()-34+i);const k=key(d);return{key:k,day:d.getDate(),active:set.has(k),today:i===34}})};
+const week=days=>{const map=new Map((days||[]).map(x=>[x.key||x.step_date||x.date,x])),e=new Date();e.setHours(12,0,0,0);return Array.from({length:7},(_,i)=>{const d=new Date(e);d.setDate(e.getDate()-6+i);const k=key(d),x=map.get(k)||{};return{key:k,date:d,steps:Number(x.steps||0),distance:Number(x.distance||x.km||0),today:i===6}})};
 
-function formatMetric(metric,value,unit){
-  const n=Number(value);
-  if(metric==='distance')return{value:Number.isFinite(n)?n.toFixed(1):'0.0',unit:'km'};
-  if(metric==='movement_days'||metric==='best_streak')return{value:Number.isFinite(n)?Math.round(n).toLocaleString():'0',unit:dayWord(n)};
-  if(metric==='steps_today'||metric==='lifetime_steps')return{value:Number.isFinite(n)?Math.round(n).toLocaleString():'0',unit:unit||'steps'};
-  if(metric==='protein_today'||metric==='protein_target')return{value:Number.isFinite(n)?Math.round(n).toLocaleString():'0',unit:unit||'g'};
-  return{value:String(value??'0'),unit:unit||''};
-}
-function formatDate(date=new Date()){
-  return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(date);
-}
-function parseDateKey(key){
-  const [y,m,d]=String(key).split('-').map(Number);
-  return new Date(y,m-1,d,12);
-}
-function dateKey(date){
-  return new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(date);
-}
-function buildHeatmap(heatmapDays,highlightBestRun){
-  const rows=(heatmapDays||[]).map(row=>{
-    const key=typeof row==='string'?row:row?.step_date||row?.key||row?.date;
-    return key?dateKey(parseDateKey(key)):null;
-  }).filter(Boolean);
-  if(!rows.length)return{cells:[],monthLabel:'',best:new Set()};
-  const logged=new Set(rows);
-  const first=parseDateKey(rows.slice().sort()[0]);
-  const year=first.getFullYear(),month=first.getMonth(),last=new Date(year,month+1,0),start=new Date(year,month,1);
-  const cells=[];
-  for(let i=0;i<start.getDay();i+=1)cells.push(null);
-  for(let d=1;d<=last.getDate();d+=1){
-    const key=dateKey(new Date(year,month,d,12));
-    cells.push({day:d,key,active:logged.has(key)});
-  }
-  const active=[...logged].filter(k=>{const d=parseDateKey(k);return d.getFullYear()===year&&d.getMonth()===month;}).sort();
-  const best=new Set();
-  if(highlightBestRun&&active.length){
-    let run=[active[0]],bestRun=[active[0]];
-    for(let i=1;i<active.length;i+=1){
-      const diff=Math.round((parseDateKey(active[i])-parseDateKey(active[i-1]))/86400000);
-      run=diff===1?[...run,active[i]]:[active[i]];
-      if(run.length>bestRun.length)bestRun=run;
-    }
-    bestRun.forEach(k=>best.add(k));
-  }
-  return{cells,monthLabel:new Intl.DateTimeFormat('en-KE',{month:'long',year:'numeric'}).format(start),best};
-}
-
-export default function ShareCard({
-  metric='steps_today',value='0',unit='',label='',subtext='',progress=0,username='',
-  look='dark',theme,qrDataUrl='',logoDataUrl='',showUsername=true,heatmapDays=[],highlightBestRun=false
-}){
-  const selectedLook=look||theme||'dark';
-  const t=LOOKS[selectedLook]||LOOKS.dark;
-  const headline=HEADLINES[metric]||['PROGRESS',''];
-  const formatted=formatMetric(metric,value,unit);
-  const p=clamp(progress);
-  const showRing=['protein_today','protein_target','steps_today','distance'].includes(metric)&&p>=.4;
-  const heatmap=(metric==='movement_days'||metric==='best_streak')?buildHeatmap(heatmapDays,highlightBestRun):null;
-  const [headlineSize,setHeadlineSize]=useState(58),[logo,setLogo]=useState(logoDataUrl),[qr,setQr]=useState(qrDataUrl);
-  const headlineRef=useRef(null),logoRef=useRef(null);
-  const radius=42,circumference=2*Math.PI*radius;
-
-  useLayoutEffect(()=>{
-    let cancelled=false;
-    (async()=>{
-      if(document.fonts?.ready)await document.fonts.ready;
-      const node=headlineRef.current;if(!node||cancelled)return;
-      const maxWidth=node.clientWidth,lines=[...node.querySelectorAll('[data-headline-line]')];
-      let size=17;
-      while(size>8){node.style.fontSize=size+'cqw';if(lines.every(line=>line.scrollWidth<=maxWidth+1))break;size-=1;}
-      if(!cancelled)setHeadlineSize(size);
-    })();
-    return()=>{cancelled=true};
-  },[headline[0],headline[1]]);
-
-  useLayoutEffect(()=>{
-    let cancelled=false;
-    if(logoDataUrl){setLogo(logoDataUrl);return()=>{cancelled=true};}
-    fetch(t.logo,{cache:'force-cache'}).then(r=>r.blob()).then(blob=>new Promise(resolve=>{
-      const reader=new FileReader();reader.onloadend=()=>resolve(reader.result);reader.readAsDataURL(blob);
-    })).then(data=>{if(!cancelled)setLogo(data)}).catch(()=>{});
-    return()=>{cancelled=true};
-  },[t.logo,logoDataUrl]);
-
-  useLayoutEffect(()=>{
-    let cancelled=false;
-    if(qrDataUrl){setQr(qrDataUrl);return()=>{cancelled=true};}
-    QRCode.toDataURL('https://hub.protlys.com/calculator?src=share-card',{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}})
-      .then(data=>{if(!cancelled)setQr(data)}).catch(()=>{});
-    return()=>{cancelled=true};
-  },[qrDataUrl]);
-
-  useLayoutEffect(()=>{const img=logoRef.current;if(img?.decode)img.decode().catch(()=>{});},[logo]);
-
-  const positiveLead=metric==='best_streak'
-    ? 'Best streak '+formatted.value+' '+formatted.unit
-    : metric==='lifetime_steps' ? formatted.value+' '+formatted.unit+' lifetime' : null;
-
-  return <div data-protlys-share-card="true" data-look={selectedLook} style={{
-    width:'100%',aspectRatio:'9 / 16',boxSizing:'border-box',position:'relative',overflow:'hidden',
-    background:t.bg,color:t.fg,padding:'6.8% 7.1%',display:'flex',flexDirection:'column',
-    fontFamily:'Manrope,sans-serif',isolation:'isolate',containerType:'inline-size'
-  }}>
-    {(selectedLook==='dark'||selectedLook==='surface')&&<div aria-hidden="true" style={{position:'absolute',inset:0,zIndex:-1,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%, rgba(107,203,69,.25) 0%, rgba(107,203,69,.08) 24%, transparent 52%)'}}/>}
-
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:'9.2%',flex:'0 0 auto'}}>
-      <img ref={logoRef} src={logo||t.logo} alt="Protlys" style={{display:'block',height:'100%',minHeight:28,width:'28%',maxWidth:102,objectFit:'contain',objectPosition:'left center'}}/>
-      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3cqw',fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>{formatDate()}</div>
-    </div>
-
-    <div ref={headlineRef} style={{width:'100%',marginTop:'5.4%',fontFamily:'Space Grotesk,sans-serif',fontSize:headlineSize,lineHeight:.82,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap',overflow:'visible',flex:'0 0 auto'}}>
-      <div data-headline-line>{headline[0]}</div><div data-headline-line style={{color:t.faded}}>{headline[1]}</div>
-    </div>
-
-    <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'4% 0 2%'}}>
-      {heatmap ? <div style={{width:'100%',maxWidth:'86%'}}>
-        <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.7cqw',fontWeight:700,color:t.muted,textAlign:'center',marginBottom:'3.5%'}}>{heatmap.monthLabel}</div>
-        <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2.2%'}}>
-          {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{fontFamily:'Manrope,sans-serif',fontSize:'2.4cqw',fontWeight:800,color:t.muted,textAlign:'center'}}>{d}</div>)}
-          {heatmap.cells.map((cell,i)=>cell?<div key={cell.key} style={{aspectRatio:'1',borderRadius:'16%',background:cell.active?t.accent:t.faint,boxShadow:cell.best&&highlightBestRun?'inset 0 0 0 2px '+t.fg:'none',display:'grid',placeItems:'center',fontFamily:'Manrope,sans-serif',fontSize:'2.7%',fontWeight:800,color:cell.active?t.bg:t.muted}}>{cell.day}</div>:<div key={'blank-'+i}/>)}
-        </div>
-        {highlightBestRun&&positiveLead&&<div style={{marginTop:'4%',textAlign:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.2cqw',fontWeight:800,color:t.accent}}>{positiveLead}</div>}
-      </div> : showRing ? <div style={{position:'relative',width:'36%',maxWidth:'44cqw',aspectRatio:'1'}}>
-        <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><circle cx="50" cy="50" r={radius} fill="none" stroke={t.faded} strokeWidth="7"/><circle cx="50" cy="50" r={radius} fill="none" stroke={t.accent} strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference*(1-p)} transform="rotate(-90 50 50)"/></svg>
-        <span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',fontFamily:'Space Grotesk,sans-serif',fontSize:'6cqw',fontWeight:900}}>{Math.round(p*100)}%</span>
-      </div> : positiveLead ? <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'6.5cqw',fontWeight:900,letterSpacing:'-.03em',textAlign:'center',color:t.accent}}>{positiveLead}</div> : <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.1cqw',fontWeight:700,color:t.muted,textAlign:'center'}}>Keep building your progress.</div>}
-    </div>
-
-    <div style={{flex:'0 0 auto'}}>
-      <div style={{display:'flex',alignItems:'center',gap:'2.6%',minHeight:'7.2%'}}>
-        <div style={{width:'7.5%',aspectRatio:'1',borderRadius:'50%',background:t.accent,color:t.bg,display:'grid',placeItems:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.4cqw',fontWeight:900,textTransform:'uppercase'}}>{String(username||'P').replace(/^@/,'').slice(0,1)}</div>
-        {showUsername&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.3cqw',fontWeight:700,color:t.fg,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div>}
-      </div>
-      <div style={{display:'flex',alignItems:'baseline',gap:'2%',marginTop:'4.5%'}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'13.5cqw',lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap'}}>{formatted.value}</span>{formatted.unit&&<span style={{fontFamily:'Manrope,sans-serif',fontSize:'3.4%',fontWeight:800,color:t.muted,whiteSpace:'nowrap'}}>{formatted.unit}</span>}</div>
-      <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'3.6cqw',lineHeight:1.05,fontWeight:800,marginTop:'2.4%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[metric]||label||'progress'}</div>
-      {subtext&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.9cqw',lineHeight:1.2,fontWeight:600,color:t.muted,marginTop:'1.7%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{subtext}</div>}
-      <div style={{display:'flex',justifyContent:'flex-end',alignItems:'flex-end',marginTop:'4.2%'}}><div style={{width:'21%',aspectRatio:'1',padding:'1.7%',boxSizing:'border-box',background:'#FFFFFF',borderRadius:'4%',flex:'0 0 auto'}}>{qr&&<img src={qr} alt="" style={{display:'block',width:'100%',height:'100%'}}/>}</div></div>
-      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.35cqw',lineHeight:1.15,fontWeight:700,color:t.muted,marginTop:'1.6%',textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
-    </div>
-  </div>;
+export default function ShareCard({metric='steps_today',value='0',unit='',label='',subtext='',progress=0,username='',look='dark',theme,qrDataUrl='',logoDataUrl='',showUsername=true,heatmapDays=[],highlightBestRun=false,weeklyDays=[],cardWidth=360}){
+ const t=LOOKS[look||theme||'dark']||LOOKS.dark,w=Math.max(1,Number(cardWidth)||360),h=Math.round(w*16/9),s=w/360,p=clamp(progress),f=fmt(metric,value,unit),days=week(weeklyDays),weeklyMode=['steps_today','distance'].includes(metric)&&(Number(value||0)===0||p<.4),vals=days.map(d=>metric==='distance'?d.distance:d.steps),total=vals.reduce((a,b)=>a+b,0),avg=total/7,max=Math.max(...vals,1),showRing=['protein_today','protein_target','steps_today','distance'].includes(metric)&&p>=.4&&!weeklyMode,hm=['movement_days','best_streak'].includes(metric)?heat(heatmapDays):null;
+ const px=Math.round(26*s),py=Math.round(24*s),gap=Math.max(2,Math.round(5*s)),hw=Math.round(w*.86),cell=Math.max(1,Math.floor((hw-gap*6)/7)),barMax=Math.round(74*s),barW=Math.max(8,Math.floor((w-px*2-42*s)/7));
+ return <div data-protlys-share-card="true" data-look={look||theme||'dark'} style={{width:w+'px',height:h+'px',boxSizing:'border-box',position:'relative',overflow:'hidden',background:t.bg,color:t.fg,padding:py+'px '+px+'px',display:'flex',flexDirection:'column',fontFamily:'Manrope,sans-serif',isolation:'isolate'}}>
+  {(look==='dark'||look==='surface'||theme==='dark'||theme==='surface')&&<div style={{position:'absolute',inset:0,zIndex:-1,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%,rgba(107,203,69,.25),rgba(107,203,69,.08) 24%,transparent 52%)'}}/>}
+  <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:Math.round(37*s)}}><img src={logoDataUrl} alt="Protlys" style={{display:'block',height:Math.round(32*s),width:Math.round(100*s),objectFit:'contain',objectPosition:'left center'}}/><div style={{fontSize:Math.round(11*s),fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>{new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date())}</div></div>
+  <div style={{marginTop:Math.round(20*s),fontFamily:'Space Grotesk,sans-serif',fontSize:Math.round(54*s),lineHeight:.82,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}><div>{(HEADLINES[metric]||['PROGRESS',''])[0]}</div><div style={{color:t.faded}}>{(HEADLINES[metric]||['',''])[1]}</div></div>
+  <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:Math.round(15*s)+'px 0'}}>
+   {hm?<div style={{width:hw,maxWidth:'100%'}}><div style={{fontSize:Math.round(10*s),fontWeight:700,color:t.muted,textAlign:'center',marginBottom:Math.round(10*s)}}>Last 30 days</div><div style={{display:'grid',gridTemplateColumns:'repeat(7,'+cell+'px)',gap:gap+'px'}}>{['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{width:cell,height:Math.round(13*s),fontSize:Math.round(9*s),fontWeight:800,color:t.muted,textAlign:'center'}}>{d}</div>)}{hm.map(d=><div key={d.key} style={{width:cell,height:cell,boxSizing:'border-box',borderRadius:Math.max(2,Math.round(4*s)),background:d.active?t.accent:t.faint,boxShadow:d.today?'inset 0 0 0 '+Math.max(1,Math.round(2*s))+'px '+t.fg:'none',display:'grid',placeItems:'center',fontSize:Math.round(10*s),fontWeight:800,color:d.active?t.bg:t.muted}}>{d.day}</div>)}</div></div>
+   :weeklyMode?<div style={{width:'100%',textAlign:'center'}}><div style={{fontSize:Math.round(11*s),fontWeight:800,color:t.muted,marginBottom:Math.round(10*s)}}>This week</div><div style={{display:'flex',alignItems:'flex-end',justifyContent:'center',gap:Math.max(3,Math.round(7*s)),height:barMax+28*s}}>{days.map(d=>{const v=metric==='distance'?d.distance:d.steps,h2=v?Math.max(6*s,Math.round(v/max*barMax)):Math.max(2,Math.round(3*s));return <div key={d.key} style={{width:barW,height:barMax+28*s,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:Math.max(2,Math.round(4*s))}}><div style={{width:'100%',height:h2,background:v?t.accent:t.faint,borderRadius:Math.max(2,Math.round(4*s)),border:d.today?'2px solid '+t.fg:'none',boxSizing:'border-box'}}/><span style={{fontSize:Math.max(7,Math.round(8*s)),fontWeight:d.today?800:600,color:d.today?t.accent:t.muted}}>{d.date.toLocaleDateString('en-KE',{weekday:'short',timeZone:'Africa/Nairobi'}).slice(0,1)}</span></div>})}</div></div>
+   :showRing?<div style={{position:'relative',width:Math.round(130*s),height:Math.round(130*s)}}><svg viewBox="0 0 100 100" width="100%" height="100%"><circle cx="50" cy="50" r="42" fill="none" stroke={t.faded} strokeWidth="7"/><circle cx="50" cy="50" r="42" fill="none" stroke={t.accent} strokeWidth="7" strokeLinecap="round" strokeDasharray={2*Math.PI*42} strokeDashoffset={2*Math.PI*42*(1-p)} transform="rotate(-90 50 50)"/></svg><span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',fontSize:Math.round(22*s),fontWeight:900}}>{Math.round(p*100)}%</span></div>
+   :metric==='best_streak'?<div style={{fontSize:Math.round(23*s),fontWeight:900,color:t.accent}}>Best streak {f.v} {f.u}</div>:null}
+  </div>
+  <div><div style={{display:'flex',alignItems:'center',gap:Math.round(9*s),minHeight:Math.round(27*s)}}><div style={{width:Math.round(27*s),height:Math.round(27*s),borderRadius:'50%',background:t.accent,color:t.bg,display:'grid',placeItems:'center',fontSize:Math.round(12*s),fontWeight:900}}>{String(username||'P').replace(/^@/,'').slice(0,1)}</div>{showUsername&&<div style={{fontSize:Math.round(12*s),fontWeight:700,color:t.fg,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div>}</div>
+   <div style={{display:'flex',alignItems:'baseline',gap:Math.round(7*s),marginTop:Math.round(16*s)}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:Math.round(49*s),lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',whiteSpace:'nowrap'}}>{weeklyMode?Math.round(total).toLocaleString():f.v}</span><span style={{fontSize:Math.round(12*s),fontWeight:800,color:t.muted}}>{weeklyMode?(metric==='distance'?'km':'steps'):f.u}</span></div>
+   <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:Math.round(13*s),fontWeight:800,marginTop:Math.round(9*s),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{weeklyMode?(metric==='distance'?'distance this week':'steps this week'):(LABELS[metric]||label||'progress')}</div>
+   {(weeklyMode||subtext)&&<div style={{fontSize:Math.max(8,Math.round(10*s)),color:t.muted,marginTop:Math.round(6*s),whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{weeklyMode?'Daily average '+(metric==='distance'?avg.toFixed(1)+' km':Math.round(avg).toLocaleString()+' steps'):subtext}</div>}
+   <div style={{display:'flex',justifyContent:'flex-end',marginTop:Math.round(15*s)}}><div style={{width:Math.round(76*s),height:Math.round(76*s),padding:Math.round(6*s),boxSizing:'border-box',background:'#fff',borderRadius:Math.max(2,Math.round(4*s))}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{display:'block',width:'100%',height:'100%'}}/>}</div></div>
+   <div style={{fontSize:Math.max(7,Math.round(8.5*s)),color:t.muted,marginTop:Math.round(6*s),textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
+  </div>
+ </div>;
 }
