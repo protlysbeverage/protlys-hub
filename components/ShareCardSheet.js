@@ -166,7 +166,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
 
   return createPortal(
     <div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
-      <style>{'@keyframes protlys-share-spin{to{transform:rotate(360deg)}}'}</style>
+      <style>{'@keyframes protlys-share-spin{to{transform:rotate(360deg)}} @keyframes protlys-share-skeleton{0%,100%{opacity:.45}50%{opacity:.75}}'}</style>
       <div onPointerUp={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.60)',touchAction:'none'}}/>
       <section role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{
         position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',
@@ -195,6 +195,9 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
             </div>
           )}
         </div>
+        {shareData.hasData && !previewMeasured && (
+          <div aria-hidden="true" style={{position:'absolute',left:16,right:16,top:'50%',transform:'translateY(-50%)',height:'min(62vh,520px)',maxWidth:360,margin:'0 auto',borderRadius:18,background:'var(--surface)',opacity:.72,animation:'protlys-share-skeleton 1.1s ease-in-out infinite'}} />
+        )}
 
         {shareData.hasData && (
           <>
