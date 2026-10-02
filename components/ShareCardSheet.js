@@ -33,7 +33,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const [showUsername,setShowUsername]=useState(true);
   const [assets,setAssets]=useState({});
   const [mounted,setMounted]=useState(false);
-  const [smallScreen,setSmallScreen]=useState(false);
+  const [smallScreen,setSmallScreen]=useState(false);\n  const [previewScale,setPreviewScale]=useState(1);\n  const previewAreaRef=useRef(null);
   const [hideLooks,setHideLooks]=useState(false);
   const exportRef=useRef(null);
   const historyPushed=useRef(false);
@@ -45,7 +45,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     let cancelled=false;
     setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);
     const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
-    updateSize();window.addEventListener('resize',updateSize);
+    updateSize();window.addEventListener('resize',updateSize);\n    const measure=()=>{const box=previewAreaRef.current;if(!box)return;setPreviewScale(Math.min(box.clientWidth/360,box.clientHeight/640));};\n    measure();const observer=new ResizeObserver(measure);if(previewAreaRef.current)observer.observe(previewAreaRef.current);
     (async()=>{
       try{
         const [dark,surface,light,qr]=await Promise.all([
@@ -60,7 +60,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     if(!state?.protlysShareSheet){window.history.pushState({...state,protlysShareSheet:true},'');historyPushed.current=true;}
     const onPop=()=>{historyPushed.current=false;onClose?.()};
     window.addEventListener('popstate',onPop);
-    return()=>{cancelled=true;window.removeEventListener('popstate',onPop);window.removeEventListener('resize',updateSize);document.body.style.overflow=oldOverflow;};
+    return()=>{cancelled=true;window.removeEventListener('popstate',onPop);window.removeEventListener('resize',updateSize);observer.disconnect();document.body.style.overflow=oldOverflow;};
   },[open,onClose]);
 
   function close(){if(historyPushed.current){historyPushed.current=false;window.history.back();}else onClose?.();}
@@ -114,7 +114,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
           <button type="button" onClick={close} aria-label="Close share sheet" style={{width:44,height:44,minWidth:44,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',display:'grid',placeItems:'center'}}>×</button>
         </div>
 
-        <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',height:previewHeight}}>
+        <div ref={previewAreaRef} style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
           {shareData.hasData ? (
             <div style={{width:360,height:640,flex:'0 0 auto',transform:'scale(min(calc((100vw - 32px) / 360), calc(100% / 640)))',transformOrigin:'center center',display:'flex',alignItems:'center',justifyContent:'center'}}>
               <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
