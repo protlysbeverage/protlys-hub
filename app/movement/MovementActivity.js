@@ -1,13 +1,10 @@
 'use client';
 
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
+import { getShareData, localDateKey } from '@/lib/share-data';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-
-function dateKey(date) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
-}
 
 function parseKey(key) {
   const [y, m, d] = key.split('-').map(Number);
@@ -28,10 +25,10 @@ function streaks(keys) {
     else run = 1;
     best = Math.max(best, run);
   }
-  const todayKey = dateKey(new Date());
+  const todayKey = localDateKey(new Date());
   const yesterday = new Date();
   yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = dateKey(yesterday);
+  const yesterdayKey = localDateKey(yesterday);
   const endKey = sorted[sorted.length - 1];
   if (endKey !== todayKey && endKey !== yesterdayKey) return { current: 0, best };
   let current = 1;
@@ -59,7 +56,7 @@ function monthRange(date) {
   const m = date.getMonth();
   return {
     start: `${y}-${String(m + 1).padStart(2, '0')}-01`,
-    end: dateKey(new Date(y, m + 1, 0)),
+    end: localDateKey(new Date(y, m + 1, 0)),
   };
 }
 
@@ -128,14 +125,16 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
   const current = Number(currentStreak || recentStreaks.current || 0);
   const best = Math.max(Number(currentStreak || 0), recentStreaks.best || 0);
+  const movementShareData = getShareData('movement_days', { rows: days, currentStreak: current, bestStreak: best });
+  const hasMovement = movementShareData.hasData;
 
   const today = new Date();
-  const todayKey = dateKey(today);
+  const todayKey = localDateKey(today);
   const recent = Array.from({ length: 7 }, (_, i) => {
     const d = new Date(today);
     d.setHours(12, 0, 0, 0);
     d.setDate(d.getDate() - 6 + i);
-    const key = dateKey(d);
+    const key = localDateKey(d);
     return { key, date: d, steps: byDate.get(key) || 0, isToday: key === todayKey };
   });
   const max = Math.max(...recent.map(d => d.steps), 1);
@@ -170,7 +169,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     let cursor = parseKey(selectedKey);
     for (let i = 0; i < 366; i += 1) {
       cursor.setDate(cursor.getDate() - 1);
-      const key = dateKey(cursor);
+      const key = localDateKey(cursor);
       const row = monthByDate.get(key);
       if (!row || Number(row.steps || 0) <= 0) break;
       n += 1;
@@ -240,20 +239,16 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
-  function shareLast30Days() {
-    const end = new Date(); end.setHours(12,0,0,0);
-    const start = new Date(end); start.setDate(end.getDate()-29);
-    const byKey = new Map(days.map(row => [row.step_date, row]));
-    return Array.from({length:30},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);const k=dateKey(d);return byKey.get(k)||{step_date:k,steps:0};});
-  }
   function openMovementShare() {
-    const last30 = shareLast30Days();
-    const activeDays = last30.filter(row => Number(row.steps || 0) > 0).length;
-    setShareData({metric:'movement_days',value:String(activeDays),unit:'days',label:'Movement days',subtext:activeDays+' active days in the last 30 days',progress:Math.min(1,activeDays/30),heatmapDays:last30,weeklyDays:recent});
+    setShareData(movementShareData);
   }
   function openStreakShare(type) {
-    const value = type === 'current' ? current : best;
-    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0,heatmapDays:monthRows,highlightBestRun:true});
+    setShareData(getShareData('best_streak', {
+      rows: days,
+      currentStreak: current,
+      bestStreak: best,
+      streakType: type,
+    }));
   }
 
   function openDay(key, element) {
@@ -269,7 +264,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     if (!selectedKey) return;
     const next = new Date(parseKey(selectedKey));
     next.setDate(next.getDate() + offset);
-    const key = dateKey(next);
+    const key = localDateKey(next);
     if (key > todayKey) return;
     const targetMonth = new Date(next.getFullYear(), next.getMonth(), 1);
     if (monthKey(targetMonth) !== currentMonthKey) setCalendarMonthKey(monthKey(targetMonth));
@@ -376,7 +371,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           <button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:40 }}>
             7-day view
           </button>
-          <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
+          {hasMovement && <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>} 
         </div>
       </div>
 
@@ -415,7 +410,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{textAlign:'center',fontSize:9,color:'var(--ink-45)',fontWeight:800,paddingBottom:2,minHeight:16}}>{d}</div>)}
             {calendar.map((d, i) => {
               if (!d) return <div className="movement-calendar-day empty" key={`blank-${i}`} />;
-              const key = dateKey(d);
+              const key = localDateKey(d);
               const row = monthByDate.get(key);
               const steps = Number(row?.steps || 0);
               const active = steps > 0;
@@ -430,12 +425,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
           <div className="movement-streak-grid">
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">CURRENT STREAK</span><span className="streak-label-short">CURRENT</span></div>
-              <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/></span>
+              <span style={{position:'absolute',top:9,right:9}}>{hasMovement && <ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/>} </span>
               <div className="movement-streak-value"><span>{current}</span><small>{current === 1 ? 'day' : 'days'}</small></div>
             </div>
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">BEST STREAK</span><span className="streak-label-short">BEST</span></div>
-              <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/></span>
+              <span style={{position:'absolute',top:9,right:9}}>{hasMovement && <ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/>} </span>
               <div className="movement-streak-value"><span>{best}</span><small>{best === 1 ? 'day' : 'days'}</small></div>
             </div>
           </div>
@@ -481,7 +476,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} heatmapDays={shareData.heatmapDays || []} highlightBestRun={shareData.highlightBestRun || false} weeklyDays={shareData.weeklyDays || []} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} />}
     </div>
   );
 }
