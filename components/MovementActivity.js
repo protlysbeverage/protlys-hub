@@ -340,7 +340,13 @@ export default function MovementActivity({ days = [], compact = false, title = '
   return (
     <div className="hub-card movement-activity-card" style={{ marginTop: 10 }}>
       <style>{`
-        .movement-activity-card{position:relative;overflow:hidden;box-sizing:border-box;}
+         .movement-activity-card{position:relative;overflow:hidden;box-sizing:border-box;}
+        .movement-recent-header{display:flex;flex-direction:column;gap:0;min-width:0;}
+        .movement-recent-top{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px;}
+        .movement-recent-subtitle{font-size:11px;color:var(--ink-45);line-height:1.35;margin-top:3px;min-width:0;}
+        .movement-view-tabs{margin-top:10px!important;}
+        .movement-calendar-toolbar{display:grid;grid-template-columns:44px minmax(0,1fr) 44px;align-items:center;gap:8px;}
+
         .movement-streak-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}
         .movement-streak-tile{position:relative;min-width:0;min-height:92px;padding:14px 12px;border-radius:16px;background:var(--white);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;}
         .movement-streak-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.2;font-weight:800;letter-spacing:.8px;color:var(--ink-45);white-space:nowrap;padding-right:38px;}
@@ -385,16 +391,19 @@ export default function MovementActivity({ days = [], compact = false, title = '
         @media (max-width:380px){.movement-calendar-grid{gap:3px;}.movement-calendar-day{min-width:44px;min-height:44px;}.movement-sheet{padding-left:14px;padding-right:14px;}.movement-sheet-main{gap:10px;}.movement-day-ring{transform:scale(.9);margin:-5px;}.movement-sheet-big{font-size:29px;}.movement-stat-tile{padding:9px 7px;}.movement-stat-value{font-size:12.5px;}}
       `}</style>
 
-      <div style={{ display:'flex', justifyContent:'space-between', alignItems:'baseline', gap:10 }}>
-        <div>
+      <div className="movement-recent-header">
+        <div className="movement-recent-top">
           <div className="t">{title}</div>
-          <div style={{ fontSize:11, color:'var(--ink-45)', marginTop:3 }}>
-            {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
-          </div>
+          <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
         </div>
-        <div style={{display:'flex',alignItems:'center',gap:6}}><ShareIconButton label="Share movement calendar" onClick={openMovementShare}/><button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:44 }}>
-          {expanded ? '7-day view' : 'View calendar'}
-        </button></div>
+        <div className="movement-recent-subtitle">
+          {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
+        </div>
+        <div className="protlys-segmented-tabs movement-view-tabs" role="tablist" aria-label="Movement view">
+          <button type="button" className={`protlys-segmented-tab ${!expanded ? 'is-active' : ''}`} aria-selected={!expanded} onClick={() => setExpanded(false)}>7-day</button>
+          <button type="button" className={`protlys-segmented-tab ${expanded ? 'is-active' : ''}`} aria-selected={expanded} onClick={() => setExpanded(true)}>Calendar</button>
+          <span className="protlys-segmented-indicator" data-active={expanded ? 'calendar' : 'week'} style={{transform:expanded ? 'translateX(100%)' : 'translateX(0)'}} />
+        </div>
       </div>
 
       {!expanded ? (
@@ -419,10 +428,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
         <div style={{ marginTop:12 }}>
           <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', gap:8, marginBottom:10 }}>
             <button type="button" onClick={() => canGoPrev && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
-            <div style={{textAlign:'center'}}><strong style={{ fontSize:13 }}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div></div>
+            <div style={{textAlign:'center',minWidth:0}}><strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>{monthRows.filter(row => Number(row.steps || 0) > 0).length} logged days</div></div>
             <button type="button" onClick={() => canGoToNextMonth && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
           </div>
-          <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : 'Green = movement logged'}</div>
+          
           <div className="movement-calendar-grid">
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{textAlign:'center',fontSize:9,color:'var(--ink-45)',fontWeight:800,paddingBottom:2,minHeight:16}}>{d}</div>)}
             {calendar.map((d, i) => {
