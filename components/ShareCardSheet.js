@@ -103,7 +103,7 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
       </div>
 
       <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',flex:'0 0 auto'}}>
-        {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:56,height:46,padding:3,border:selected===look?'2px solid var(--green-dark)':'1px solid var(--line)',borderRadius:10,background:'var(--white)',overflow:'hidden',cursor:'pointer'}}><div style={{width:'100%',height:'100%',borderRadius:6,background:look==='dark'?'#232924':look==='surface'?'#323A33':'#F7F8F6'}}/></button>)}
+        {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:60,height:96,padding:3,border:selected===look?'2px solid var(--green-dark)':'1px solid var(--line)',borderRadius:10,background:'var(--white)',overflow:'hidden',cursor:'pointer'}}><div style={{width:'100%',height:'100%',borderRadius:6,overflow:'hidden'}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun}/></div></button>)}
       </div>
 
       <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'2px 2px 8px',fontSize:13,fontWeight:700,flex:'0 0 auto'}}><span>Show my username</span><input type="checkbox" checked={showUsername} onChange={e=>setShowUsername(e.target.checked)} style={{width:20,height:20,accentColor:'var(--green)'}}/></label>
