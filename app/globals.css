@@ -327,3 +327,10 @@
 .protlys-app .protlys-feed-comment .protlys-bubble{background:var(--paper);box-shadow:none;}
 .protlys-app .protlys-feed-comment .protlys-message-footer{padding-left:2px;}
 @media (max-width:599px){.protlys-app .protlys-message-content{max-width:82%;}.protlys-app .protlys-feed-comment .protlys-message-content{max-width:calc(100% - 43px);}}
+
+.protlys-app .protlys-message-scroller{background:var(--paper);border:1px solid var(--line);border-radius:18px;padding:10px 10px;}
+.protlys-app .protlys-group-message .protlys-message-content{max-width:78%;}
+.protlys-app .protlys-group-message .protlys-message-footer{font-size:10px;padding:0 2px;}
+.protlys-app .protlys-group-message .protlys-bubble-content{padding:9px 12px;}
+.protlys-app .protlys-group-message.protlys-message-end .protlys-bubble{border-color:rgba(46,158,91,.25);}
+@media (max-width:599px){.protlys-app .protlys-group-message .protlys-message-content{max-width:82%;}.protlys-app .protlys-message-scroller{padding:9px 7px;}}
