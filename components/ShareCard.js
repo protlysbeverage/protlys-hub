@@ -110,7 +110,7 @@ export default function ShareCard({
 
       <div style={{marginTop:`${Math.round(20*s)}px`,fontFamily:'Space Grotesk,sans-serif',fontSize:`${Math.round(50*s)}px`,lineHeight:.84,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>
         <div>{headline[0]}</div>
-        <div style={{color:'rgba(255,255,255,.20)'}}>{headline[1]}</div>
+        <div style={{color:t.dim}}>{headline[1]}</div>
       </div>
 
       <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:`${Math.round(15*s)}px 0`,overflow:'hidden'}}>
