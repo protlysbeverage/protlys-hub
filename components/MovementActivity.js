@@ -357,7 +357,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .movement-streak-value small{font-size:12px;font-weight:700;color:var(--ink-45);white-space:nowrap;}
         @media (max-width:340px){.movement-streak-label{padding-right:38px}.streak-label-long{display:none}.streak-label-short{display:inline}}
         .movement-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
-        .movement-calendar-day{min-width:44px;min-height:44px;width:100%;aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;position:relative;}
+        .movement-calendar-day{min-width:0;min-height:0;width:100%;aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;position:relative;}
         .movement-calendar-day.empty{min-width:0;min-height:0;aspect-ratio:auto;}
         .movement-calendar-day:not(:disabled){cursor:pointer;}
         .movement-calendar-day:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
@@ -388,7 +388,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .movement-sheet-empty span{display:block;font-size:11.5px;color:var(--ink-45);margin-top:5px;}
         @keyframes movement-sheet-in{from{transform:translateY(100%);opacity:.75}to{transform:translateY(0);opacity:1}}
         @media (prefers-reduced-motion:reduce){.movement-sheet{animation:none;}}
-        @media (max-width:380px){.movement-calendar-grid{gap:3px;}.movement-calendar-day{min-width:44px;min-height:44px;}.movement-sheet{padding-left:14px;padding-right:14px;}.movement-sheet-main{gap:10px;}.movement-day-ring{transform:scale(.9);margin:-5px;}.movement-sheet-big{font-size:29px;}.movement-stat-tile{padding:9px 7px;}.movement-stat-value{font-size:12.5px;}}
+        @media (max-width:380px){.movement-calendar-grid{gap:3px;}.movement-calendar-day{min-width:0;min-height:0;}.movement-sheet{padding-left:14px;padding-right:14px;}.movement-sheet-main{gap:10px;}.movement-day-ring{transform:scale(.9);margin:-5px;}.movement-sheet-big{font-size:29px;}.movement-stat-tile{padding:9px 7px;}.movement-stat-value{font-size:12.5px;}}
       `}</style>
 
       <div className="movement-recent-header">
