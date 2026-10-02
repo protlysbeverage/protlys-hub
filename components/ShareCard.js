@@ -28,6 +28,7 @@ export function ActivityHeatmap({ days = [], highlight = [], width = 308, accent
     <div style={{width:`${cell * 7 + gap * 6}px`,maxWidth:'100%',boxSizing:'border-box'}}>
       <div style={{display:'grid',gridTemplateColumns:`repeat(7,${cell}px)`,columnGap:`${gap}px`,rowGap:'4px'}}>
         {weekdays.map((day,index)=><div key={`weekday-${index}`} style={{width:`${cell}px`,height:'14px',fontSize:'9px',fontWeight:800,color:muted,textAlign:'center',lineHeight:'14px'}}>{day}</div>)}
+        {Array.from({length:safeDays.length ? new Date(safeDays[0].key + 'T12:00:00').getDay() : 0}, (_,index) => <div key={`leading-${index}`} style={{width:`${cell}px`,height:`${cell}px`}} />)}
         {safeDays.map((day,index)=>{
           const logged = Boolean(day?.logged ?? day?.active);
           const strong = highlighted.size > 0 && highlighted.has(day.key);
