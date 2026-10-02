@@ -323,6 +323,8 @@
 .protlys-app .protlys-message-end .protlys-message-content{align-items:flex-end;}
 .protlys-app .protlys-message-end .protlys-bubble{background:var(--green-soft);}
 .protlys-app .protlys-message-group{display:grid;gap:5px;width:100%;}
+.protlys-app .protlys-feed-comment{align-items:flex-start;}
+.protlys-app .protlys-feed-comment .protlys-message-avatar{align-items:flex-start;}
 .protlys-app .protlys-feed-comment .protlys-message-content{max-width:none;flex:1;}
 .protlys-app .protlys-feed-comment .protlys-bubble{background:var(--paper);box-shadow:none;}
 .protlys-app .protlys-feed-comment .protlys-message-footer{padding-left:2px;}
