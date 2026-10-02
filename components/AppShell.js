@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
 import DotClient from '@/app/dot/DotClient';
 
@@ -24,6 +25,15 @@ export default function AppShell({ children }) {
   const router = useRouter();
   const shopUrl = getShopUrl();
   const logoSrc = '/protlys-logo-exact.png';
+  const [darkTheme, setDarkTheme] = useState(false);
+  useEffect(() => {
+    const root = document.documentElement;
+    const sync = () => setDarkTheme(root.classList.contains('protlys-dark'));
+    sync();
+    const observer = new MutationObserver(sync);
+    observer.observe(root, { attributes:true, attributeFilter:['class'] });
+    return () => observer.disconnect();
+  }, []);
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
@@ -259,7 +269,7 @@ export default function AppShell({ children }) {
 
     <div className="app-header">
       <ThemeToggle />
-      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo logo-light" src={logoSrc} alt="Protlys" width="2000" height="973" /><img className="logo logo-dark" src="/protlys-logo-dark.png" alt="Protlys" width="2000" height="973" /></Link>
+      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
     </div>
 
