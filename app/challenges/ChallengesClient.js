@@ -1,4 +1,6 @@
 'use client';
+import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
 
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
@@ -92,24 +94,31 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                 {currentGroupAdmin&&<button type="button" aria-label="Copy group invite code" title="Copy invite code" onClick={async()=>{try{await navigator.clipboard?.writeText(selectedGroup.invite_code);setCopyToast('Link copied')}catch{setCopyToast('Copy failed')}}} style={{width:28,height:28,margin:0,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,cursor:'pointer'}}>↗</button>}
               </div>
 
-              <div style={{background:'var(--paper)',border:'1px solid var(--line)',borderRadius:18,padding:'8px 2px',height:360,maxHeight:360,minHeight:0,overflowY:'auto',overscrollBehaviorY:'contain',WebkitOverflowScrolling:'touch',touchAction:'pan-y',display:'flex',flexDirection:'column',gap:10}}>
-                {messages.length?messages.map(m=>{
-                  const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
-                  const isMine=m.sender_id===userId;
-                  return <div key={m.id} style={{display:'flex',width:'100%',flexShrink:0,justifyContent:isMine?'flex-end':'flex-start',minWidth:0}}>
-                    <div style={{display:'flex',gap:6,alignItems:'flex-end',justifyContent:isMine?'flex-end':'flex-start',flexDirection:isMine?'row-reverse':'row',maxWidth:'78%',minWidth:0}}>
-                      <div style={{display:'flex',flexDirection:'column',alignItems:isMine?'flex-end':'flex-start',minWidth:0,maxWidth:'100%'}}>
-                        {!isMine&&<div style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginBottom:4,paddingLeft:2}}>{sender?.name||'Protlys member'}</div>}
-                        {m.deleted_at?<div style={{display:'inline-block',width:'fit-content',maxWidth:'100%',fontSize:12,lineHeight:1.45,color:'var(--ink-45)',fontStyle:'italic',background:'var(--white)',border:'1px solid var(--line)',borderRadius:16,padding:'10px 14px',overflowWrap:'anywhere'}}>Message removed.</div>:<div style={{display:'inline-block',width:'fit-content',maxWidth:'100%',background:isMine?'var(--green-soft)':'var(--white)',border:'1px solid var(--line)',borderRadius:16,padding:m.image_url||m.text?'10px 14px':'0',boxShadow:'0 1px 3px rgba(15,42,74,.04)',overflowWrap:'anywhere'}}>
-                          {m.image_url&&<img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:280,maxHeight:280,objectFit:'cover',borderRadius:11}}/>}
-                          {m.text&&<div style={{fontSize:13,lineHeight:1.5,color:'var(--ink)',padding:m.image_url?'6px 3px 2px':'2px 3px',overflowWrap:'anywhere'}}>{m.text}</div>}
-                        </div>}
-                      </div>
-                      {currentGroupAdmin&&!m.deleted_at&&<button type="button" onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{flexShrink:0,border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:'3px 2px',alignSelf:'flex-end'}}>Remove</button>}
-                    </div>
-                  </div>
-                }):<div style={{padding:'34px 16px',textAlign:'center'}}>
-                  <div style={{fontSize:24,marginBottom:7}}>💬</div>
+              <div className="protlys-message-scroller" style={{height:360,maxHeight:360,minHeight:0,overflowY:'auto',overscrollBehaviorY:'contain',WebkitOverflowScrolling:'touch',touchAction:'pan-y'}}>
+                {messages.length ? <div className="protlys-message-group">
+                  {messages.map(m=>{
+                    const sender=selectedGroupMembers.find(x=>x.id===m.sender_id);
+                    const isMine=m.sender_id===userId;
+                    return <Message key={m.id} align={isMine?'end':'start'} className="protlys-group-message">
+                      <MessageAvatar>
+                        {isMine ? <div style={{width:30,height:30,borderRadius:'50%',background:'var(--green-soft)'}} aria-hidden="true" /> : <Avatar member={sender} size={30} />}
+                      </MessageAvatar>
+                      <MessageContent>
+                        {!isMine && <MessageHeader><span style={{fontWeight:800,color:'var(--ink-70)'}}>{sender?.name||'Protlys member'}</span></MessageHeader>}
+                        {m.deleted_at ? <Bubble><BubbleContent style={{fontStyle:'italic',color:'var(--ink-45)'}}>Message removed.</BubbleContent></Bubble> : <Bubble>
+                          <BubbleContent>
+                            {m.image_url && <img src={m.image_url} alt="Group post" style={{display:'block',width:'100%',maxWidth:280,maxHeight:280,objectFit:'cover',borderRadius:11,marginBottom:m.text?7:0}}/>}
+                            {m.text && <span>{m.text}</span>}
+                          </BubbleContent>
+                        </Bubble>}
+                        <MessageFooter>
+                          <span>{timeAgo(m.created_at)}</span>
+                          {currentGroupAdmin&&!m.deleted_at&&<button type="button" onClick={()=>deleteMessage(m.id)} aria-label="Remove message" title="Remove message" style={{border:0,background:'transparent',fontSize:10,color:'var(--ink-45)',cursor:'pointer',padding:0}}>Remove</button>}
+                        </MessageFooter>
+                      </MessageContent>
+                    </Message>;
+                  })}
+                </div> : <div style={{padding:'34px 16px',textAlign:'center'}}>
                   <div style={{fontSize:13,fontWeight:800}}>Start the conversation</div>
                   <div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:3}}>Share a win, ask a question, or post a photo.</div>
                 </div>}
