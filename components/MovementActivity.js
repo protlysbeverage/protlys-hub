@@ -5,7 +5,7 @@ import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getShareData } from '@/lib/share-data';
-import { monthIndex, shiftMonth, canGoPrevious, canGoNext } from '@/lib/movement-calendar';
+import { monthIndex, shiftMonth, canGoPrevious, canGoNext as canGoNextMonth } from '@/lib/movement-calendar';
 
 function dateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
@@ -154,7 +154,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const currentDate = parseKey(todayKey);
   const viewIndex = monthIndex(calendarMonth);
   const canGoPrev = canGoPrevious(calendarMonth, firstLogDate);
-  const canGoNext = canGoNext(calendarMonth, currentDate);
+  const canGoNext = canGoNextMonth(calendarMonth, currentDate);
 
   useEffect(() => {
     const refreshToday = () => setTodayKey(dateKey(new Date()));
