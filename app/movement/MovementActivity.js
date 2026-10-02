@@ -142,12 +142,13 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
-  const currentMonthStart = useMemo(
-    () => new Date(today.getFullYear(), today.getMonth(), 1),
-    [todayKey]
+  const currentMonthKeyToday = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
+  const [calendarYear, calendarMonthIndex] = calendarMonthKey.split('-').map(Number);
+  const calendarMonth = useMemo(
+    () => new Date(calendarYear, calendarMonthIndex - 1, 1),
+    [calendarYear, calendarMonthIndex]
   );
-  const canGoPrev = calendarMonth.getTime() > currentMonthStart.getTime();
-  const canGoToNextMonth = calendarMonth.getTime() < currentMonthStart.getTime();
+  const canGoToNextMonth = calendarMonthKey < currentMonthKeyToday;
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
