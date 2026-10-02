@@ -65,6 +65,7 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
   function close(){if(historyPushed.current){historyPushed.current=false;window.history.back();}else onClose?.();}
   function selectLook(look){setSelected(look);const node=scrollRef.current?.querySelector('[data-look-card="'+look+'"]');node?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   async function renderCard(){
+    if(!assets[selected] || !assets.qr)throw new Error('share-assets-not-ready');
     const node=previewRefs.current[selected];if(!node)throw new Error('card-not-ready');
     if(document.fonts?.ready)await document.fonts.ready;await waitForImages(node);
     return toPng(node,{cacheBust:true,pixelRatio:2});
@@ -108,8 +109,8 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
       <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'2px 2px 8px',fontSize:13,fontWeight:700,flex:'0 0 auto'}}><span>Show my username</span><input type="checkbox" checked={showUsername} onChange={e=>setShowUsername(e.target.checked)} style={{width:20,height:20,accentColor:'var(--green)'}}/></label>
       {message&&<div role="status" style={{textAlign:'center',fontSize:11.5,fontWeight:700,color:'var(--green-dark)',margin:'0 0 7px',flex:'0 0 auto'}}>{message}</div>}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,flex:'0 0 auto'}}>
-        <button type="button" onClick={share} disabled={busy} style={{gridColumn:'1 / -1',minHeight:50,border:0,borderRadius:14,background:'var(--green)',color:'#fff',fontWeight:800,fontSize:14,cursor:busy?'default':'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9}}>{busy?<><span aria-hidden="true" style={{width:16,height:16,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',display:'inline-block',animation:'protlys-share-spin .7s linear infinite'}}/>Creating…</>:<><ShareGlyph/>Share {LOOK_LABELS[selected]} card</>}</button>
-        <button type="button" onClick={save} disabled={busy} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><SaveGlyph/>Save image</button>
+        <button type="button" onClick={share} disabled={busy || !assets[selected] || !assets.qr} style={{gridColumn:'1 / -1',minHeight:50,border:0,borderRadius:14,background:'var(--green)',color:'#fff',fontWeight:800,fontSize:14,cursor:busy?'default':'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9}}>{busy?<><span aria-hidden="true" style={{width:16,height:16,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',display:'inline-block',animation:'protlys-share-spin .7s linear infinite'}}/>Creating…</>:<><ShareGlyph/>Share {LOOK_LABELS[selected]} card</>}</button>
+        <button type="button" onClick={save} disabled={busy || !assets[selected] || !assets.qr} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><SaveGlyph/>Save image</button>
         <button type="button" onClick={copyLink} disabled={busy} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><LinkGlyph/>Copy link</button>
       </div>
     </section>
