@@ -8,7 +8,10 @@ import ShareCard from './ShareCard';
 const THEMES = ['dark','light','surface'];
 const LOOK_LABELS = { dark:'Dark', light:'Light', surface:'Surface' };
 const LOGOS = { dark:'/protlys-logo-dark.png', surface:'/protlys-logo-dark.png', light:'/protlys-logo-exact.png' };
-const QR_TEXT = 'https://hub.protlys.com/calculator?src=share-card';
+const PUBLIC_SHARE_BASE = 'https://hub.protlys.com/movement';
+function publicShareUrl(metric){
+  return PUBLIC_SHARE_BASE + '?utm_source=share&utm_medium=card&utm_campaign=' + encodeURIComponent(metric || 'movement');
+}
 
 function ShareGlyph(){return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="m8 11 7.8-4.6M8 13l7.8 4.6"/></svg>}
 function SaveGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>}
@@ -32,6 +35,8 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const [message,setMessage]=useState('');
   const [showUsername,setShowUsername]=useState(true);
   const [assets,setAssets]=useState({});
+  const cachedBlobRef=useRef(null);
+  const renderingRef=useRef(false);
   const [mounted,setMounted]=useState(false);
   const [smallScreen,setSmallScreen]=useState(false);
   const [previewScale,setPreviewScale]=useState(1);
@@ -45,7 +50,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   useEffect(()=>{
     if(!open)return;
     let cancelled=false;
-    setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);
+    setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);cachedBlobRef.current=null;
     const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
     updateSize();window.addEventListener('resize',updateSize);
     const measure=()=>{const box=previewAreaRef.current;if(!box)return;setPreviewScale(Math.min(box.clientWidth/360,box.clientHeight/640));};
@@ -54,7 +59,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
       try{
         const [dark,surface,light,qr]=await Promise.all([
           assetDataUrl(LOGOS.dark),assetDataUrl(LOGOS.surface),assetDataUrl(LOGOS.light),
-          import('qrcode').then(({default:Q})=>Q.toDataURL(QR_TEXT,{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}}))
+          import('qrcode').then(({default:Q})=>Q.toDataURL(publicShareUrl(shareData.metric),{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}}))
         ]);
         if(!cancelled)setAssets({dark,surface,light,qr});
       }catch{if(!cancelled)setMessage('Some share assets could not be loaded.');}
@@ -77,23 +82,27 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   }
   async function share(){
     if(busy || !shareData.hasData)return;
-    setBusy(true);setMessage('');
-    try{
-      const dataUrl=await renderCard(),blob=await(await fetch(dataUrl)).blob(),file=new File([blob],'protlys-share-card.png',{type:'image/png'});
-      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({files:[file],title:'My Protlys progress'});
-      else{const url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);}
-      setMessage('Image ready.');
-    }catch(error){if(error?.name!=='AbortError'){console.error(error);setMessage('Could not create the share card.');}}
-    finally{setBusy(false);}
+    const blob=cachedBlobRef.current;
+    if(!blob){setMessage('Preparing image…');return;}
+    const file=new File([blob],'protlys-share-card.png',{type:'image/png'});
+    if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
+      navigator.share({files:[file],title:'My Protlys progress'}).catch(error=>{
+        if(error?.name!=='AbortError')setMessage('Could not share the card.');
+      });
+      return;
+    }
+    const url=URL.createObjectURL(blob),a=document.createElement('a');
+    a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url),1000);
   }
   async function save(){
     if(busy || !shareData.hasData)return;
     setBusy(true);setMessage('');
-    try{const dataUrl=await renderCard(),a=document.createElement('a');a.href=dataUrl;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setMessage('Image saved.');}
+    try{const blob=cachedBlobRef.current || await renderCard(),dataUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=dataUrl;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(dataUrl);setMessage('Image saved.');}
     catch(error){console.error(error);setMessage('Could not save the share card.');}
     finally{setBusy(false);}
   }
-  async function copyLink(){try{await navigator.clipboard?.writeText(QR_TEXT);setMessage('Link copied.');}catch{setMessage('Could not copy the link.');}}
+  async function copyLink(){try{await navigator.clipboard?.writeText(publicShareUrl(shareData.metric));setMessage('Link copied.');}catch{setMessage('Could not copy the link.');}}
   function onTouchStart(e){touchStart.current=e.touches?.[0]?.clientY??null;}
   function onTouchEnd(e){if(touchStart.current==null)return;const dy=(e.changedTouches?.[0]?.clientY??touchStart.current)-touchStart.current;touchStart.current=null;if(dy>90)close();}
 
