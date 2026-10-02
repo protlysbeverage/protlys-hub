@@ -5,6 +5,7 @@ import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { getShareData } from '@/lib/share-data';
+import { monthIndex, shiftMonth, canGoPrevious, canGoNext } from '@/lib/movement-calendar';
 
 function dateKey(date = new Date()) {
   const parts = new Intl.DateTimeFormat('en-CA', { year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
@@ -145,17 +146,15 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
-  const [todayYear, todayMonth] = todayKey.split('-').map(Number);
-  const currentIndex = todayYear * 12 + (todayMonth - 1);
   const firstLogKey = useMemo(() => {
     if (!movementKeys.length) return todayKey;
     return [...movementKeys].sort()[0];
   }, [movementKeys, todayKey]);
-  const [firstLogYear, firstLogMonth] = firstLogKey.split('-').map(Number);
-  const firstLogIndex = firstLogYear * 12 + (firstLogMonth - 1);
-  const viewIndex = calendarMonth.getFullYear() * 12 + calendarMonth.getMonth();
-  const canGoPrev = viewIndex > firstLogIndex;
-  const canGoNext = viewIndex < currentIndex;
+  const firstLogDate = parseKey(firstLogKey);
+  const currentDate = parseKey(todayKey);
+  const viewIndex = monthIndex(calendarMonth);
+  const canGoPrev = canGoPrevious(calendarMonth, firstLogDate);
+  const canGoNext = canGoNext(calendarMonth, currentDate);
 
   useEffect(() => {
     const refreshToday = () => setTodayKey(dateKey(new Date()));
@@ -427,9 +426,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar" style={{marginBottom:10}}>
-            <button type="button" onClick={() => canGoPrev && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() - 1, 1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
+            <button type="button" onClick={() => canGoPrev && setCalendarMonth(shiftMonth(calendarMonth, -1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}><strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>{monthRows.filter(row => Number(row.steps || 0) > 0).length} logged days</div></div>
-            <button type="button" onClick={() => canGoToNextMonth && setCalendarMonth(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 1))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
+            <button type="button" onClick={() => canGoNext && setCalendarMonth(shiftMonth(calendarMonth, 1))} disabled={!canGoNext} aria-label="Next month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoNext?1:.35,cursor:canGoNext?'pointer':'default'}}>›</button>
           </div>
           
           <div className="movement-calendar-grid">
