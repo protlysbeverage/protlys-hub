@@ -1,8 +1,9 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
+import QRCode from 'qrcode';
 import ShareCard from './ShareCard';
 
 const THEMES = ['dark','light','surface'];
@@ -35,31 +36,44 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const [message,setMessage]=useState('');
   const [showUsername,setShowUsername]=useState(true);
   const [assets,setAssets]=useState({});
-  const cachedBlobRef=useRef(null);
+  const cachedBlobRef=useRef(new Map());
   const renderingRef=useRef(false);
   const [mounted,setMounted]=useState(false);
   const [smallScreen,setSmallScreen]=useState(false);
   const [previewScale,setPreviewScale]=useState(1);
+  const [previewMeasured,setPreviewMeasured]=useState(false);
   const previewAreaRef=useRef(null);
   const [hideLooks,setHideLooks]=useState(false);
   const exportRef=useRef(null);
   const historyPushed=useRef(false);
   const touchStart=useRef(null);
 
-  useEffect(()=>setMounted(true),[]);
+  useLayoutEffect(()=>setMounted(true),[]);
   useEffect(()=>{
     if(!open)return;
     let cancelled=false;
-    setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);cachedBlobRef.current=null;
+    setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);cachedBlobRef.current.clear();
     const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
     updateSize();window.addEventListener('resize',updateSize);
-    const measure=()=>{const box=previewAreaRef.current;if(!box)return;setPreviewScale(Math.min(box.clientWidth/360,box.clientHeight/640));};
-    measure();const observer=new ResizeObserver(measure);if(previewAreaRef.current)observer.observe(previewAreaRef.current);
+    setPreviewMeasured(false);
+    const measure=()=>{
+      const box=previewAreaRef.current;
+      if(!box)return;
+      const availW=Math.max(0,box.clientWidth);
+      const availH=Math.max(0,box.clientHeight);
+      if(availW>0 && availH>0){
+        setPreviewScale(Math.min(availW/360,availH/640));
+        setPreviewMeasured(true);
+      }
+    };
+    measure();
+    const observer=new ResizeObserver(measure);
+    if(previewAreaRef.current)observer.observe(previewAreaRef.current);
     (async()=>{
       try{
         const [dark,surface,light,qr]=await Promise.all([
           assetDataUrl(LOGOS.dark),assetDataUrl(LOGOS.surface),assetDataUrl(LOGOS.light),
-          import('qrcode').then(({default:Q})=>Q.toDataURL(publicShareUrl(shareData.metric),{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}}))
+          QRCode.toDataURL(publicShareUrl(shareData.metric),{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}})
         ]);
         if(!cancelled)setAssets({dark,surface,light,qr});
       }catch{if(!cancelled)setMessage('Some share assets could not be loaded.');}
@@ -72,32 +86,57 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     return()=>{cancelled=true;window.removeEventListener('popstate',onPop);window.removeEventListener('resize',updateSize);observer.disconnect();document.body.style.overflow=oldOverflow;};
   },[open,onClose]);
 
-  function close(){if(historyPushed.current){historyPushed.current=false;window.history.back();}else onClose?.();}
+  function close(){if(!open)return;const shouldBack=historyPushed.current;historyPushed.current=false;onClose?.();if(shouldBack)window.history.back();}
   function selectLook(look){setSelected(look);setHideLooks(false);}
+  function cacheKey(){
+    return [selected,showUsername,shareData?.metric,shareData?.number,shareData?.unit,shareData?.label,shareData?.subtext,JSON.stringify(shareData?.visual||{}),JSON.stringify(shareData?.highlight||[])].join('|');
+  }
+
   async function renderCard(){
     if(!assets[selected] || !assets.qr)throw new Error('share-assets-not-ready');
+    const key=cacheKey();
+    const cached=cachedBlobRef.current.get(key);
+    if(cached)return cached;
     const node=exportRef.current;if(!node)throw new Error('export-card-not-ready');
     if(document.fonts?.ready)await document.fonts.ready;await waitForImages(node);
     const dataUrl=await toPng(node,{cacheBust:true,pixelRatio:3,width:360,height:640});
     const blob=await (await fetch(dataUrl)).blob();
-    cachedBlobRef.current=blob;
+    cachedBlobRef.current.set(key,blob);
     return blob;
   }
 
   useEffect(()=>{
     if(!open || !shareData.hasData || !assets[selected] || !assets.qr || renderingRef.current)return;
-    renderingRef.current=true;
-    renderCard().catch(()=>{}).finally(()=>{renderingRef.current=false;});
+    const run=()=>{
+      if(!open || renderingRef.current)return;
+      renderingRef.current=true;
+      renderCard().catch(()=>{}).finally(()=>{renderingRef.current=false;});
+    };
+    const idle=window.requestIdleCallback ? window.requestIdleCallback(run,{timeout:900}) : window.setTimeout(run,180);
+    return()=>window.requestIdleCallback ? window.cancelIdleCallback?.(idle) : window.clearTimeout(idle);
   },[open,selected,showUsername,shareData,assets]);
 
   useEffect(()=>{
     if(!open)return;
     document.body.classList.add('protlys-share-open');
-    return()=>document.body.classList.remove('protlys-share-open');
+    const appRoot=document.querySelector('.protlys-app');
+    if(appRoot){
+      appRoot.setAttribute('aria-hidden','true');
+      appRoot.setAttribute('inert','');
+      appRoot.style.pointerEvents='none';
+    }
+    return()=>{
+      document.body.classList.remove('protlys-share-open');
+      if(appRoot){
+        appRoot.removeAttribute('aria-hidden');
+        appRoot.removeAttribute('inert');
+        appRoot.style.pointerEvents='';
+      }
+    };
   },[open]);
   async function share(){
     if(busy || !shareData.hasData)return;
-    const blob=cachedBlobRef.current;
+    const blob=cachedBlobRef.current.get(cacheKey());
     if(!blob){setMessage('Preparing image…');return;}
     const file=new File([blob],'protlys-share-card.png',{type:'image/png'});
     if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){
@@ -113,7 +152,7 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   async function save(){
     if(busy || !shareData.hasData)return;
     setBusy(true);setMessage('');
-    try{const blob=cachedBlobRef.current || await renderCard(),dataUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=dataUrl;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(dataUrl);setMessage('Image saved.');}
+    try{const blob=cachedBlobRef.current.get(cacheKey()) || await renderCard(),dataUrl=URL.createObjectURL(blob),a=document.createElement('a');a.href=dataUrl;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(dataUrl);setMessage('Image saved.');}
     catch(error){console.error(error);setMessage('Could not save the share card.');}
     finally{setBusy(false);}
   }
@@ -126,24 +165,24 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const actionHeight = shareData.hasData ? 100 : 56;
 
   return createPortal(
-    <div style={{position:'fixed',inset:0,zIndex:30000,fontFamily:'Manrope,sans-serif'}}>
+    <div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
       <style>{'@keyframes protlys-share-spin{to{transform:rotate(360deg)}}'}</style>
-      <div onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.60)'}}/>
+      <div onPointerUp={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.60)',touchAction:'none'}}/>
       <section role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{
         position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',
-        padding:'8px 16px calc(14px + env(safe-area-inset-bottom))',
+        padding:'max(env(safe-area-inset-top), 12px) 16px calc(14px + env(safe-area-inset-bottom))',
         background:'var(--paper)',color:'var(--ink)',display:'flex',flexDirection:'column',
         overflow:'hidden',boxShadow:'0 -16px 45px rgba(0,0,0,.22)'
       }}>
         <div style={{width:42,height:5,borderRadius:99,background:'var(--line)',margin:'0 auto 10px',flex:'0 0 auto'}}/>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flex:'0 0 auto'}}>
           <div style={{fontSize:18,fontWeight:800}}>Share your progress</div>
-          <button type="button" onClick={close} aria-label="Close share sheet" style={{width:44,height:44,minWidth:44,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',display:'grid',placeItems:'center'}}>×</button>
+          <button type="button" onPointerUp={(event)=>{event.preventDefault();event.stopPropagation();close();}} aria-label="Close share sheet" style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',display:'grid',placeItems:'center'}}>×</button>
         </div>
 
         <div ref={previewAreaRef} style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
           {shareData.hasData ? (
-            <div style={{width:360*previewScale,height:640*previewScale,flex:'0 0 auto',position:'relative'}}>
+            <div style={{width:360*previewScale,height:640*previewScale,flex:'0 0 auto',position:'relative',visibility:previewMeasured?'visible':'hidden'}}>
               <div style={{width:360,height:640,transform:'scale('+previewScale+')',transformOrigin:'top left'}}>
                 <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
               </div>
