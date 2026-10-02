@@ -25,9 +25,9 @@ async function waitForImages(node){
   }));
 }
 
-export default function ShareCardSheet({open,onClose,metric,value,unit,label,subtext,progress,username,heatmapDays=[],highlightBestRun=false}){
+export default function ShareCardSheet({open,onClose,metric,value,unit,label,subtext,progress,username,heatmapDays=[],highlightBestRun=false,weeklyDays=[]}){
   const [selected,setSelected]=useState('dark'),[busy,setBusy]=useState(false),[message,setMessage]=useState(''),[showUsername,setShowUsername]=useState(true),[assets,setAssets]=useState({}),[mounted,setMounted]=useState(false);
-  const previewRefs=useRef({}),scrollRef=useRef(null),historyPushed=useRef(false),touchStart=useRef(null);
+  const previewRefs=useRef({}),exportRef=useRef(null),scrollRef=useRef(null),historyPushed=useRef(false),touchStart=useRef(null);
   useEffect(()=>setMounted(true),[]);
 
   useEffect(()=>{
@@ -66,9 +66,10 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
   function selectLook(look){setSelected(look);const node=scrollRef.current?.querySelector('[data-look-card="'+look+'"]');node?.scrollIntoView({behavior:'smooth',block:'nearest',inline:'center'});}
   async function renderCard(){
     if(!assets[selected] || !assets.qr)throw new Error('share-assets-not-ready');
-    const node=previewRefs.current[selected];if(!node)throw new Error('card-not-ready');
+    const preview=previewRefs.current[selected];if(!preview)throw new Error('card-not-ready');
+    const node=exportRef.current;if(!node)throw new Error('export-card-not-ready');
     if(document.fonts?.ready)await document.fonts.ready;await waitForImages(node);
-    return toPng(node,{cacheBust:true,pixelRatio:2});
+    return toPng(node,{cacheBust:true,pixelRatio:3,width:360,height:640});
   }
   async function share(){
     if(busy)return;setBusy(true);setMessage('');
@@ -90,27 +91,31 @@ export default function ShareCardSheet({open,onClose,metric,value,unit,label,sub
   function onTouchStart(e){touchStart.current=e.touches?.[0]?.clientY??null;}
   function onTouchEnd(e){if(touchStart.current==null)return;const dy=(e.changedTouches?.[0]?.clientY??touchStart.current)-touchStart.current;touchStart.current=null;if(dy>90)close();}
 
+  const weeklyTotal=(weeklyDays||[]).reduce((sum,d)=>sum+Number(metric==='distance'?(d.distance||d.km||0):(d.steps||0)),0);
+  const emptyMovement=['steps_today','distance'].includes(metric)&&weeklyTotal<=0;
   if(!open||!mounted)return null;
   return createPortal(<div style={{position:'fixed',inset:0,zIndex:30000,fontFamily:'Manrope,sans-serif'}}>
     <style>{'@keyframes protlys-share-spin{to{transform:rotate(360deg)}}'}</style>
     <div onClick={close} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.60)'}}/>
-    <section role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{position:'absolute',left:0,right:0,bottom:0,maxHeight:'90vh',overflow:'hidden',background:'var(--white)',color:'var(--ink)',borderRadius:'24px 24px 0 0',padding:'8px 16px calc(14px + env(safe-area-inset-bottom))',boxSizing:'border-box',display:'flex',flexDirection:'column',boxShadow:'0 -16px 45px rgba(0,0,0,.22)'}}>
+    <section role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} style={{position:'absolute',left:0,right:0,bottom:0,maxHeight:'90dvh',overflow:'hidden',background:'#FFFFFF',color:'#111111',borderRadius:'24px 24px 0 0',padding:'8px 16px calc(14px + env(safe-area-inset-bottom))',boxSizing:'border-box',display:'flex',flexDirection:'column',boxShadow:'0 -16px 45px rgba(0,0,0,.22)'}}>
       <div style={{width:42,height:5,borderRadius:99,background:'var(--line)',margin:'0 auto 12px',flex:'0 0 auto'}}/>
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flex:'0 0 auto'}}><div style={{fontSize:18,fontWeight:800}}>Share your progress</div><button type="button" onClick={close} aria-label="Close share sheet" style={{width:40,height:40,border:'1px solid var(--line)',borderRadius:'50%',background:'transparent',color:'var(--ink)',fontSize:20,cursor:'pointer'}}>×</button></div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,flex:'0 0 auto'}}><div style={{fontSize:18,fontWeight:800}}>Share your progress</div><button type="button" onClick={close} aria-label="Close share sheet" style={{width:44,height:44,minWidth:44,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',pointerEvents:'auto',display:'grid',placeItems:'center'}}>×</button></div>
 
-      <div ref={scrollRef} style={{display:'flex',gap:16,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',padding:'12px max(8px,calc((100% - 340px)/2)) 8px',margin:'0 -16px',alignItems:'flex-start',flex:'1 1 auto',minHeight:0}}>
-        {THEMES.map(look=><div key={look} data-look-card={look} style={{width:'min(340px,calc(100vw - 48px),calc((90vh - 250px) * .5625))',flex:'0 0 auto',scrollSnapAlign:'center',position:'relative'}}><div ref={el=>{previewRefs.current[look]=el}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun}/></div></div>)}
+      <div ref={scrollRef} style={{display:'flex',gap:16,overflowX:'auto',scrollSnapType:'x mandatory',scrollbarWidth:'none',padding:'12px 8px 8px',margin:'0 -16px',alignItems:'flex-start',flex:'1 1 auto',minHeight:0}}>
+        {THEMES.map(look=><div key={look} data-look-card={look} style={{width:'340px',flex:'0 0 auto',scrollSnapAlign:'center',position:'relative'}}><div ref={el=>{previewRefs.current[look]=el}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={340}/></div></div>)}
       </div>
 
       <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',flex:'0 0 auto'}}>
-        {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:60,height:96,padding:3,border:selected===look?'2px solid var(--green-dark)':'1px solid var(--line)',borderRadius:10,background:'var(--white)',overflow:'hidden',cursor:'pointer'}}><div style={{width:'100%',height:'100%',borderRadius:6,overflow:'hidden'}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun}/></div></button>)}
+        {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:60,height:96,padding:3,border:selected===look?'2px solid #4F9F35':'1px solid #D7DDD8',borderRadius:10,background:'#FFFFFF',overflow:'hidden',cursor:'pointer'}}><div style={{width:340,height:604,transform:'scale(.16)',transformOrigin:'top left',borderRadius:6,overflow:'hidden'}}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={340}/></div></button>)}
       </div>
 
+      <div style={{position:'fixed',left:'-10000px',top:0,width:360,height:640,overflow:'hidden',pointerEvents:'none'}} aria-hidden="true"><div ref={exportRef}><ShareCard metric={metric} value={value} unit={unit} label={label} subtext={subtext} progress={progress} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} heatmapDays={heatmapDays} highlightBestRun={highlightBestRun} weeklyDays={weeklyDays} cardWidth={360}/></div></div>
+
       <label style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,minHeight:44,padding:'2px 2px 8px',fontSize:13,fontWeight:700,flex:'0 0 auto'}}><span>Show my username</span><input type="checkbox" checked={showUsername} onChange={e=>setShowUsername(e.target.checked)} style={{width:20,height:20,accentColor:'var(--green)'}}/></label>
-      {message&&<div role="status" style={{textAlign:'center',fontSize:11.5,fontWeight:700,color:'var(--green-dark)',margin:'0 0 7px',flex:'0 0 auto'}}>{message}</div>}
+      {message&&<div role="status" style={{textAlign:'center',fontSize:11.5,fontWeight:700,color:'#4F9F35',margin:'0 0 7px',flex:'0 0 auto'}}>{message}</div>}
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,flex:'0 0 auto'}}>
-        <button type="button" onClick={share} disabled={busy || !assets[selected] || !assets.qr} style={{gridColumn:'1 / -1',minHeight:50,border:0,borderRadius:14,background:'var(--green)',color:'#fff',fontWeight:800,fontSize:14,cursor:busy?'default':'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9}}>{busy?<><span aria-hidden="true" style={{width:16,height:16,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',display:'inline-block',animation:'protlys-share-spin .7s linear infinite'}}/>Creating…</>:<><ShareGlyph/>Share {LOOK_LABELS[selected]} card</>}</button>
-        <button type="button" onClick={save} disabled={busy || !assets[selected] || !assets.qr} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><SaveGlyph/>Save image</button>
+        <button type="button" onClick={share} disabled={busy || emptyMovement || !assets[selected] || !assets.qr} style={{gridColumn:'1 / -1',minHeight:50,border:0,borderRadius:14,background:'#6BCB45',color:'#fff',fontWeight:800,fontSize:14,cursor:busy?'default':'pointer',display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9}}>{emptyMovement?'Log some movement to share.':busy?<><span aria-hidden="true" style={{width:16,height:16,border:'2px solid currentColor',borderTopColor:'transparent',borderRadius:'50%',display:'inline-block',animation:'protlys-share-spin .7s linear infinite'}}/>Creating…</>:<><ShareGlyph/>Share {LOOK_LABELS[selected]} card</>}</button>
+        <button type="button" onClick={save} disabled={busy || !assets[selected] || !assets.qr} style={{minHeight:46,border:'1px solid #D7DDD8',borderRadius:14,background:'#FFFFFF',color:'#111111',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><SaveGlyph/>Save image</button>
         <button type="button" onClick={copyLink} disabled={busy} style={{minHeight:46,border:'1px solid var(--line)',borderRadius:14,background:'var(--white)',color:'var(--ink)',fontWeight:800,fontSize:13,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7,cursor:busy?'default':'pointer'}}><LinkGlyph/>Copy link</button>
       </div>
     </section>
