@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
+import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import {
   createFeedPostAction,
   updateFeedPostAction,
@@ -128,18 +130,23 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
 function CommentRow({ comment, onLike, onReply, postId, depth = 0 }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const likeCount = Number(comment.like_count || 0);
-  return <div className="profile-comment" style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
-    <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={34} href={`/member/${comment.user_id}`} />
-    <div style={{ flex: 1, minWidth: 0 }}>
-      <div style={{ fontSize: 14, lineHeight: 1.3 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight: 800, color: 'var(--ink)', textDecoration: 'none' }}>{comment.profiles?.display_name || 'Member'}</Link> <span style={{ color: 'var(--ink-45)', marginLeft: 5, fontSize: 12 }}>{timeAgo(comment.created_at)}</span></div>
-      <div style={{ fontSize: 14, lineHeight: 1.45, marginTop: 3, whiteSpace: 'pre-wrap', overflowWrap: 'anywhere' }}>{comment.body}</div>
-      <div style={{ display: 'flex', alignItems: 'center', gap: 13, marginTop: 5, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700 }}>
-        <button type="button" onClick={() => onLike(comment.id)} aria-label={comment.liked ? 'Unlike comment' : 'Like comment'} style={{ border: 0, background: 'transparent', padding: 0, display: 'inline-flex', alignItems: 'center', gap: 4, color: comment.liked ? '#E1306C' : 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}><CommentHeartIcon liked={comment.liked} size={16} /> {likeCount}</button>
-        <button type="button" onClick={() => setReplyOpen(value => !value)} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{replyOpen ? 'Cancel' : 'Reply'}</button>
-      </div>
+  return <Message className="protlys-feed-comment">
+    <MessageAvatar>
+      <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} size={34} href={`/member/${comment.user_id}`} />
+    </MessageAvatar>
+    <MessageContent>
+      <MessageHeader>
+        <Link href={`/member/${comment.user_id}`} style={{fontWeight:800,color:'var(--ink)',textDecoration:'none'}}>{comment.profiles?.display_name || 'Member'}</Link>
+        <span>{timeAgo(comment.created_at)}</span>
+      </MessageHeader>
+      <Bubble><BubbleContent>{comment.body}</BubbleContent></Bubble>
+      <MessageFooter>
+        <button type="button" onClick={() => onLike(comment.id)} aria-label={comment.liked ? 'Unlike comment' : 'Like comment'} style={{border:0,background:'transparent',padding:0,display:'inline-flex',alignItems:'center',gap:4,color:comment.liked ? '#E1306C' : 'var(--ink-45)',fontSize:12,fontWeight:700,cursor:'pointer'}}><CommentHeartIcon liked={comment.liked} size={16} /> {likeCount}</button>
+        <button type="button" onClick={() => setReplyOpen(value => !value)} style={{border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:12,fontWeight:700,cursor:'pointer'}}>{replyOpen ? 'Cancel' : 'Reply'}</button>
+      </MessageFooter>
       {replyOpen && <CommentInput postId={postId} parentCommentId={comment.id} compact onDone={async () => { setReplyOpen(false); await onReply?.(); }} />}
-    </div>
-  </div>;
+    </MessageContent>
+  </Message>;
 }
 
 function CommentsPanel({ postId, initialCount, onCommented }) {
