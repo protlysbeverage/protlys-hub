@@ -103,7 +103,7 @@ function ProgressRing({ steps, goal }) {
   );
 }
 
-export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null }) {
+export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null, onAddSteps }) {
   const [expanded, setExpanded] = useState(false);
   const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
   const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
@@ -476,7 +476,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} onAddSteps={onAddSteps} />}
     </div>
   );
 }
