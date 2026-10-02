@@ -33,7 +33,9 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const [showUsername,setShowUsername]=useState(true);
   const [assets,setAssets]=useState({});
   const [mounted,setMounted]=useState(false);
-  const [smallScreen,setSmallScreen]=useState(false);\n  const [previewScale,setPreviewScale]=useState(1);\n  const previewAreaRef=useRef(null);
+  const [smallScreen,setSmallScreen]=useState(false);
+  const [previewScale,setPreviewScale]=useState(1);
+  const previewAreaRef=useRef(null);
   const [hideLooks,setHideLooks]=useState(false);
   const exportRef=useRef(null);
   const historyPushed=useRef(false);
@@ -45,7 +47,9 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     let cancelled=false;
     setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);
     const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
-    updateSize();window.addEventListener('resize',updateSize);\n    const measure=()=>{const box=previewAreaRef.current;if(!box)return;setPreviewScale(Math.min(box.clientWidth/360,box.clientHeight/640));};\n    measure();const observer=new ResizeObserver(measure);if(previewAreaRef.current)observer.observe(previewAreaRef.current);
+    updateSize();window.addEventListener('resize',updateSize);
+    const measure=()=>{const box=previewAreaRef.current;if(!box)return;setPreviewScale(Math.min(box.clientWidth/360,box.clientHeight/640));};
+    measure();const observer=new ResizeObserver(measure);if(previewAreaRef.current)observer.observe(previewAreaRef.current);
     (async()=>{
       try{
         const [dark,surface,light,qr]=await Promise.all([
@@ -116,8 +120,10 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
 
         <div ref={previewAreaRef} style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
           {shareData.hasData ? (
-            <div style={{width:360,height:640,flex:'0 0 auto',transform:'scale(min(calc((100vw - 32px) / 360), calc(100% / 640)))',transformOrigin:'center center',display:'flex',alignItems:'center',justifyContent:'center'}}>
-              <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
+            <div style={{width:360*previewScale,height:640*previewScale,flex:'0 0 auto',position:'relative'}}>
+              <div style={{width:360,height:640,transform:'scale('+previewScale+')',transformOrigin:'top left'}}>
+                <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
+              </div>
             </div>
           ) : (
             <div style={{textAlign:'center',maxWidth:290}}>
