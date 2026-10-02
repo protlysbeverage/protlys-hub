@@ -84,37 +84,36 @@ export default function ShareCard({
   const t = LOOKS[look || theme || 'dark'] || LOOKS.dark;
   const w = Number(cardWidth) || 360;
   const h = Math.round(w * 16 / 9);
-  const s = w / 360;
   const visual = data.visual || {};
   const headline = Array.isArray(data.headline) ? data.headline : ['PROGRESS',''];
   const value = Number(data.number ?? data.value ?? 0);
   const numberText = data.unit === 'km' ? value.toFixed(1) : value.toLocaleString();
   const usernameText = String(username || 'protlys').replace(/^@/, '');
-  const px = Math.round(26*s);
-  const py = Math.round(24*s);
-  const qrSize = Math.round(76*s);
+  const px = '7.22cqw';
+  const py = '6.67cqw';
+  const qrSize = '21.11cqw';
 
   return (
     <div data-protlys-share-card="true" style={{
-      width:`${w}px`,height:`${h}px`,boxSizing:'border-box',position:'relative',overflow:'hidden',
+      width:'100%',height:'100%',boxSizing:'border-box',position:'relative',overflow:'hidden',
       background:t.bg,color:t.fg,padding:`${py}px ${px}px`,display:'flex',flexDirection:'column',
       fontFamily:'Manrope,sans-serif',isolation:'isolate'
     }}>
       <div style={{position:'absolute',inset:0,zIndex:-1,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%,rgba(107,203,69,.22),rgba(107,203,69,.07) 24%,transparent 52%)'}} />
 
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:`${Math.round(37*s)}px`}}>
-        <img src={logoDataUrl} alt="Protlys" style={{display:'block',height:`${Math.round(32*s)}px`,width:`${Math.round(100*s)}px`,objectFit:'contain',objectPosition:'left center'}} />
-        <div style={{fontSize:`${Math.round(11*s)}px`,fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>
+        <img src={logoDataUrl} alt="Protlys" style={{display:'block',height:'8.89cqw',width:'27.78cqw',objectFit:'contain',objectPosition:'left center'}} />
+        <div style={{fontSize:'3.06cqw',fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>
           {new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date())}
         </div>
       </div>
 
-      <div style={{marginTop:`${Math.round(20*s)}px`,fontFamily:'Space Grotesk,sans-serif',fontSize:`${Math.round(50*s)}px`,lineHeight:.84,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>
+      <div style={{marginTop:'5.56cqw',fontFamily:'Space Grotesk,sans-serif',fontSize:'13.89cqw',lineHeight:.84,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap'}}>
         <div>{headline[0]}</div>
         <div style={{color:t.dim}}>{headline[1]}</div>
       </div>
 
-      <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:`${Math.round(15*s)}px 0`,overflow:'hidden'}}>
+      <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'4.17cqw 0',overflow:'hidden'}}>
         {visual.type === 'heatmap' ? (
           <ActivityHeatmap
             days={visual.days || data.heatmapDays || []}
@@ -135,28 +134,28 @@ export default function ShareCard({
         )}
       </div>
 
-      <div style={{flex:'0 0 auto',paddingTop:`${Math.round(12*s)}px`}}>
+      <div style={{flex:'0 0 auto',paddingTop:'3.33cqw'}}>
         {showUsername && (
-          <div style={{display:'flex',alignItems:'center',gap:`${Math.round(9*s)}px`,minHeight:`${Math.round(27*s)}px`}}>
-            <div style={{width:`${Math.round(27*s)}px`,height:`${Math.round(27*s)}px`,borderRadius:'50%',background:t.accent,color:'#111111',display:'grid',placeItems:'center',fontSize:`${Math.round(12*s)}px`,fontWeight:900}}>
+          <div style={{display:'flex',alignItems:'center',gap:'2.5cqw',minHeight:'7.5cqw'}}>
+            <div style={{width:'7.5cqw',height:'7.5cqw',borderRadius:'50%',background:t.accent,color:'#111111',display:'grid',placeItems:'center',fontSize:'3.33cqw',fontWeight:900}}>
               {usernameText.slice(0,1).toUpperCase()}
             </div>
-            <div style={{fontFamily:'Manrope,sans-serif',fontSize:`${Math.round(12*s)}px`,fontWeight:700,color:t.fg,letterSpacing:'normal',textTransform:'none',lineHeight:1.2,maxWidth:`${Math.max(40,w-90*s)}px`,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{usernameText}</div>
+            <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.33cqw',fontWeight:700,color:t.fg,letterSpacing:'normal',textTransform:'none',lineHeight:1.2,maxWidth:'75cqw',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{usernameText}</div>
           </div>
         )}
 
-        <div style={{display:'flex',alignItems:'baseline',gap:`${Math.round(7*s)}px`,marginTop:`${Math.round(11*s)}px`}}>
-          <span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:`${Math.round(47*s)}px`,lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',whiteSpace:'nowrap'}}>{numberText}</span>
-          <span style={{fontSize:`${Math.round(12*s)}px`,fontWeight:800,color:t.muted}}>{data.unit || ''}</span>
+        <div style={{display:'flex',alignItems:'baseline',gap:'1.94cqw',marginTop:'3.06cqw'}}>
+          <span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'13.06cqw',lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',whiteSpace:'nowrap'}}>{numberText}</span>
+          <span style={{fontSize:'3.33cqw',fontWeight:800,color:t.muted}}>{data.unit || ''}</span>
         </div>
-        <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:`${Math.round(13*s)}px`,fontWeight:800,marginTop:`${Math.round(8*s)}px`,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{data.label || ''}</div>
-        {data.subtext && <div style={{fontSize:`${Math.max(8,Math.round(10*s))}px`,color:t.muted,marginTop:`${Math.round(6*s)}px`,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{data.subtext}</div>}
-        <div style={{display:'flex',justifyContent:'flex-end',marginTop:`${Math.round(10*s)}px`}}>
-          <div style={{width:`${qrSize}px`,height:`${qrSize}px`,padding:`${Math.round(6*s)}px`,boxSizing:'border-box',background:'#FFFFFF',borderRadius:'4px'}}>
+        <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'3.61cqw',fontWeight:800,marginTop:'2.22cqw',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{data.label || ''}</div>
+        {data.subtext && <div style={{fontSize:'2.78cqw',color:t.muted,marginTop:'1.67cqw',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{data.subtext}</div>}
+        <div style={{display:'flex',justifyContent:'flex-end',marginTop:'2.78cqw'}}>
+          <div style={{width:`${qrSize}px`,height:`${qrSize}px`,padding:'1.67cqw',boxSizing:'border-box',background:'#FFFFFF',borderRadius:'4px'}}>
             {qrDataUrl && <img src={qrDataUrl} alt="" style={{display:'block',width:'100%',height:'100%'}} />}
           </div>
         </div>
-        <div style={{fontSize:`${Math.max(7,Math.round(8.5*s))}px`,color:t.muted,marginTop:`${Math.round(5*s)}px`,textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
+        <div style={{fontSize:'2.36cqw',color:t.muted,marginTop:`${Math.round(5*s)}px`,textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
       </div>
     </div>
   );
