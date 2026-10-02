@@ -1,6 +1,6 @@
 'use client';
 
-import MilestoneShareCard from '@/components/MilestoneShareCard';
+import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
@@ -113,6 +113,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
+  const [shareData, setShareData] = useState(null);
   const [sheetClosing, setSheetClosing] = useState(false);
   const [sheetDirection, setSheetDirection] = useState(1);
   const sheetRef = useRef(null);
@@ -245,6 +246,16 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
+  function openMovementShare() {
+    const activeMonthDays = monthRows.filter(row => Number(row.steps || 0) > 0).length;
+    const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
+    setShareData({metric:'movement_days',value:String(activeMonthDays),unit:'days',label:'Movement days',subtext:`${activeMonthDays} active days in ${calendarMonth.toLocaleDateString([], {month:'long',year:'numeric'})}`,progress:Math.min(1,activeMonthDays/Math.max(daysInMonth,1))});
+  }
+  function openStreakShare(type) {
+    const value = type === 'current' ? current : best;
+    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0});
+  }
+
   function openDay(key, element) {
     if (!key || key > todayKey || !monthCache[currentMonthKey]) return;
     returnFocusRef.current=element||document.activeElement;
@@ -360,9 +371,9 @@ export default function MovementActivity({ days = [], compact = false, title = '
             {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
           </div>
         </div>
-        <button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:44 }}>
+        <div style={{display:'flex',alignItems:'center',gap:6}}><ShareIconButton label="Share movement calendar" onClick={openMovementShare}/><button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:44 }}>
           {expanded ? '7-day view' : 'View calendar'}
-        </button>
+        </button></div>
       </div>
 
       {!expanded ? (
@@ -461,6 +472,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
     </div>
   );
 }
