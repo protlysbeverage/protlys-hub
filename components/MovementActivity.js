@@ -145,6 +145,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const max = Math.max(...recent.map(d => d.steps), 1);
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
+  const movementShareData = useMemo(
+    () => getShareData('movement_days', { rows: days, endKey: todayKey, currentStreak: current, bestStreak: best, periodPreference: 'Last 30 days' }),
+    [days, todayKey, current, best]
+  );
 
   const firstLogKey = useMemo(() => {
     if (!movementKeys.length) return todayKey;
@@ -393,7 +397,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       <div className="movement-recent-header">
         <div className="movement-recent-top">
           <div className="t">{title}</div>
-          <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
+          {movementShareData.hasData && <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>} 
         </div>
         <div className="movement-recent-subtitle">
           {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
