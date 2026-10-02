@@ -78,8 +78,23 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
     if(!assets[selected] || !assets.qr)throw new Error('share-assets-not-ready');
     const node=exportRef.current;if(!node)throw new Error('export-card-not-ready');
     if(document.fonts?.ready)await document.fonts.ready;await waitForImages(node);
-    return toPng(node,{cacheBust:true,pixelRatio:3,width:360,height:640});
+    const dataUrl=await toPng(node,{cacheBust:true,pixelRatio:3,width:360,height:640});
+    const blob=await (await fetch(dataUrl)).blob();
+    cachedBlobRef.current=blob;
+    return blob;
   }
+
+  useEffect(()=>{
+    if(!open || !shareData.hasData || !assets[selected] || !assets.qr || renderingRef.current)return;
+    renderingRef.current=true;
+    renderCard().catch(()=>{}).finally(()=>{renderingRef.current=false;});
+  },[open,selected,showUsername,shareData,assets]);
+
+  useEffect(()=>{
+    if(!open)return;
+    document.body.classList.add('protlys-share-open');
+    return()=>document.body.classList.remove('protlys-share-open');
+  },[open]);
   async function share(){
     if(busy || !shareData.hasData)return;
     const blob=cachedBlobRef.current;
