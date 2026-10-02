@@ -102,7 +102,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
                     const isMine=m.sender_id===userId;
                     return <Message key={m.id} align={isMine?'end':'start'} className="protlys-group-message">
                       <MessageAvatar>
-                        {isMine ? <div style={{width:30,height:30,borderRadius:'50%',background:'var(--green-soft)'}} aria-hidden="true" /> : <Avatar member={sender} size={30} />}
+                        <Avatar member={sender} size={30} />
                       </MessageAvatar>
                       <MessageContent>
                         {!isMine && <MessageHeader><span style={{fontWeight:800,color:'var(--ink-70)'}}>{sender?.name||'Protlys member'}</span></MessageHeader>}
