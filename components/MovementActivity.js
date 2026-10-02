@@ -421,12 +421,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
           <div className="movement-streak-grid">
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">CURRENT STREAK</span><span className="streak-label-short">CURRENT</span></div>
-              {current > 0 && <MilestoneShareCard shareLabel="Share current streak" milestone={{key:'current-streak',type:'streak',value:current,label:'Day streak',subline:current+' days of movement in a row',accent:'flame',title:current+'-day movement streak',shareText:(who='') => (who ? who+' just hit a ' : 'I just hit a ') + current+'-day movement streak on Protlys. Join me: https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}
+              {current > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/></span>}
               <div className="movement-streak-value"><span>{current}</span><small>{current === 1 ? 'day' : 'days'}</small></div>
             </div>
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">BEST STREAK</span><span className="streak-label-short">BEST</span></div>
-              {best > 0 && <MilestoneShareCard shareLabel="Share best streak" milestone={{key:'best-streak',type:'streak',value:best,label:'Best streak',subline:best+' days of movement in a row',accent:'trophy',title:'Best movement streak',shareText:(who='') => (who ? who+' reached a best movement streak of '+best+' days on Protlys. Join me: ' : 'I reached a best movement streak of '+best+' days on Protlys. Join me: ') + 'https://hub.protlys.com/calculator?src=milestone'}} profile={profile}/>}
+              {best > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/></span>}
               <div className="movement-streak-value"><span>{best}</span><small>{best === 1 ? 'day' : 'days'}</small></div>
             </div>
           </div>
