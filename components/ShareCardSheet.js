@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
@@ -40,35 +40,18 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
   const renderingRef=useRef(false);
   const [mounted,setMounted]=useState(false);
   const [smallScreen,setSmallScreen]=useState(false);
-  const [previewScale,setPreviewScale]=useState(1);
-  const [previewMeasured,setPreviewMeasured]=useState(false);
-  const previewAreaRef=useRef(null);
   const [hideLooks,setHideLooks]=useState(false);
   const exportRef=useRef(null);
   const historyPushed=useRef(false);
   const touchStart=useRef(null);
 
-  useLayoutEffect(()=>setMounted(true),[]);
+  useEffect(()=>setMounted(true),[]);
   useEffect(()=>{
     if(!open)return;
     let cancelled=false;
-    setSelected('dark');setMessage('');setBusy(false);setShowUsername(true);cachedBlobRef.current.clear();
+    setMessage('');setBusy(false);setShowUsername(true);
     const updateSize=()=>{const short=window.innerHeight<680;setSmallScreen(short);setHideLooks(window.innerHeight<620);};
     updateSize();window.addEventListener('resize',updateSize);
-    setPreviewMeasured(false);
-    const measure=()=>{
-      const box=previewAreaRef.current;
-      if(!box)return;
-      const availW=Math.max(0,box.clientWidth);
-      const availH=Math.max(0,box.clientHeight);
-      if(availW>0 && availH>0){
-        setPreviewScale(Math.min(availW/360,availH/640));
-        setPreviewMeasured(true);
-      }
-    };
-    measure();
-    const observer=new ResizeObserver(measure);
-    if(previewAreaRef.current)observer.observe(previewAreaRef.current);
     (async()=>{
       try{
         const [dark,surface,light,qr]=await Promise.all([
@@ -180,31 +163,27 @@ export default function ShareCardSheet({open,onClose,data=null,metric,value,unit
           <button type="button" onPointerUp={(event)=>{event.preventDefault();event.stopPropagation();close();}} aria-label="Close share sheet" style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,cursor:'pointer',display:'grid',placeItems:'center'}}>×</button>
         </div>
 
-        <div ref={previewAreaRef} style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
+        <div style={{flex:'0 0 auto',width:'100%',height:'min(58dvh, calc((100dvw - 48px) * 16 / 9))',maxWidth:'100%',margin:'0 auto',position:'relative',containerType:'inline-size',overflow:'hidden',borderRadius:20}}>
           {shareData.hasData ? (
-            <div style={{width:360*previewScale,height:640*previewScale,flex:'0 0 auto',position:'relative',visibility:previewMeasured?'visible':'hidden'}}>
-              <div style={{width:360,height:640,transform:'scale('+previewScale+')',transformOrigin:'top left'}}>
-                <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
-              </div>
+            <div style={{width:'100%',height:'100%',position:'relative'}}>
+              <ShareCard metric={shareData.metric} data={shareData} username={username} look={selected} qrDataUrl={assets.qr} logoDataUrl={assets[selected]} showUsername={showUsername} cardWidth={360}/>
             </div>
           ) : (
-            <div style={{textAlign:'center',maxWidth:290}}>
-              <div style={{fontSize:18,fontWeight:800}}>No movement to share yet</div>
-              <div style={{fontSize:12,color:'var(--ink-45)',lineHeight:1.45,marginTop:6}}>Add some steps first, then you can create a share card.</div>
-              <button type="button" onClick={()=>{close();window.setTimeout(()=>onAddSteps?.(),220);}} style={{marginTop:14,minHeight:44,padding:'0 18px',border:0,borderRadius:12,background:'var(--green)',color:'#fff',fontWeight:800}}>Add steps</button>
+            <div style={{width:'100%',height:'100%',borderRadius:20,background:'var(--surface)',display:'grid',placeItems:'center',padding:24,boxSizing:'border-box'}}>
+              <div style={{textAlign:'center',maxWidth:290}}>
+                <div style={{fontSize:18,fontWeight:800}}>No movement to share yet</div>
+                <div style={{fontSize:12,color:'var(--ink-45)',lineHeight:1.45,marginTop:6}}>Add some steps first, then you can create a share card.</div>
+                <button type="button" onClick={()=>{close();window.setTimeout(()=>onAddSteps?.(),220);}} style={{marginTop:14,minHeight:44,padding:'0 18px',border:0,borderRadius:12,background:'var(--green)',color:'#fff',fontWeight:800}}>Add steps</button>
+              </div>
             </div>
           )}
         </div>
-        {shareData.hasData && !previewMeasured && (
-          <div aria-hidden="true" style={{position:'absolute',left:16,right:16,top:'50%',transform:'translateY(-50%)',height:'min(62vh,520px)',maxWidth:360,margin:'0 auto',borderRadius:18,background:'var(--surface)',opacity:.72,animation:'protlys-share-skeleton 1.1s ease-in-out infinite'}} />
-        )}
-
         {shareData.hasData && (
           <>
             {!hideLooks ? (
-              <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',height:smallScreen?44:62,flex:'0 0 auto',boxSizing:'border-box'}}>
-                {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:smallScreen?58:64,height:smallScreen?44:58,padding:2,border:selected===look?'2px solid #4F9F35':'1px solid #D7DDD8',borderRadius:10,background:'#FFFFFF',overflow:'hidden',cursor:'pointer'}}>
-                  <div style={{width:360,height:640,transform:'scale('+(smallScreen?.12:.155)+')',transformOrigin:'top left',borderRadius:6,overflow:'hidden'}}><ShareCard metric={shareData.metric} data={shareData} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} cardWidth={360}/></div>
+              <div style={{display:'flex',justifyContent:'center',gap:8,padding:'4px 0 8px',height:44,flex:'0 0 auto',boxSizing:'border-box'}}>
+                {THEMES.map(look=><button key={look} type="button" onClick={()=>selectLook(look)} aria-label={'Select '+LOOK_LABELS[look]+' look'} style={{width:64,height:44,padding:2,border:selected===look?'2px solid #4F9F35':'1px solid #D7DDD8',borderRadius:10,background:'#FFFFFF',overflow:'hidden',cursor:'pointer'}}>
+                  <div style={{width:360,height:640,width:'100%',height:'100%',transform:'none',borderRadius:6,overflow:'hidden'}}><ShareCard metric={shareData.metric} data={shareData} username={username} look={look} qrDataUrl={assets.qr} logoDataUrl={assets[look]} showUsername={showUsername} cardWidth={360}/></div>
                 </button>)}
               </div>
             ) : (
