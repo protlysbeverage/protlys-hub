@@ -308,3 +308,22 @@
   transition:transform 400ms var(--motion-glide);
 }
 .protlys-app .protlys-segmented-indicator[data-active="groups"]{transform:translateX(100%);}
+
+
+/* shadcn-inspired Message system for Feed comments and group conversations. */
+.protlys-app .protlys-message{display:flex;align-items:flex-end;gap:9px;width:100%;min-width:0;}
+.protlys-app .protlys-message-end{flex-direction:row-reverse;}
+.protlys-app .protlys-message-avatar{flex:0 0 auto;display:flex;align-items:flex-end;}
+.protlys-app .protlys-message-content{min-width:0;max-width:min(78%,560px);display:flex;flex-direction:column;gap:4px;}
+.protlys-app .protlys-message-header{display:flex;align-items:baseline;gap:7px;min-height:16px;font-size:11px;color:var(--ink-45);}
+.protlys-app .protlys-message-header span{font-size:10px;color:var(--ink-45);font-weight:500;}
+.protlys-app .protlys-bubble{width:fit-content;max-width:100%;border:1px solid var(--line);border-radius:15px;background:var(--white);box-shadow:0 1px 3px rgba(15,42,74,.04);overflow:hidden;}
+.protlys-app .protlys-bubble-content{padding:9px 12px;font-size:13px;line-height:1.5;color:var(--ink);white-space:pre-wrap;overflow-wrap:anywhere;}
+.protlys-app .protlys-message-footer{display:flex;align-items:center;gap:13px;min-height:17px;color:var(--ink-45);font-size:11px;}
+.protlys-app .protlys-message-end .protlys-message-content{align-items:flex-end;}
+.protlys-app .protlys-message-end .protlys-bubble{background:var(--green-soft);}
+.protlys-app .protlys-message-group{display:grid;gap:5px;width:100%;}
+.protlys-app .protlys-feed-comment .protlys-message-content{max-width:none;flex:1;}
+.protlys-app .protlys-feed-comment .protlys-bubble{background:var(--paper);box-shadow:none;}
+.protlys-app .protlys-feed-comment .protlys-message-footer{padding-left:2px;}
+@media (max-width:599px){.protlys-app .protlys-message-content{max-width:82%;}.protlys-app .protlys-feed-comment .protlys-message-content{max-width:calc(100% - 43px);}}
