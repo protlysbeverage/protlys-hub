@@ -243,11 +243,11 @@ export default function MovementActivity({ days = [], compact = false, title = '
   function openMovementShare() {
     const activeMonthDays = monthRows.filter(row => Number(row.steps || 0) > 0).length;
     const daysInMonth = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0).getDate();
-    setShareData({metric:'movement_days',value:String(activeMonthDays),unit:'days',label:'Movement days',subtext:`${activeMonthDays} active days in ${calendarMonth.toLocaleDateString([], {month:'long',year:'numeric'})}`,progress:Math.min(1,activeMonthDays/Math.max(daysInMonth,1))});
+    setShareData({metric:'movement_days',value:String(activeMonthDays),unit:'days',label:'Movement days',subtext:`${activeMonthDays} active days in ${calendarMonth.toLocaleDateString([], {month:'long',year:'numeric'})}`,progress:Math.min(1,activeMonthDays/Math.max(daysInMonth,1)),heatmapDays:monthRows,highlightBestRun:false});
   }
   function openStreakShare(type) {
     const value = type === 'current' ? current : best;
-    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0});
+    setShareData({metric:'best_streak',value:String(value),unit:'days',label:type === 'current' ? 'Current streak' : 'Best streak',subtext:'Movement days in a row',progress:0,heatmapDays:monthRows,highlightBestRun:true});
   }
 
   function openDay(key, element) {
@@ -368,7 +368,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
         </div>
         <div style={{display:'flex',alignItems:'center',gap:6,flexShrink:0}}>
           <button type="button" onClick={() => setExpanded(v => !v)} style={{ border:0, background:'transparent', color:'var(--green-dark)', fontSize:11, fontWeight:800, cursor:'pointer', padding:4, minHeight:40 }}>
-            {expanded ? '7-day view' : 'View calendar'}
+            7-day view
           </button>
           <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>
         </div>
@@ -475,7 +475,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} heatmapDays={shareData.heatmapDays || []} highlightBestRun={shareData.highlightBestRun || false} />}
     </div>
   );
 }
