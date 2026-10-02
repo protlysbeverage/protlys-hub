@@ -220,7 +220,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     const values = {
       today: {metric:'steps_today', value:Number(todaySteps).toLocaleString(), unit:'steps', label:'Steps today', subtext:`${Math.round((Number(todaySteps)||0)/Math.max(sheetGoal,1)*100)}% of your daily step goal`, progress:Math.min(1,(Number(todaySteps)||0)/Math.max(sheetGoal,1))},
       distance: {metric:'distance', value:formatDistance(totalDistanceKm), unit:'', label:'Estimated distance', subtext:'Based on all recorded steps', progress:Math.min(1,totalDistanceKm/42.195)},
-      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7)},
+      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7), heatmapDays:movementHistory},
       lifetime: {metric:'lifetime_steps', value:totalSteps.toLocaleString(), unit:'steps', label:'Lifetime steps', subtext:'All recorded movement', progress:0}
     };
     setShareStat(values[id] || null);
@@ -403,6 +403,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
     </div>
-    {shareStat && <ShareCardSheet open={!!shareStat} onClose={()=>setShareStat(null)} metric={shareStat.metric} value={shareStat.value} unit={shareStat.unit} label={shareStat.label} subtext={shareStat.subtext} progress={shareStat.progress} username={profile?.display_name || email || 'protlys'} />}
+    {shareStat && <ShareCardSheet open={!!shareStat} onClose={()=>setShareStat(null)} metric={shareStat.metric} value={shareStat.value} unit={shareStat.unit} label={shareStat.label} subtext={shareStat.subtext} progress={shareStat.progress} username={profile?.display_name || email || 'protlys'} heatmapDays={shareStat.heatmapDays || []} highlightBestRun={shareStat.highlightBestRun || false} />}
   </>;
 }
