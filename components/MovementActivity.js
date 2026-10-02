@@ -265,12 +265,6 @@ export default function MovementActivity({ days = [], compact = false, title = '
 
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
-  function shareLast30Days() {
-    const end = parseKey(todayKey);
-    const start = new Date(end); start.setDate(end.getDate()-29);
-    const byKey = new Map(days.map(row => [row.step_date, row]));
-    return Array.from({length:30},(_,i)=>{const d=new Date(start);d.setDate(start.getDate()+i);const k=dateKey(d);return byKey.get(k)||{step_date:k,steps:0};});
-  }
   function openMovementShare() {
     const last30 = shareLast30Days();
     const activeDays = last30.filter(row => Number(row.steps || 0) > 0).length;
