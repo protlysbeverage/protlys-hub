@@ -101,7 +101,7 @@ export default function ShareCard({
     }}>
       <div style={{position:'absolute',inset:0,zIndex:-1,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%,rgba(107,203,69,.22),rgba(107,203,69,.07) 24%,transparent 52%)'}} />
 
-      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:`${Math.round(37*s)}px`}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:'10.28cqw'}}>
         <img src={logoDataUrl} alt="Protlys" style={{display:'block',height:'8.89cqw',width:'27.78cqw',objectFit:'contain',objectPosition:'left center'}} />
         <div style={{fontSize:'3.06cqw',fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>
           {new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date())}
@@ -128,8 +128,8 @@ export default function ShareCard({
         ) : visual.type === 'bars' ? (
           <WeeklyBars days={visual.days || data.weeklyDays || []} distance={data.unit === 'km'} look={t} width={Math.round(w - px*2)} />
         ) : (
-          <div style={{width:`${Math.round(128*s)}px`,height:`${Math.round(128*s)}px`,borderRadius:'50%',border:`${Math.max(6,Math.round(8*s))}px solid ${t.dim}`,display:'grid',placeItems:'center',boxSizing:'border-box'}}>
-            <span style={{fontSize:`${Math.round(25*s)}px`,fontWeight:900,color:t.accent}}>{data.unit === 'km' ? numberText : numberText}</span>
+          <div style={{width:'35.56cqw',height:'35.56cqw',borderRadius:'50%',border:'2.22cqw solid '+t.dim,display:'grid',placeItems:'center',boxSizing:'border-box'}}>
+            <span style={{fontSize:'6.94cqw',fontWeight:900,color:t.accent}}>{data.unit === 'km' ? numberText : numberText}</span>
           </div>
         )}
       </div>
@@ -155,7 +155,7 @@ export default function ShareCard({
             {qrDataUrl && <img src={qrDataUrl} alt="" style={{display:'block',width:'100%',height:'100%'}} />}
           </div>
         </div>
-        <div style={{fontSize:'2.36cqw',color:t.muted,marginTop:`${Math.round(5*s)}px`,textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
+        <div style={{fontSize:'2.36cqw',color:t.muted,marginTop:'1.39cqw',textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
       </div>
     </div>
   );
