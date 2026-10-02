@@ -142,13 +142,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
 
-  const currentMonthKeyToday = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
+  const todayMonthKey = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
   const [calendarYear, calendarMonthIndex] = calendarMonthKey.split('-').map(Number);
-  const calendarMonth = useMemo(
-    () => new Date(calendarYear, calendarMonthIndex - 1, 1),
-    [calendarYear, calendarMonthIndex]
-  );
-  const canGoToNextMonth = calendarMonthKey < currentMonthKeyToday;
+  const calendarMonth = useMemo(() => new Date(calendarYear, calendarMonthIndex - 1, 1), [calendarYear, calendarMonthIndex]);
+  const canGoToNextMonth = calendarMonthKey < todayMonthKey;
 
   const calendar = useMemo(() => {
     const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
@@ -393,12 +390,14 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex - 2, 1)))} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
+            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex - 2, 1))) aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
             </div>
-            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex, 1)))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
+            <div style={{display:'flex',alignItems:'center',gap:6}}>
+              <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex, 1)))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
+            </div>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : 'Green = movement logged'}</div>
           <div className="movement-calendar-grid">
