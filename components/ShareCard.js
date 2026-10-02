@@ -89,8 +89,8 @@ export default function ShareCard({
       if(document.fonts?.ready)await document.fonts.ready;
       const node=headlineRef.current;if(!node||cancelled)return;
       const maxWidth=node.clientWidth,lines=[...node.querySelectorAll('[data-headline-line]')];
-      let size=58;
-      while(size>26){node.style.fontSize=size+'px';if(lines.every(line=>line.scrollWidth<=maxWidth+1))break;size-=1;}
+      let size=17;
+      while(size>8){node.style.fontSize=size+'cqw';if(lines.every(line=>line.scrollWidth<=maxWidth+1))break;size-=1;}
       if(!cancelled)setHeadlineSize(size);
     })();
     return()=>{cancelled=true};
@@ -122,13 +122,13 @@ export default function ShareCard({
   return <div data-protlys-share-card="true" data-look={selectedLook} style={{
     width:'100%',aspectRatio:'9 / 16',boxSizing:'border-box',position:'relative',overflow:'hidden',
     background:t.bg,color:t.fg,padding:'6.8% 7.1%',display:'flex',flexDirection:'column',
-    fontFamily:'Manrope,sans-serif',isolation:'isolate'
+    fontFamily:'Manrope,sans-serif',isolation:'isolate',containerType:'inline-size'
   }}>
     {(selectedLook==='dark'||selectedLook==='surface')&&<div aria-hidden="true" style={{position:'absolute',inset:0,zIndex:-1,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%, rgba(107,203,69,.25) 0%, rgba(107,203,69,.08) 24%, transparent 52%)'}}/>}
 
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:'9.2%',flex:'0 0 auto'}}>
       <img ref={logoRef} src={logo||t.logo} alt="Protlys" style={{display:'block',height:'100%',minHeight:28,width:'28%',maxWidth:102,objectFit:'contain',objectPosition:'left center'}}/>
-      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.0%',fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>{formatDate()}</div>
+      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3cqw',fontWeight:700,color:t.muted,whiteSpace:'nowrap'}}>{formatDate()}</div>
     </div>
 
     <div ref={headlineRef} style={{width:'100%',marginTop:'5.4%',fontFamily:'Space Grotesk,sans-serif',fontSize:headlineSize,lineHeight:.82,letterSpacing:'-.055em',fontWeight:900,textTransform:'uppercase',whiteSpace:'nowrap',overflow:'visible',flex:'0 0 auto'}}>
@@ -137,28 +137,28 @@ export default function ShareCard({
 
     <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',padding:'4% 0 2%'}}>
       {heatmap ? <div style={{width:'100%',maxWidth:'86%'}}>
-        <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.7%',fontWeight:700,color:t.muted,textAlign:'center',marginBottom:'3.5%'}}>{heatmap.monthLabel}</div>
+        <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.7cqw',fontWeight:700,color:t.muted,textAlign:'center',marginBottom:'3.5%'}}>{heatmap.monthLabel}</div>
         <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'2.2%'}}>
-          {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{fontFamily:'Manrope,sans-serif',fontSize:'2.4%',fontWeight:800,color:t.muted,textAlign:'center'}}>{d}</div>)}
+          {['S','M','T','W','T','F','S'].map((d,i)=><div key={i} style={{fontFamily:'Manrope,sans-serif',fontSize:'2.4cqw',fontWeight:800,color:t.muted,textAlign:'center'}}>{d}</div>)}
           {heatmap.cells.map((cell,i)=>cell?<div key={cell.key} style={{aspectRatio:'1',borderRadius:'16%',background:cell.active?t.accent:t.faint,boxShadow:cell.best&&highlightBestRun?'inset 0 0 0 2px '+t.fg:'none',display:'grid',placeItems:'center',fontFamily:'Manrope,sans-serif',fontSize:'2.7%',fontWeight:800,color:cell.active?t.bg:t.muted}}>{cell.day}</div>:<div key={'blank-'+i}/>)}
         </div>
-        {highlightBestRun&&positiveLead&&<div style={{marginTop:'4%',textAlign:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.2%',fontWeight:800,color:t.accent}}>{positiveLead}</div>}
-      </div> : showRing ? <div style={{position:'relative',width:'36%',maxWidth:150,aspectRatio:'1'}}>
+        {highlightBestRun&&positiveLead&&<div style={{marginTop:'4%',textAlign:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.2cqw',fontWeight:800,color:t.accent}}>{positiveLead}</div>}
+      </div> : showRing ? <div style={{position:'relative',width:'36%',maxWidth:'44cqw',aspectRatio:'1'}}>
         <svg viewBox="0 0 100 100" width="100%" height="100%" aria-hidden="true"><circle cx="50" cy="50" r={radius} fill="none" stroke={t.faded} strokeWidth="7"/><circle cx="50" cy="50" r={radius} fill="none" stroke={t.accent} strokeWidth="7" strokeLinecap="round" strokeDasharray={circumference} strokeDashoffset={circumference*(1-p)} transform="rotate(-90 50 50)"/></svg>
-        <span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',fontFamily:'Space Grotesk,sans-serif',fontSize:'6%',fontWeight:900}}>{Math.round(p*100)}%</span>
-      </div> : positiveLead ? <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'6.5%',fontWeight:900,letterSpacing:'-.03em',textAlign:'center',color:t.accent}}>{positiveLead}</div> : <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.1%',fontWeight:700,color:t.muted,textAlign:'center'}}>Keep building your progress.</div>}
+        <span style={{position:'absolute',inset:0,display:'grid',placeItems:'center',fontFamily:'Space Grotesk,sans-serif',fontSize:'6cqw',fontWeight:900}}>{Math.round(p*100)}%</span>
+      </div> : positiveLead ? <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'6.5cqw',fontWeight:900,letterSpacing:'-.03em',textAlign:'center',color:t.accent}}>{positiveLead}</div> : <div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.1cqw',fontWeight:700,color:t.muted,textAlign:'center'}}>Keep building your progress.</div>}
     </div>
 
     <div style={{flex:'0 0 auto'}}>
       <div style={{display:'flex',alignItems:'center',gap:'2.6%',minHeight:'7.2%'}}>
-        <div style={{width:'7.5%',aspectRatio:'1',borderRadius:'50%',background:t.accent,color:t.bg,display:'grid',placeItems:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.4%',fontWeight:900,textTransform:'uppercase'}}>{String(username||'P').replace(/^@/,'').slice(0,1)}</div>
-        {showUsername&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.3%',fontWeight:700,color:t.fg,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div>}
+        <div style={{width:'7.5%',aspectRatio:'1',borderRadius:'50%',background:t.accent,color:t.bg,display:'grid',placeItems:'center',fontFamily:'Manrope,sans-serif',fontSize:'3.4cqw',fontWeight:900,textTransform:'uppercase'}}>{String(username||'P').replace(/^@/,'').slice(0,1)}</div>
+        {showUsername&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'3.3cqw',fontWeight:700,color:t.fg,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div>}
       </div>
-      <div style={{display:'flex',alignItems:'baseline',gap:'2%',marginTop:'4.5%'}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'13.5%',lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap'}}>{formatted.value}</span>{formatted.unit&&<span style={{fontFamily:'Manrope,sans-serif',fontSize:'3.4%',fontWeight:800,color:t.muted,whiteSpace:'nowrap'}}>{formatted.unit}</span>}</div>
-      <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'3.6%',lineHeight:1.05,fontWeight:800,marginTop:'2.4%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[metric]||label||'progress'}</div>
-      {subtext&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.9%',lineHeight:1.2,fontWeight:600,color:t.muted,marginTop:'1.7%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{subtext}</div>}
+      <div style={{display:'flex',alignItems:'baseline',gap:'2%',marginTop:'4.5%'}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'13.5cqw',lineHeight:.88,fontWeight:900,letterSpacing:'-.055em',fontVariantNumeric:'tabular-nums',whiteSpace:'nowrap'}}>{formatted.value}</span>{formatted.unit&&<span style={{fontFamily:'Manrope,sans-serif',fontSize:'3.4%',fontWeight:800,color:t.muted,whiteSpace:'nowrap'}}>{formatted.unit}</span>}</div>
+      <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:'3.6cqw',lineHeight:1.05,fontWeight:800,marginTop:'2.4%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[metric]||label||'progress'}</div>
+      {subtext&&<div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.9cqw',lineHeight:1.2,fontWeight:600,color:t.muted,marginTop:'1.7%',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{subtext}</div>}
       <div style={{display:'flex',justifyContent:'flex-end',alignItems:'flex-end',marginTop:'4.2%'}}><div style={{width:'21%',aspectRatio:'1',padding:'1.7%',boxSizing:'border-box',background:'#FFFFFF',borderRadius:'4%',flex:'0 0 auto'}}>{qr&&<img src={qr} alt="" style={{display:'block',width:'100%',height:'100%'}}/>}</div></div>
-      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.35%',lineHeight:1.15,fontWeight:700,color:t.muted,marginTop:'1.6%',textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
+      <div style={{fontFamily:'Manrope,sans-serif',fontSize:'2.35cqw',lineHeight:1.15,fontWeight:700,color:t.muted,marginTop:'1.6%',textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>
     </div>
   </div>;
 }
