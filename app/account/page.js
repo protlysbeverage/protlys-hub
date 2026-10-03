@@ -10,6 +10,9 @@ function localDateStr(date = new Date()) {
 }
 function getShopUrl(){return 'https://protlys.com/collections/all';}
 
+export const dynamic = 'force-dynamic';
+export const revalidate = 0;
+
 export default async function AccountPage(){
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
   const today=localDateStr(); const weekAgoDate=new Date(today + 'T12:00:00+03:00'); weekAgoDate.setUTCDate(weekAgoDate.getUTCDate()-6); const weekAgo=localDateStr(weekAgoDate);
