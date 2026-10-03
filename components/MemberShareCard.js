@@ -1,0 +1,27 @@
+'use client';
+
+import { useEffect, useRef } from 'react';
+
+const LOOKS={dark:{bg:'#232924',fg:'#fff',ac:'#6bcb45',on:'#111',tn:'rgba(255,255,255,.12)',gl:'rgba(107,203,69,.27)'},light:{bg:'#f7f8f6',fg:'#111',ac:'#4f9f35',on:'#fff',tn:'rgba(0,0,0,.08)',gl:'rgba(79,159,53,.20)'},surface:{bg:'#323a33',fg:'#fff',ac:'#6bcb45',on:'#111',tn:'rgba(255,255,255,.13)',gl:'rgba(107,203,69,.25)'}};
+
+function fitHeadline(node){if(!node)return;const lines=[...node.querySelectorAll('[data-member-headline]')];let size=76;lines.forEach(x=>x.style.fontSize=size+'px');while(size>42&&lines.some(x=>x.scrollWidth>x.clientWidth+1)){size-=2;lines.forEach(x=>x.style.fontSize=size+'px')}}
+
+function today(){return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date())}
+function initials(name){return String(name||'Protlys Member').trim().slice(0,1).toUpperCase()}
+
+export default function MemberShareCard({displayName='Protlys Member',username='',avatarUrl='',joinedAt='',founding=false,activeDays=[],totalSteps=0,currentStreak=0,bestStreak=0,look='dark',logoDataUrl='/protlys-logo-exact.png',qrDataUrl=''}) {
+ const p=LOOKS[look]||LOOKS.dark,ref=useRef(null);
+ useEffect(()=>{const run=()=>fitHeadline(ref.current);run();document.fonts?.ready?.then(run).catch(()=>{});requestAnimationFrame(run)},[displayName]);
+ const days=(activeDays||[]).slice(-14),active=days.filter(d=>d?.logged||Number(d?.steps)>0).length;
+ const handle=String(username||displayName||'protlys').replace(/^@/,'').trim().replace(/s+/g,'').toLowerCase()||'protlys';
+ return <div data-protlys-member-card="true" style={{width:360,height:640,position:'relative',overflow:'hidden',borderRadius:26,padding:24,boxSizing:'border-box',display:'flex',flexDirection:'column',background:'radial-gradient(130% 60% at 100% 0,'+p.gl+',transparent 70%),radial-gradient(90% 40% at 0 100%,'+p.gl+',transparent 70%),'+p.bg,color:p.fg,fontFamily:'Archivo,system-ui,sans-serif',isolation:'isolate'}}>
+  <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',height:26,flex:'0 0 26px'}}><img src={logoDataUrl} alt="Protlys" style={{width:110,height:28,objectFit:'contain',objectPosition:'left center',display:'block'}}/><span style={{fontSize:12,fontWeight:800,opacity:.7}}>{today()}</span></div>
+  <div ref={ref} style={{height:128,flex:'0 0 128px',marginTop:14,width:312,fontFamily:'Anton,Impact,sans-serif',textTransform:'uppercase',overflow:'hidden'}}><div data-member-headline style={{fontSize:76,lineHeight:.84,whiteSpace:'nowrap'}}>Protlys</div><div data-member-headline style={{fontSize:76,lineHeight:.84,whiteSpace:'nowrap',opacity:.22}}>Member</div></div>
+  <div style={{flex:'1 1 auto',minHeight:0,display:'flex',flexDirection:'column',justifyContent:'center',gap:16}}>
+   <div style={{display:'flex',alignItems:'center',gap:18}}><div style={{width:84,height:84,borderRadius:42,flex:'0 0 84px',display:'grid',placeItems:'center',overflow:'hidden',background:p.ac,color:'#111',fontFamily:'Anton,Impact,sans-serif',fontSize:44,boxShadow:'0 0 0 4px '+p.bg+',0 0 0 7px '+p.ac}}>{avatarUrl?<img src={avatarUrl} alt="" style={{width:'100%',height:'100%',objectFit:'cover',display:'block'}}/>:initials(displayName)}</div><div style={{minWidth:0}}><div style={{fontSize:26,lineHeight:1.05,fontWeight:800,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',maxWidth:200}}>@{handle}</div>{joinedAt&&<div style={{fontSize:12.5,marginTop:4,opacity:.72}}>Member since {joinedAt}</div>}{founding&&<span style={{display:'inline-block',marginTop:9,padding:'5px 11px',borderRadius:999,background:p.ac,color:p.on,fontSize:11,fontWeight:800}}>Founding 250</span>}</div></div>
+   <div style={{display:'flex',borderRadius:20,padding:'16px 4px',background:p.tn}}>{[['Steps',totalSteps.toLocaleString(),'lifetime steps'],['Best streak',String(bestStreak),'best streak'],['Active days',String(active),'active days']].map(([n,v,l],i)=><div key={n} style={{flex:1,textAlign:'center',borderLeft:i?'1.5px solid rgba(128,128,128,.28)':'0'}}><b style={{display:'block',fontFamily:'Anton,Impact,sans-serif',fontSize:32,lineHeight:1,fontWeight:400}}>{v}</b><i style={{display:'block',fontSize:10.5,lineHeight:1.2,fontStyle:'normal',fontWeight:800,opacity:.68,marginTop:6,padding:'0 4px'}}>{l}</i></div>)}</div>
+   <div><div style={{display:'flex',justifyContent:'space-between',fontSize:11.5,fontWeight:800,opacity:.7,marginBottom:8}}><span>Last 14 days</span><span>{active} active</span></div><div style={{display:'flex',gap:5}}>{Array.from({length:14},(_,i)=>{const d=days[i],logged=Boolean(d?.logged||Number(d?.steps)>0);return <span key={d?.key||i} style={{width:17,height:17,borderRadius:5,background:logged?p.ac:p.tn,display:'block',boxShadow:i===13?'0 0 0 2px '+p.bg+',0 0 0 3.5px '+p.fg:'none'}}/>})}</div></div>
+  </div>
+  <div style={{flex:'0 0 auto',display:'flex',justifyContent:'space-between',alignItems:'flex-end',gap:14,marginTop:6}}><div><div style={{fontSize:20,lineHeight:1.15,fontWeight:800}}>Join me on Protlys</div><div style={{fontSize:12.5,lineHeight:1.3,opacity:.72,marginTop:5}}>Scan to follow my progress.</div></div><div style={{width:84,height:84,flex:'0 0 84px',background:'#fff',padding:5,borderRadius:10,boxSizing:'border-box'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{width:'100%',height:'100%',display:'block',objectFit:'contain'}}/>}</div></div>
+ </div>
+}
