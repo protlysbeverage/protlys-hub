@@ -14,7 +14,7 @@ export default async function AccountPage(){
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
   const today=localDateStr(); const weekAgoDate=new Date(today + 'T12:00:00+03:00'); weekAgoDate.setUTCDate(weekAgoDate.getUTCDate()-6); const weekAgo=localDateStr(weekAgoDate);
   const [{data:profile},{data:achievements},{data:todaySteps},{data:weekSteps},{data:movementDays},{data:targetHistory}]=await Promise.all([
-    supabase.from('profiles').select('id,display_name,avatar_url,streak,target_g,step_streak,total_steps,step_goal').eq('id',user.id).single(),
+    supabase.from('profiles').select('id,display_name,avatar_url,created_at,streak,target_g,step_streak,total_steps,step_goal').eq('id',user.id).single(),
     supabase.from('user_achievements').select('earned_at,achievements(slug,name,icon,description)').eq('user_id',user.id).order('earned_at',{ascending:false}),
     supabase.from('daily_steps').select('steps,source,synced_at').eq('user_id',user.id).eq('step_date',today).single(),
     supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).gte('step_date',weekAgo).lte('step_date',today).order('step_date'),
