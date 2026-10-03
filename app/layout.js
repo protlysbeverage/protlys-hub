@@ -54,7 +54,9 @@ export default function RootLayout({ children }) {
           href="https://fonts.googleapis.com/css2?family=Anton&family=Space+Grotesk:wght@500;600;700&family=Manrope:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@500;600;700&display=swap"
           rel="stylesheet"
         />
-        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const buildId=process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || 'local';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}if(window.caches){caches.keys().then(keys=>keys.filter(k=>/protlys|workbox|next-cache/i.test(k)).forEach(k=>caches.delete(k))).catch(()=>{});}const s=localStorage.getItem('protlys-theme');const d=s==='dark'||(!s&&matchMedia('(prefers-color-scheme: dark)').matches);if(d){document.documentElement.classList.add('protlys-dark');document.documentElement.style.colorScheme='dark';}}catch(e){}})()" }} />
+        <meta name="color-scheme" content="light dark" />
+        <meta name="theme-color" content="#F7F8F6" />
+        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}}catch(e){}})()" }} />
       </head>
       <body data-build-id={BUILD_ID}>{children}</body>
     </html>

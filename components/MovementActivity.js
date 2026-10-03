@@ -266,12 +266,23 @@ export default function MovementActivity({ days = [], compact = false, title = '
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
   function openMovementShare() {
-    setShareData(getShareData('movement_calendar', {
-      rows: days,
+    const metric = expanded ? 'movement_calendar' : 'steps_today';
+    const rowsForShare = expanded
+      ? Array.from(
+          [...days, ...Object.values(monthCache).flat()]
+            .filter(Boolean)
+            .reduce((map, row) => map.set(String(row.step_date || row.key || row.date), row), new Map())
+            .values()
+        )
+      : days;
+    setShareData(getShareData(metric, {
+      rows: rowsForShare,
       endKey: todayKey,
       currentStreak: current,
       bestStreak: best,
-      periodPreference: 'Last 30 days',
+      periodPreference: expanded ? 'Viewed month' : 'This week',
+      viewYear: expanded ? calendarMonth.getFullYear() : undefined,
+      viewMonth: expanded ? calendarMonth.getMonth() + 1 : undefined,
     }));
   }
   function openStreakShare(type) {
@@ -395,14 +406,14 @@ export default function MovementActivity({ days = [], compact = false, title = '
       <div className="movement-recent-header">
         <div className="movement-recent-top">
           <div className="t">{title}</div>
-          {movementShareData.hasData && <ShareIconButton label="Share movement calendar" onClick={openMovementShare}/>} 
+          {(expanded ? movementShareData.hasData : recentTotal > 0) && <ShareIconButton label={expanded ? 'Share movement calendar' : 'Share 7-day steps'} onClick={openMovementShare}/>} 
         </div>
         <div className="movement-recent-subtitle">
           {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
         </div>
         <div className="protlys-segmented-tabs movement-view-tabs" role="tablist" aria-label="Movement view">
-          <button type="button" className={`protlys-segmented-tab ${!expanded ? 'is-active' : ''}`} aria-selected={!expanded} onClick={() => setExpanded(false)}>7-day</button>
           <button type="button" className={`protlys-segmented-tab ${expanded ? 'is-active' : ''}`} aria-selected={expanded} onClick={() => setExpanded(true)}>Calendar</button>
+          <button type="button" className={`protlys-segmented-tab ${!expanded ? 'is-active' : ''}`} aria-selected={!expanded} onClick={() => setExpanded(false)}>7-day</button>
           <span className="protlys-segmented-indicator" data-active={expanded ? 'calendar' : 'week'} style={{transform:expanded ? 'translateX(100%)' : 'translateX(0)'}} />
         </div>
       </div>
@@ -503,7 +514,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
     </div>
   );
 }
