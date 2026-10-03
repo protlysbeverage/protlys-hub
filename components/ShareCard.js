@@ -118,9 +118,9 @@ function StreakVisual({current,best,look,type}){
   const total=Math.min(14,Math.max(Number(best)||0,Number(current)||0));
   const filled=type==='current'?Math.min(total,Number(current)||0):total;
   return <div style={{width:312,height:262,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',boxSizing:'border-box'}}>
-    <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:200,lineHeight:.78,fontWeight:900,color:look.accent,letterSpacing:'-.07em'}}>{Number(type==='current'?current:best)||0}</div>
-    <div style={{fontSize:14,fontWeight:800,color:look.text,marginTop:12}}>days in a row</div>
-    <div style={{display:'flex',gap:4,marginTop:18,alignItems:'center',maxWidth:300,flexWrap:'nowrap'}}>
+    <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:200,lineHeight:.8,fontWeight:400,color:look.accent,letterSpacing:'-.07em'}}>{Number(type==='current'?current:best)||0}</div>
+    <div style={{fontSize:20,fontWeight:800,color:look.text,marginTop:8}}>days in a row</div>
+    <div style={{display:'flex',gap:4,marginTop:14,alignItems:'center',maxWidth:300,flexWrap:'nowrap'}}>
       {Array.from({length:total},(_,i)=><div key={i} style={{width:17,height:10,borderRadius:3,background:i<filled?look.accent:look.dim,boxSizing:'border-box'}}/>)}
     </div>
   </div>;
@@ -129,9 +129,9 @@ function StreakVisual({current,best,look,type}){
 function TargetVisual({target,look}){
   const meal=Math.round((Number(target)||0)/4);
   return <div style={{width:312,height:262,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center'}}>
-    <div style={{display:'flex',alignItems:'baseline',gap:10,color:look.text}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:92,lineHeight:.82,fontWeight:900}}>{Math.round(Number(target)||0)}</span><span style={{fontSize:22,fontWeight:800}}>g /day</span></div>
-    <div style={{display:'flex',gap:8,marginTop:26}}>{[0,1,2,3].map(i=><div key={i} style={{width:64,height:10,borderRadius:5,background:look.accent}}/>)}</div>
-    <div style={{fontSize:11,fontWeight:700,color:look.muted,marginTop:13}}>About {meal} g per meal across 4 meals</div>
+    <div style={{display:'flex',alignItems:'baseline',gap:10,color:look.text}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:190,lineHeight:.8,fontWeight:400}}>{Math.round(Number(target)||0)}</span><span style={{fontSize:24,fontWeight:800}}>g /day</span></div>
+    <div style={{display:'flex',gap:8,marginTop:14}}>{[0,1,2,3].map(i=><div key={i} style={{width:64,height:10,borderRadius:5,background:look.accent}}/>)}</div>
+    <div style={{fontSize:12,fontWeight:800,color:look.muted,marginTop:13}}>About {meal} g per meal across 4 meals</div>
   </div>;
 }
 
@@ -159,30 +159,30 @@ export default function ShareCard({type='steps',metric,data={},username='',avata
   const best=Number(data.bestStreak??data.best??current);
   const visual=data.visual||{};
   const challenge=data.challenge||{};
-  return <div data-protlys-share-card="true" style={{width:360,height:640,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.text,padding:24,display:'flex',flexDirection:'column',fontFamily:'Manrope,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-share-card="true" style={{width:360,height:640,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.text,padding:24,display:'flex',flexDirection:'column',fontFamily:'Archivo,system-ui,sans-serif',isolation:'isolate'}}>
     {palette.glow&&<><div style={{position:'absolute',inset:0,pointerEvents:'none',background:'radial-gradient(circle at 100% 0%,rgba(107,203,69,.18),rgba(107,203,69,.05) 24%,transparent 52%)'}}/><div style={{position:'absolute',inset:0,pointerEvents:'none',background:'radial-gradient(circle at 0% 100%,rgba(107,203,69,.12),transparent 48%)'}}/></>}
-    <div style={{height:28,flex:'0 0 28px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:1}}>
-      <img src={logoDataUrl} alt="Protlys" style={{display:'block',width:90,height:28,objectFit:'contain',objectPosition:'left center'}}/>
-      <div style={{fontSize:11,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{formatDate()}</div>
+    <div style={{height:26,flex:'0 0 26px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:1}}>
+      <img src={logoDataUrl} alt="Protlys" style={{display:'block',width:110,height:28,objectFit:'contain',objectPosition:'left center'}}/>
+      <div style={{fontSize:12,fontWeight:800,color:palette.muted,whiteSpace:'nowrap'}}>{formatDate()}</div>
     </div>
-    <div ref={headlineRef} style={{height:128,flex:'0 0 128px',marginTop:12,fontFamily:'Anton,Space Grotesk,sans-serif',fontWeight:900,letterSpacing:'-.035em',textTransform:'uppercase',overflow:'visible',width:312}}>
+    <div ref={headlineRef} style={{height:128,flex:'0 0 128px',marginTop:12,fontFamily:'Anton,Impact,sans-serif',fontWeight:400,letterSpacing:'normal',textTransform:'uppercase',overflow:'visible',width:312}}>
       <div data-headline-line style={{fontSize:76,lineHeight:.82,whiteSpace:'nowrap',overflow:'visible'}}>{headline[0]}</div>
       <div data-headline-line style={{fontSize:76,lineHeight:.82,whiteSpace:'nowrap',overflow:'visible',color:palette.text,opacity:.2}}>{headline[1]}</div>
     </div>
-    <div style={{height:262,flex:'0 0 262px',display:'flex',alignItems:'flex-start',justifyContent:'center',overflow:'visible',position:'relative',zIndex:1}}>
-      {cardType==='streak'||cardType==='cstreak'?<StreakVisual current={current} best={best} look={palette} type={cardType==='cstreak'?'current':'best'}/>:cardType==='ptoday'?<ProteinRing value={number} target={data.target||data.proteinTarget} look={palette}/>:cardType==='ptarget'?<TargetVisual target={number} look={palette}/>:cardType==='cal'?<Heatmap days={visual.days||data.calendarDays||[]} highlight={[]} look={palette} monthGrid/>:cardType==='days'?<Heatmap days={visual.days||data.heatmapDays||[]} highlight={visual.highlight||data.highlight||[]} look={palette}/>:cardType==='steps'||cardType==='dist'?<WeeklyBars days={visual.days||data.weeklyDays||[]} distance={cardType==='dist'} look={palette}/>:cardType==='life'?<LifetimeVisual value={number} look={palette}/>:cardType==='chal'?<div style={{width:312,height:262,display:'flex',flexDirection:'column',justifyContent:'center'}}><div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:72,fontWeight:900,lineHeight:.9}}>{Number(challenge.members??number).toLocaleString()}</div><div style={{fontSize:14,fontWeight:800,marginTop:8}}>members</div><div style={{height:10,borderRadius:5,background:palette.dim,marginTop:26}}><div style={{height:10,width:Math.min(100,Math.max(0,Number(challenge.progress||0)/Math.max(1,Number(challenge.goal||1))*100))+'%',borderRadius:5,background:palette.accent}}/></div><div style={{marginTop:16,display:'inline-flex',alignSelf:'flex-start',padding:'7px 12px',borderRadius:999,background:palette.accent,color:'#111111',fontSize:11,fontWeight:900}}>I'm in</div></div>:<div style={{width:312,height:262,display:'grid',placeItems:'center',fontSize:54,fontWeight:900,color:palette.accent}}>{number.toLocaleString()}</div>}
+    <div style={{flex:'1 1 auto',minHeight:0,marginTop:10,display:'flex',alignItems:'center',justifyContent:'center',overflow:'visible',position:'relative',zIndex:1}}>
+      {cardType==='streak'||cardType==='cstreak'?<StreakVisual current={current} best={best} look={palette} type={cardType==='cstreak'?'current':'best'}/>:cardType==='ptoday'?<ProteinRing value={number} target={data.target||data.proteinTarget} look={palette}/>:cardType==='ptarget'?<TargetVisual target={number} look={palette}/>:cardType==='cal'?<Heatmap days={visual.days||data.calendarDays||[]} highlight={[]} look={palette} monthGrid/>:cardType==='days'?<Heatmap days={visual.days||data.heatmapDays||[]} highlight={visual.highlight||data.highlight||[]} look={palette}/>:cardType==='steps'||cardType==='dist'?<WeeklyBars days={visual.days||data.weeklyDays||[]} distance={cardType==='dist'} look={palette}/>:cardType==='life'?<LifetimeVisual value={number} look={palette}/>:cardType==='chal'?<div style={{width:312,height:262,display:'flex',flexDirection:'column',justifyContent:'center'}}><div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:72,fontWeight:900,lineHeight:.9}}>{Number(challenge.members??number).toLocaleString()}</div><div style={{fontSize:14,fontWeight:800,marginTop:8}}>members</div><div style={{height:10,borderRadius:5,background:palette.dim,marginTop:26}}><div style={{height:10,width:Math.min(100,Math.max(0,Number(challenge.progress||0)/Math.max(1,Number(challenge.goal||1))*100))+'%',borderRadius:5,background:palette.accent}}/></div><div style={{marginTop:16,display:'inline-flex',alignSelf:'flex-start',padding:'7px 12px',borderRadius:999,background:palette.accent,color:'#111111',fontSize:11,fontWeight:800}}>I'm in</div></div>:<div style={{width:312,height:262,display:'grid',placeItems:'center',fontSize:54,fontWeight:900,color:palette.accent}}>{number.toLocaleString()}</div>}
     </div>
-    <div style={{height:174,flex:'0 0 174px',position:'relative',paddingTop:4,boxSizing:'border-box',zIndex:1}}>
-      {showUsername&&<div style={{height:28,display:'flex',alignItems:'center',gap:10,fontSize:11,fontWeight:700,letterSpacing:'normal',color:palette.text,whiteSpace:'nowrap'}}>
-        <div style={{width:28,height:28,flex:'0 0 28px',borderRadius:14,overflow:'hidden',background:palette.accent,color:'#111111',display:'grid',placeItems:'center',fontSize:11,fontWeight:900}}>{avatarUrl?<img src={avatarUrl} alt="" style={{display:'block',width:28,height:28,objectFit:'cover'}}/>:String(username||'protlys').replace(/^@/,'').slice(0,1).toUpperCase()}</div>
+    <div style={{flex:'0 0 auto',position:'relative',paddingTop:4,boxSizing:'border-box',zIndex:1}}>
+      {showUsername&&<div style={{height:28,display:'flex',alignItems:'center',gap:10,fontSize:14,fontWeight:800,letterSpacing:'normal',color:palette.text,whiteSpace:'nowrap'}}>
+        <div style={{width:22,height:22,flex:'0 0 22px',borderRadius:11,overflow:'hidden',background:palette.accent,color:'#111111',display:'grid',placeItems:'center',fontSize:11,fontWeight:900}}>{avatarUrl?<img src={avatarUrl} alt="" style={{display:'block',width:22,height:22,objectFit:'cover'}}/>:String(username||'protlys').replace(/^@/,'').slice(0,1).toUpperCase()}</div>
         <span>@{String(username||'protlys').replace(/^@/,'')}</span>
       </div>}
       <div style={{display:'flex',alignItems:'baseline',gap:7,marginTop:7}}>
-        <span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:47,lineHeight:.9,fontWeight:900,letterSpacing:'-.045em',whiteSpace:'nowrap'}}>{number.toLocaleString()}</span>
+        <span style={{fontFamily:'Anton,Impact,sans-serif',fontSize:52,lineHeight:.9,fontWeight:400,letterSpacing:'normal',whiteSpace:'nowrap'}}>{number.toLocaleString()}</span>
         <span style={{fontSize:11,fontWeight:800,color:palette.muted}}>{unit}</span>
       </div>
-      <div style={{fontFamily:'Space Grotesk,sans-serif',fontSize:13,fontWeight:800,lineHeight:1.05,marginTop:7,whiteSpace:'nowrap'}}>{data.label||copy.label}</div>
-      <div style={{fontSize:9,color:palette.muted,lineHeight:1.2,marginTop:5,maxWidth:230,whiteSpace:'nowrap'}}>{data.subtext||copy.subtext}</div>
+      <div style={{fontFamily:'Archivo,system-ui,sans-serif',fontSize:16,fontWeight:800,lineHeight:1.05,marginTop:7,whiteSpace:'nowrap'}}>{data.label||copy.label}</div>
+      <div style={{fontSize:12,color:palette.muted,lineHeight:1.3,marginTop:3,maxWidth:210,whiteSpace:'nowrap'}}>{data.subtext||copy.subtext}</div>
       {cardType==='chal'&&<div style={{position:'absolute',right:0,bottom:14,fontSize:7,color:palette.muted,textAlign:'right'}}>Scan to join the challenge</div>}
       <div style={{position:'absolute',right:0,bottom:24,width:68,height:68,padding:4,boxSizing:'border-box',background:'#FFFFFF',borderRadius:4}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{display:'block',width:60,height:60,objectFit:'contain'}}/>}</div>
       {cardType!=='chal'&&<div style={{position:'absolute',right:0,bottom:10,fontSize:7,color:palette.muted,textAlign:'right',whiteSpace:'nowrap'}}>Scan to find your protein target</div>}
