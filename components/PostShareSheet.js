@@ -33,6 +33,7 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   const [size,setSize]=useState('standard');
   const [showAvatar,setShowAvatar]=useState(false);
   const [assets,setAssets]=useState({});
+  const [shareReplies,setShareReplies]=useState(replies||[]);
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
   const [cardHeight,setCardHeight]=useState(0);
@@ -45,7 +46,8 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   useEffect(()=>{
     if(!open)return;
     setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
-    setLayout('post');setSize('standard');setShowAvatar(false);setBusy(false);setMessage('');
+    setLayout('post');setSize('standard');setShowAvatar(false);setBusy(false);setMessage('');setShareReplies(replies||[]);
+    fetch(`/api/posts/${post.id}/share`).then(r=>r.ok?r.json():Promise.reject(new Error('share data failed'))).then(data=>setShareReplies(data.comments||[])).catch(()=>{});
     (async()=>{
       try{
         const [dark,light,qr]=await Promise.all([
@@ -122,7 +124,7 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
       <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 8px',position:'relative',zIndex:1}}>
         <div style={previewStyle}>
           <div ref={cardRef} style={{position:'absolute',left:0,top:0,width:360,transform:`scale(${scale})`,transformOrigin:'top left'}}>
-            <PostShareCard post={post} replies={replies} theme={theme} layout={layout} size={size} showAvatar={showAvatar} avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'} moreReplies={Math.max(0,(replies?.length||0)-3)}/>
+            <PostShareCard post={post} replies={shareReplies} theme={theme} layout={layout} size={size} showAvatar={showAvatar} avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'} moreReplies={Math.max(0,(shareReplies?.length||0)-3)}/>
           </div>
         </div>
       </div>
