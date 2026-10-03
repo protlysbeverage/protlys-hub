@@ -8,6 +8,8 @@ const LOOKS = {
     tint: 'rgba(107,203,69,.12)',
     dim: 'rgba(107,203,69,.28)',
     accent: '#6BCB45',
+    loggedNumber: '#111111',
+    futureBorder: 'rgba(255,255,255,.35)',
     glow: true,
   },
   light: {
@@ -17,6 +19,8 @@ const LOOKS = {
     tint: 'rgba(79,159,53,.12)',
     dim: 'rgba(79,159,53,.28)',
     accent: '#4F9F35',
+    loggedNumber: '#FFFFFF',
+    futureBorder: 'rgba(17,17,17,.35)',
     glow: false,
   },
   surface: {
@@ -26,6 +30,8 @@ const LOOKS = {
     tint: 'rgba(107,203,69,.12)',
     dim: 'rgba(107,203,69,.28)',
     accent: '#6BCB45',
+    loggedNumber: '#111111',
+    futureBorder: 'rgba(255,255,255,.35)',
     glow: true,
   },
 };
@@ -95,7 +101,7 @@ export function ActivityHeatmap({ days = [], highlight = [], look }) {
           const strong = highlighted.size === 0 || highlightedDay;
           const future = Boolean(day?.future);
           const background = logged ? (strong ? accent : dim) : tint;
-          const numberColor = logged ? '#111111' : fg;
+          const numberColor = logged ? (look?.loggedNumber || '#111111') : fg;
           const monthInside = Boolean(day?.monthChanged || index === 0);
 
           return (
@@ -106,7 +112,7 @@ export function ActivityHeatmap({ days = [], highlight = [], look }) {
               alignItems: 'center', justifyContent: 'center',
               color: numberColor, fontSize: 11, fontWeight: 800,
               lineHeight: 1,
-              border: future ? '1px dashed rgba(255,255,255,.35)' : '0 solid transparent',
+              border: future ? '1px dashed ' + (look?.futureBorder || 'rgba(255,255,255,.35)') : '0 solid transparent',
               outline: day?.today ? '2px solid ' + accent : 'none',
               outlineOffset: day?.today ? 2 : 0,
               position: 'relative',
@@ -267,7 +273,7 @@ export default function ShareCard({
         whiteSpace: 'nowrap', overflow: 'visible',
       }}>
         <div>{headline[0]}</div>
-        <div style={{ color: palette.dim }}>{headline[1]}</div>
+        <div style={{ color: palette.fg, opacity: .2 }}>{headline[1]}</div>
       </div>
 
       <div style={{
