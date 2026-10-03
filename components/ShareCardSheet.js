@@ -38,7 +38,7 @@ export class ShareSheetErrorBoundary extends Component{
 function CardPreview({data,type,look,assets,username,avatarUrl,scale}){
   return <div style={{width:360*scale,height:640*scale,flex:'0 0 auto',position:'relative'}}>
     <div style={{width:360,height:640,position:'absolute',left:0,top:0,transform:'scale('+scale+')',transformOrigin:'top left'}}>
-      <ShareCard type={type} metric={data.metric} data={data} username={username} avatarUrl={avatarUrl} look={look} qrDataUrl={assets.qr||''} logoDataUrl={assets[look]||''}/>
+      <ShareCard type={type} metric={data.metric} data={data} username={username} avatarUrl={avatarUrl} look={look} qrDataUrl={assets.qr||''} logoDataUrl={assets[look]||LOGOS[look]||LOGOS.dark}/>
     </div>
   </div>
 }
@@ -157,7 +157,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   if(!open||!mounted)return null;
   const content=<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
     <div aria-hidden="true" onPointerUp={closeSheet} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.6)'}}/>
-    <section ref={node=>{cardHostRef.current=node}} role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={touchStart} onTouchEnd={touchEnd} style={{position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',padding:'max(env(safe-area-inset-top),12px) 16px calc(10px + env(safe-area-inset-bottom))',background:'#F7F8F6',color:'#111111',display:'flex',flexDirection:'column',overflow:'hidden',touchAction:'pan-y'}}>
+    <section ref={node=>{cardHostRef.current=node}} role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={touchStart} onTouchEnd={touchEnd} style={{position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',padding:'max(env(safe-area-inset-top),12px) 16px calc(10px + env(safe-area-inset-bottom))',background:(document.documentElement.dataset.theme==='dark'?'#121513':'#F7F8F6'),color:(document.documentElement.dataset.theme==='dark'?'#FFFFFF':'#111111'),display:'flex',flexDirection:'column',overflow:'hidden',touchAction:'pan-y'}}>
       <div style={{height:56,flex:'0 0 56px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
         <div style={{fontSize:18,fontWeight:800}}>Share your progress</div>
         <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
