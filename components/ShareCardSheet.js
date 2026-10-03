@@ -63,7 +63,6 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   const [assets,setAssets]=useState({});
   const [scale,setScale]=useState(1);
   const previewRef=useRef(null);
-  const historyIdRef=useRef(null);
   const touchStartRef=useRef(null);
   const cachedBlobRef=useRef(new Map());
   const mountedRef=useRef(false);
@@ -86,28 +85,12 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       }catch(error){console.error('[Protlys ShareSheet] asset error',error);if(!cancelled)setMessage('Some share assets could not be loaded.');}
     })();
 
-    const entry={...(window.history.state||{})};
-    const currentId=entry.__protlysShareSheetId;
-    if(!currentId){
-      const id='share-'+Date.now()+'-'+Math.random().toString(36).slice(2);
-      historyIdRef.current=id;
-      window.history.pushState({...entry,__protlysShareSheet:true,__protlysShareSheetId:id},'',window.location.href);
-    }else historyIdRef.current=currentId;
-
     const oldOverflow=document.body.style.overflow;
     document.body.style.overflow='hidden';
-    const onPop=()=>{historyIdRef.current=null;onClose?.();};
-    window.addEventListener('popstate',onPop);
-    return()=>{cancelled=true;window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);window.removeEventListener('popstate',onPop);document.body.style.overflow=oldOverflow;};
+    return()=>{cancelled=true;window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);document.body.style.overflow=oldOverflow;};
   },[open]);
 
-  function close(){
-    if(!open)return;
-    const id=historyIdRef.current;
-    historyIdRef.current=null;
-    if(id && window.history.state?.__protlysShareSheetId===id){window.history.back();return;}
-    onClose?.();
-  }
+  function close(){if(!open)return;onClose?.();}
 
   function cacheKey(){return [selected,showUsername,shareData.metric,shareData.number,shareData.unit,shareData.label,shareData.subtext,shareData.progress,JSON.stringify(shareData.visual||{}),JSON.stringify(shareData.highlight||[])].join('|');}
 
