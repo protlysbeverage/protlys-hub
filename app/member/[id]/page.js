@@ -69,7 +69,7 @@ export default async function MemberProfilePage({params}){
         </div>
       </div>
       <div style={{display:'flex',gap:8,marginTop:12}}>
-        <ShareProfileButton profileId={id} displayName={displayName}/>
+        <ShareProfileButton profileId={id} displayName={displayName} avatarUrl={profile.avatar_url||''} joinedAt={formatJoinedDate(profile.created_at)} founding={true} activeDays={publicMovementDays.slice(-14).map(row=>({key:row.step_date,steps:row.steps,logged:true}))} totalSteps={displayTotalSteps} currentStreak={displayStepStreak} bestStreak={Math.max(displayStepStreak,Number(profile.streak||0))}/>
         {!isOwnProfile&&<FollowButton profileId={id} initialFollowing={Boolean(followRow)} initialFollowers={followerCount||0} compact/>}
       </div>
       <div style={{marginTop:13,borderTop:'1px solid var(--line)',borderBottom:'1px solid var(--line)',padding:'10px 0'}}>
