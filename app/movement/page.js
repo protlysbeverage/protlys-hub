@@ -26,7 +26,7 @@ export default async function MovementPage() {
     { data: achievements },
     { data: currentGoal },
   ] = await Promise.all([
-    supabase.from('profiles').select('display_name, step_goal, step_streak, total_steps, last_step_date, activity_level').eq('id', user.id).single(),
+    supabase.from('profiles').select('display_name, avatar_url, step_goal, step_streak, total_steps, last_step_date, activity_level').eq('id', user.id).single(),
     supabase.from('daily_steps').select('steps, source, synced_at').eq('user_id', user.id).eq('step_date', today).single(),
     supabase.from('daily_steps').select('step_date, steps, source, synced_at').eq('user_id', user.id).gte('step_date', weekAgoStr).lte('step_date', today).order('step_date'),
     supabase.from('daily_steps').select('step_date, steps, source, synced_at').eq('user_id', user.id).order('step_date'),
