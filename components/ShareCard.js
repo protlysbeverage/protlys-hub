@@ -144,8 +144,8 @@ function LifetimeVisual({value,look}){
   </div>;
 }
 
-export default function ShareCard({type='steps',metric,type:metricAlias,data={},username='',avatarUrl='',look='dark',qrDataUrl='',logoDataUrl='',showUsername=true}){
-  const requestedType=type||metricAlias||data.cardType||data.metric||'steps';\n  const cardType=TYPE_BY_METRIC[requestedType]||requestedType||'steps';
+export default function ShareCard({type='steps',metric,data={},username='',avatarUrl='',look='dark',qrDataUrl='',logoDataUrl='',showUsername=true}){
+  const requestedType=type||metric||data.cardType||data.metric||'steps';\n  const cardType=TYPE_BY_METRIC[requestedType]||requestedType||'steps';
   const palette=LOOKS[look]||LOOKS.dark;
   const copy=COPY[cardType]||COPY.steps;
   const headline=Array.isArray(data.headline)?data.headline:copy.headline;
