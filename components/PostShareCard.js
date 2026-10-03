@@ -83,9 +83,9 @@ export default function PostShareCard({
   const likeCount=Number(post?.like_count||0);
   const cleanReplies=(replies||[]).slice(0,3);
   const story=size==='story';
-  const contentStyle=story?{minHeight:640,justifyContent:'center'}:{};
+  const contentStyle=story?{minHeight:600,justifyContent:'center'}:{};
   const footerUrl=`/p/${post?.id}?utm_source=share&utm_medium=card&utm_campaign=post`;
-  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,minHeight:story?640:undefined,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
     <div style={{borderRadius:20,background:t.surface,border:`1px solid ${t.line}`,overflow:'hidden'}}>
       <div style={{padding:20,...contentStyle}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
