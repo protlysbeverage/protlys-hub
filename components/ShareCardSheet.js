@@ -82,7 +82,17 @@ function computeScale() {
 }
 
 function CardPreview({ shareData, selected, assets, username, avatarUrl, showUsername }) {
-  const scale = computeScale();
+  const [scale, setScale] = useState(1);
+  useEffect(() => {
+    const update = () => setScale(computeScale());
+    update();
+    window.addEventListener('resize', update);
+    window.addEventListener('orientationchange', update);
+    return () => {
+      window.removeEventListener('resize', update);
+      window.removeEventListener('orientationchange', update);
+    };
+  }, []);
   return (
     <div style={{
       width: 360 * scale,
@@ -493,7 +503,7 @@ function ShareCardSheetInner({
         <div style={{
           flex: '0 0 auto',
           width: '100%',
-          height: 640,
+          height: 'auto',
           margin: '0 auto',
           display: 'flex',
           alignItems: 'flex-start',
