@@ -99,7 +99,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
             {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/></div>}
             <div className="t" style={{paddingRight:46}}>Days with movement</div>
             <div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div>
-            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the last 7 days</div>
+            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the displayed range</div>
           </div>
           <div className="hub-card" style={{position:'relative',minWidth:0}}>
             {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/></div>}
@@ -119,7 +119,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
 
         <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />
       </div>
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} avatarUrl={profile?.avatar_url || ''} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
     </>
   );
 }
