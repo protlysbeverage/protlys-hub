@@ -302,7 +302,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
           <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
             <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>Share profile</button>
+            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}><Icon name="share" size={13}/>Share profile</button>
           </div>
           {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
         </div>
