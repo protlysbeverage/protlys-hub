@@ -13,6 +13,16 @@ function dateLabel(value){
 }
 function Avatar({name,url,size=38}){return url?<img src={url} alt="" style={{width:size,height:size,borderRadius:'50%',objectFit:'cover',display:'block',flex:'0 0 auto'}}/>:<div style={{width:size,height:size,borderRadius:'50%',background:'var(--green-soft)',color:'var(--green-dark)',display:'grid',placeItems:'center',fontWeight:900,fontSize:size*.35,flex:'0 0 auto'}}>{(name||'?')[0].toUpperCase()}</div>}
 function Stats({stats}){const items=[['Steps',stats?.steps],['Distance',stats?.distance],['Duration',stats?.duration]].filter(([,v])=>v!==null&&v!==undefined&&String(v).trim()!=='');if(!items.length)return null;return <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(3,items.length)},minmax(0,1fr))`,gap:8,marginTop:14}}>{items.map(([label,v])=><div key={label} style={{border:'1px solid var(--line)',borderRadius:10,padding:'9px 10px',background:'var(--paper)'}}><div style={{fontSize:8,textTransform:'uppercase',letterSpacing:'.07em',fontWeight:900,color:'var(--ink-45)'}}>{label}</div><div className="mono" style={{fontSize:12,fontWeight:800,marginTop:3,overflowWrap:'anywhere'}}>{label==='Distance'?v:Number(String(v).replace(/,/g,''))?.toLocaleString?.('en-KE')||v}</div></div>)}</div>}
+export async function generateMetadata({params}){
+  const {id}=await params;
+  return {
+    title:'Protlys post',
+    description:'A post shared from Protlys Hub.',
+    openGraph:{title:'Protlys post',description:'A post shared from Protlys Hub.',url:`https://hub.protlys.com/p/${id}`,images:[{url:`https://hub.protlys.com/p/${id}/opengraph-image`,width:1200,height:630,alt:'Protlys post'}]},
+    twitter:{card:'summary_large_image',title:'Protlys post',images:[`https://hub.protlys.com/p/${id}/opengraph-image`]},
+  };
+}
+
 export default async function PublicPostPage({params}){
   const {id}=await params;const supabase=await createClient();
   const {data:post}=await supabase.from('feed_posts').select('id,user_id,body,image_url,post_type,stats,created_at,profiles(display_name,avatar_url),feed_likes(count),feed_comments(count)').eq('id',id).maybeSingle();
