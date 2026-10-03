@@ -401,8 +401,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
           {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
         </div>
         <div className="protlys-segmented-tabs movement-view-tabs" role="tablist" aria-label="Movement view">
-          <button type="button" className={`protlys-segmented-tab ${!expanded ? 'is-active' : ''}`} aria-selected={!expanded} onClick={() => setExpanded(false)}>7-day</button>
           <button type="button" className={`protlys-segmented-tab ${expanded ? 'is-active' : ''}`} aria-selected={expanded} onClick={() => setExpanded(true)}>Calendar</button>
+          <button type="button" className={`protlys-segmented-tab ${!expanded ? 'is-active' : ''}`} aria-selected={!expanded} onClick={() => setExpanded(false)}>7-day</button>
           <span className="protlys-segmented-indicator" data-active={expanded ? 'calendar' : 'week'} style={{transform:expanded ? 'translateX(100%)' : 'translateX(0)'}} />
         </div>
       </div>
