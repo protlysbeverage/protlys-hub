@@ -266,12 +266,23 @@ export default function MovementActivity({ days = [], compact = false, title = '
   useEffect(()=>()=>{if(sheetDragRaf.current)cancelAnimationFrame(sheetDragRaf.current);},[]);
 
   function openMovementShare() {
-    setShareData(getShareData('movement_calendar', {
-      rows: days,
+    const metric = expanded ? 'movement_calendar' : 'steps_today';
+    const rowsForShare = expanded
+      ? Array.from(
+          [...days, ...Object.values(monthCache).flat()]
+            .filter(Boolean)
+            .reduce((map, row) => map.set(String(row.step_date || row.key || row.date), row), new Map())
+            .values()
+        )
+      : days;
+    setShareData(getShareData(metric, {
+      rows: rowsForShare,
       endKey: todayKey,
       currentStreak: current,
       bestStreak: best,
-      periodPreference: 'Last 30 days',
+      periodPreference: expanded ? 'Viewed month' : 'This week',
+      viewYear: expanded ? calendarMonth.getFullYear() : undefined,
+      viewMonth: expanded ? calendarMonth.getMonth() + 1 : undefined,
     }));
   }
   function openStreakShare(type) {
@@ -503,7 +514,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
         </div>
       )}
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} metric={shareData.metric} value={shareData.value} unit={shareData.unit} label={shareData.label} subtext={shareData.subtext} progress={shareData.progress} username={profile?.display_name || 'protlys'} />}
     </div>
   );
 }
