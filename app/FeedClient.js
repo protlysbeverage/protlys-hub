@@ -5,6 +5,7 @@ import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
+import PostShareSheet from '@/components/PostShareSheet';
 import {
   createFeedPostAction,
   updateFeedPostAction,
@@ -250,7 +251,7 @@ function EmptyState() { return <div style={{ textAlign: 'center', padding: '38px
 export default function FeedClient({ posts, likedIds, userId, profile }) {
   const router = useRouter();
   const [liked, setLiked] = useState(new Set(likedIds));
-  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState('');
+  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
   function showToast(message) { setToast(message); window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => setToast(''), 2200); }
   async function handleLike(postId) {
     const wasLiked = liked.has(postId);
@@ -260,10 +261,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
     router.refresh();
   }
   async function handleDelete(post) { setMenu(null); if (!window.confirm('Delete this post? This will also remove its photo and comments.')) return; const result = await deleteFeedPostAction({ postId: post.id }); if (result?.error) { showToast(result.error); return; } showToast('Post deleted'); router.refresh(); }
-  async function handleShare(post) {
-    const url = `${window.location.origin}/?post=${encodeURIComponent(post.id)}`; const author = post.profiles?.display_name || 'A Protlys member'; const text = post.body ? `${author} on Protlys: ${post.body}` : `${author} shared a post on Protlys.`;
-    try { if (navigator.share) { await navigator.share({ title: 'Protlys community', text, url }); showToast('Shared'); } else if (navigator.clipboard?.writeText) { await navigator.clipboard.writeText(url); showToast('Link copied'); } else window.prompt('Copy this Protlys link', url); } catch (error) { if (error?.name !== 'AbortError') showToast('Could not share this post'); }
-  }
+  function handleShare(post) { setSharePost(post); }
 
   return <div className="screen-pad feed-home">
     <span className="eyebrow">Community</span>
@@ -311,5 +309,6 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
     }) : <EmptyState />}
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
+    <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
   </div>;
 }
