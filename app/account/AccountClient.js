@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MilestoneShareCard from '@/components/MilestoneShareCard';
+import MemberShareSheet from '@/components/MemberShareSheet';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 function Icon({ name, size = 19 }) {
@@ -85,7 +86,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [message, setMessage] = useState('');
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-  const [sharing, setSharing] = useState(false);
+  const [memberShareOpen, setMemberShareOpen] = useState(false);
   const [shareStat, setShareStat] = useState(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const [highlightedDay, setHighlightedDay] = useState('');
@@ -245,23 +246,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   function EmptyState({text}){return <div style={{padding:'18px 0 2px'}}><p style={{fontSize:13,color:'var(--ink-70)',margin:'0 0 12px'}}>{text}</p><button type="button" onClick={()=>{closeSheet();router.push('/movement');}} style={{width:'100%',minHeight:44,border:0,borderRadius:999,padding:'12px 16px',background:'#2E9E5B',color:'#fff',fontWeight:800}}>Movement &amp; steps</button></div>;}
   function SheetBody(){const today=Number(todaySteps)||0,weekTotal=sheetWeek.reduce((s,d)=>s+d.steps,0),weekKm=sheetWeek.reduce((s,d)=>s+d.km,0),days=sheetWeek.filter(d=>d.steps>0).length;if(sheet==='today')return today>0?<><div className="sheet-big">{fmt(today)}</div><Comparison up={Number(previousWeek[6]||0)>0&&today>=previousWeek[6]}>{Number(previousWeek[6]||0)>0?(today>=previousWeek[6]?'↑':'↓')+' '+Math.abs(today-previousWeek[6]).toLocaleString()+' vs yesterday':null}</Comparison><Ring value={today} goal={sheetGoal}/><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{Math.round(today/sheetGoal*100)}% of goal</span><span className="sheet-chip">{fmt(Math.max(0,sheetGoal-today))} remaining</span></div></>:<EmptyState text="No steps yet today. Record some in Movement."/>;if(sheet==='distance'){const last=previousWeekTotal*.75/1000,up=last>0&&weekKm>=last;return <><div className="sheet-big">{formatDistance(totalDistanceKm)}</div><Comparison up={up}>{last>0?(up?'↑':'↓')+' '+formatDistance(Math.abs(weekKm-last))+' this week vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.km)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6} unit="km"/><div className="sheet-chips"><span className="sheet-chip">{weekKm.toFixed(1)} km this week</span><span className="sheet-chip">{(totalDistanceKm/42.195).toFixed(1)} marathons</span></div></>;}if(sheet==='days'){const up=previousWeekDays>0&&days>=previousWeekDays;return <><div className="sheet-big">{days} of 7</div><Comparison up={up}>{previousWeekDays>0?(up?'↑':'↓')+' '+Math.abs(days-previousWeekDays)+' days vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps>0?1:0)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{consistency30}% active in 30 days</span><span className="sheet-chip">Longest: {longestMovementStreak} days</span></div></>;}if(totalSteps<=0)return <EmptyState text="No steps yet. Record some in Movement."/>;return <><div className="sheet-big">{fmt(totalSteps)}</div><Comparison up={weekTotal>0}>{weekTotal>0?'+'+fmt(weekTotal)+' steps added this week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{fmt(weekTotal)} added this week</span><span className="sheet-chip">{fmt(totalSteps)} total</span></div></>;}
 
-  async function handleShareProfile() {
+  function handleShareProfile() {
     if (!profile?.id) return;
-    setSharing(true); setMessage('');
-    try {
-      const shareData = { title: `${name} on Protlys Hub`, text: `Check out ${name}'s Protlys Hub profile.`, url: profileUrl };
-      if (typeof navigator !== 'undefined' && navigator.share) {
-        await navigator.share(shareData);
-        setMessage('Profile shared.');
-      } else if (typeof navigator !== 'undefined' && navigator.clipboard) {
-        await navigator.clipboard.writeText(profileUrl);
-        setMessage('Profile link copied.');
-      } else {
-        throw new Error('Sharing is not supported on this device.');
-      }
-    } catch (error) {
-      if (error?.name !== 'AbortError') setMessage(error?.message || 'Could not share profile.');
-    } finally { setSharing(false); }
+    setMessage('');
+    setMemberShareOpen(true);
   }
 
   async function handlePhoto(event) {
@@ -314,7 +302,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
           <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
             <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} disabled={sharing} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>{sharing ? 'Sharing…' : 'Share profile'}</button>
+            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:sharing?'default':'pointer'}}><Icon name="share" size={13}/>Share profile</button>
           </div>
           {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
         </div>
@@ -403,6 +391,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
     </div>
+    <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Number(profile?.founding_member)===1 || Number(profile?.founding_member)===true || true} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
     {shareStat && <ShareCardSheet open={!!shareStat} onClose={()=>setShareStat(null)} metric={shareStat.metric} value={shareStat.value} unit={shareStat.unit} label={shareStat.label} subtext={shareStat.subtext} progress={shareStat.progress} username={profile?.display_name || email || 'protlys'} heatmapDays={shareStat.heatmapDays || []} highlightBestRun={shareStat.highlightBestRun || false} />}
   </>;
 }
