@@ -8,7 +8,9 @@ const LOOKS = {
   surface:{ bg:'#323A33', text:'#FFFFFF', muted:'rgba(255,255,255,.62)', accent:'#6BCB45', tint:'rgba(107,203,69,.12)', dim:'rgba(107,203,69,.28)', future:'rgba(255,255,255,.35)', glow:true },
 };
 
-const TYPE_BY_METRIC={steps_today:'steps',this_week:'steps',distance:'dist',movement_days:'days',current_streak:'cstreak',best_streak:'streak',movement_calendar:'cal',lifetime_steps:'life',protein_today:'ptoday',protein_target:'ptarget'};\n\nconst COPY = {
+const TYPE_BY_METRIC={steps_today:'steps',this_week:'steps',distance:'dist',movement_days:'days',current_streak:'cstreak',best_streak:'streak',movement_calendar:'cal',lifetime_steps:'life',protein_today:'ptoday',protein_target:'ptarget'};
+
+const COPY = {
   streak:{headline:['BEST','STREAK'],label:'days in a row',subtext:'Your longest recorded movement streak.'},
   cstreak:{headline:['CURRENT','STREAK'],label:'days in a row',subtext:'Your current movement streak.'},
   ptarget:{headline:['PROTEIN','TARGET'],label:'grams per day',subtext:'Your daily target across 4 meals.'},
@@ -145,7 +147,8 @@ function LifetimeVisual({value,look}){
 }
 
 export default function ShareCard({type='steps',metric,data={},username='',avatarUrl='',look='dark',qrDataUrl='',logoDataUrl='',showUsername=true}){
-  const requestedType=type||metric||data.cardType||data.metric||'steps';\n  const cardType=TYPE_BY_METRIC[requestedType]||requestedType||'steps';
+  const requestedType=type||metric||data.cardType||data.metric||'steps';
+  const cardType=TYPE_BY_METRIC[requestedType]||requestedType||'steps';
   const palette=LOOKS[look]||LOOKS.dark;
   const copy=COPY[cardType]||COPY.steps;
   const headline=Array.isArray(data.headline)?data.headline:copy.headline;
