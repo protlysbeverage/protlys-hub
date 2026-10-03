@@ -24,6 +24,13 @@ export default function AppShell({ children }) {
   const pathname = usePathname();
   const router = useRouter();
   const shopUrl = getShopUrl();
+  const handleNavClick = (item, event) => {
+    if (item.href === '/' && pathname === '/') {
+      event.preventDefault();
+      const screen = document.querySelector('.protlys-app .screen');
+      if (screen) screen.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
   const logoSrc = '/protlys-logo-exact.png';
   const [darkTheme, setDarkTheme] = useState(false);
   useEffect(() => {
@@ -284,7 +291,7 @@ export default function AppShell({ children }) {
         const content=<>{item.icon}<span className="nav-label">{item.label}</span>{item.badge ? <span className="nav-badge" aria-hidden="true" /> : null}</>;
         return item.href==='/challenges'
           ? <a {...commonProps} href="/challenges" onClick={e=>{e.stopPropagation();}}>{content}</a>
-          : <Link {...commonProps} href={item.href}>{content}</Link>;
+          : <Link {...commonProps} href={item.href} onClick={e=>handleNavClick(item,e)}>{content}</Link>;
       })}
     </nav>
   </div>
