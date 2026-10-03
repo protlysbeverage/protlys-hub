@@ -88,7 +88,7 @@ function WeeklyBars({days=[],distance=false,look}){
   return <div style={{width:312,height:262,display:'flex',alignItems:'flex-end',justifyContent:'center',gap:6,paddingBottom:18,boxSizing:'border-box'}}>
     {safe.map((day,i)=>{
       const value=values[i], h=value?Math.max(8,Math.round(value/max*108)):4;
-      return <div key={day?.key||i} style={{width:36,height:220,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end,gap:5}}>
+      return <div key={day?.key||i} style={{width:36,height:220,display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'flex-end',gap:5}}>
         <span style={{fontSize:8,fontWeight:800,color:look.text,whiteSpace:'nowrap'}}>{distance?value.toFixed(1):value.toLocaleString()}</span>
         <div style={{width:36,height:h,borderRadius:5,background:value===best&&best>0?look.accent:look.dim,border:day?.isToday?'2px solid '+look.text:'none',boxSizing:'border-box'}}/>
         <span style={{fontSize:8,fontWeight:day?.isToday?800:600,color:day?.isToday?look.accent:look.muted}}>{new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',weekday:'short'}).format(dateFromKey(day.key)).slice(0,1)}</span>
