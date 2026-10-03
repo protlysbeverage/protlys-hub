@@ -395,7 +395,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       <div className="movement-recent-header">
         <div className="movement-recent-top">
           <div className="t">{title}</div>
-          {movementShareData.hasData && <ShareIconButton label={expanded ? 'Share movement calendar' : 'Share 7-day steps'} onClick={openMovementShare}/>} 
+          {(expanded ? movementShareData.hasData : recentTotal > 0) && <ShareIconButton label={expanded ? 'Share movement calendar' : 'Share 7-day steps'} onClick={openMovementShare}/>} 
         </div>
         <div className="movement-recent-subtitle">
           {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
