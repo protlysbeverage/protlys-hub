@@ -141,7 +141,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     try{
       const blob=await createExportBlob(selected);
       const file=new File([blob],'protlys-share-card.png',{type:'image/png'});
-      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})){await navigator.share({files:[file],title:'My Protlys progress'})}
+      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'My Protlys progress'})}
       else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
     }catch(error){if(error?.name!=='AbortError'){console.error('[Protlys ShareSheet] share failed',error);setMessage('Could not share the card.')}}finally{setBusy(false)}
   }
