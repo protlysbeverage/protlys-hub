@@ -70,15 +70,18 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
-        <div className="hub-card" style={{padding:16,position:"relative"}}>
-          <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
-            <div className="t">Steps today</div>{hasMovement && <div style={{position:"absolute",top:12,right:12}}><ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/></div>}
-            {lastSync && <span style={{fontSize:10.5,color:'var(--ink-45)',fontWeight:500}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+        <div className="hub-card" style={{padding:16}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
+            <div className="t">Steps today</div>
+            <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8}}>
+              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {hasMovement && <ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/>} 
+            </div>
           </div>
-          <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:9}}>
-            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div className="t">Distance</div>{hasMovement && <ShareIconButton variant="movement" label="Share distance" onClick={()=>openShare('distance')}/>} </div><div className="mono" style={{fontSize:18,fontWeight:800}}>{todayDistance.toFixed(1)} km</div></div>
-            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div className="t">Calories</div><div className="mono" style={{fontSize:18,fontWeight:800}}>≈ {todayCalories}</div></div>
+          <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:8}}>{todaySteps.toLocaleString()}</div>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:9}}>
+            <div style={{display:'flex',flexDirection:'column',padding:16,minHeight:96,borderRadius:11,background:'var(--green-soft)',boxSizing:'border-box'}}><div style={{minHeight:20,display:'flex',alignItems:'flex-start'}}><div className="t">Distance</div></div><div className="mono" style={{fontSize:18,lineHeight:1.2,fontWeight:800,marginTop:'auto'}}>{todayDistance.toFixed(1)} km</div></div>
+            <div style={{display:'flex',flexDirection:'column',padding:16,minHeight:96,borderRadius:11,background:'var(--green-soft)',boxSizing:'border-box'}}><div style={{minHeight:20,display:'flex',alignItems:'flex-start'}}><div className="t">Calories</div></div><div className="mono" style={{fontSize:18,lineHeight:1.2,fontWeight:800,marginTop:'auto'}}>≈ {todayCalories}</div></div>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
         </div>
