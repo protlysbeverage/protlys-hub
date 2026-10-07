@@ -70,9 +70,9 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
-        <div className="hub-card" style={{padding:16}}>
+        <div className="hub-card" style={{padding:16,position:"relative"}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div className="t">Steps today</div>{hasMovement && <ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/>} </div>
+            <div className="t">Steps today</div>{hasMovement && <div style={{position:"absolute",top:12,right:12}}><ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/></div>}
             {lastSync && <span style={{fontSize:10.5,color:'var(--ink-45)',fontWeight:500}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
           </div>
           <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div>
