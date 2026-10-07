@@ -3,17 +3,21 @@ import AppShell from '@/components/AppShell';
 import ChallengesClient from './ChallengesClient';
 
 export default async function ChallengesPage({ searchParams }) {
+  const params = await searchParams;
+  const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
+  const challengeId = typeof params?.challenge === 'string' ? params.challenge : '';
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
+  if (!user && challengeId) {
+    const next = `/hub/challenges?challenge=${encodeURIComponent(challengeId)}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ''}`;
+    const { redirect } = await import('next/navigation');
+    redirect(next);
+  }
   if (!user) return <AppShell><div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:28}}><span className="eyebrow">Challenges</span><h1 style={{fontSize:28,marginTop:6}}>Build the habit together.</h1><p className="subhead" style={{marginTop:8}}>Sign in to join Protlys community challenges.</p></div></AppShell>;
 
   await supabase.rpc('ensure_founding_250_member');
   const { data: hubStats } = await supabase.from('hub_stats').select('founding_count').eq('id', true).maybeSingle();
   const foundingCount = Math.min(250, Number(hubStats?.founding_count || 0));
-
-  const params = await searchParams;
-  const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
-  const challengeId = typeof params?.challenge === 'string' ? params.challenge : '';
 
   let challengeQuery = supabase
     .from('challenges')
