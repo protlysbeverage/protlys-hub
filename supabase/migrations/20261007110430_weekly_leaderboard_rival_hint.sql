@@ -1,4 +1,6 @@
--- Finalize the weekly leaderboard function: expose rival name and improvement percentage.\nDROP FUNCTION IF EXISTS public.get_leaderboard(text,uuid,text,integer,integer);\nCREATE OR REPLACE FUNCTION public.get_leaderboard(p_scope text, p_group_id uuid DEFAULT NULL::uuid, p_period text DEFAULT 'this_week'::text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
+-- Finalize the weekly leaderboard function: expose rival name and improvement percentage.
+DROP FUNCTION IF EXISTS public.get_leaderboard(text,uuid,text,integer,integer);
+CREATE OR REPLACE FUNCTION public.get_leaderboard(p_scope text, p_group_id uuid DEFAULT NULL::uuid, p_period text DEFAULT 'this_week'::text, p_limit integer DEFAULT 50, p_offset integer DEFAULT 0)
  RETURNS TABLE(rank bigint, user_id uuid, username text, avatar_url text, steps bigint, last_week_rank bigint, steps_to_pass bigint, rival_username text, improvement numeric)
  LANGUAGE plpgsql
  STABLE SECURITY DEFINER
@@ -38,4 +40,6 @@ begin
    r.improvement
  from ranked r order by r.r,lower(coalesce(r.display_name,'')),r.id limit v_limit offset v_offset;
 end; $function$
-\nREVOKE ALL ON FUNCTION public.get_leaderboard(text,uuid,text,integer,integer) FROM public,anon;\nGRANT EXECUTE ON FUNCTION public.get_leaderboard(text,uuid,text,integer,integer) TO authenticated;\n
+
+REVOKE ALL ON FUNCTION public.get_leaderboard(text,uuid,text,integer,integer) FROM public,anon;
+GRANT EXECUTE ON FUNCTION public.get_leaderboard(text,uuid,text,integer,integer) TO authenticated;
