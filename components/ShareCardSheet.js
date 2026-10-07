@@ -182,6 +182,10 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
 }
 
 export default function ShareCardSheet(props){return <ShareCardSheetInner {...props}/>}
-export function ShareIconButton({onClick,label='Share',disabled=false}){
-  return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={e=>{e.stopPropagation();onClick?.()}} style={{width:44,height:44,minWidth:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-45)',display:'grid',placeItems:'center',cursor:disabled?'not-allowed':'pointer',padding:0,opacity:disabled?.45:1}}><ShareGlyph/></button>
+export function ShareIconButton({onClick,label='Share',disabled=false,variant='default'}){
+  const compact=variant==='movement' || variant==='inline';
+  return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={e=>{e.stopPropagation();onClick?.()}} style={compact
+    ? {width:40,height:40,minWidth:40,border:0,borderRadius:0,background:'transparent',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',cursor:disabled?'not-allowed':'pointer',padding:0,opacity:disabled?.45:1}
+    : {width:44,height:44,minWidth:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-45)',display:'grid',placeItems:'center',cursor:disabled?'not-allowed':'pointer',padding:0,opacity:disabled?.45:1}
+  }><span style={{width:18,height:18,display:'grid',placeItems:'center'}}><ShareGlyph/></span></button>
 }
