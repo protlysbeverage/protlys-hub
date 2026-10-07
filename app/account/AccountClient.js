@@ -268,6 +268,5 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       </div>
     </div>
     <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Number(profile?.founding_member)===1 || Number(profile?.founding_member)===true || true} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
-    {shareStat && <ShareCardSheet open={!!shareStat} onClose={()=>setShareStat(null)} metric={shareStat.metric} value={shareStat.value} unit={shareStat.unit} label={shareStat.label} subtext={shareStat.subtext} progress={shareStat.progress} username={profile?.display_name || email || 'protlys'} heatmapDays={shareStat.heatmapDays || []} highlightBestRun={shareStat.highlightBestRun || false} />}
   </>;
 }
