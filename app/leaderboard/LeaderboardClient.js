@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 const PAGE_SIZE = 50;
@@ -24,11 +24,8 @@ function Avatar({ user, large=false }) {
 
 export default function LeaderboardClient({ viewerId }) {
   const router = useRouter();
-  const params = useSearchParams();
-  const requestedScope = params.get('scope');
-  const requestedGroup = params.get('group');
-  const [scope, setScope] = useState(requestedScope === 'city' || requestedScope === 'group' ? requestedScope : 'world');
-  const [groupId, setGroupId] = useState(requestedGroup || null);
+  const [scope, setScope] = useState('world');
+  const [groupId, setGroupId] = useState(null);
   const [rows, setRows] = useState([]);
   const [myRank, setMyRank] = useState(null);
   const [statsCache, setStatsCache] = useState({});
@@ -40,10 +37,11 @@ export default function LeaderboardClient({ viewerId }) {
   const listRef = useRef(null);
 
   useEffect(() => {
-    const next = requestedScope === 'city' || requestedScope === 'group' ? requestedScope : 'world';
-    setScope(next);
-    setGroupId(requestedGroup || null);
-  }, [requestedScope, requestedGroup]);
+    const query = new URLSearchParams(window.location.search);
+    const requestedScope = query.get('scope');
+    setScope(requestedScope === 'city' || requestedScope === 'group' ? requestedScope : 'world');
+    setGroupId(query.get('group') || null);
+  }, []);
 
   useEffect(() => {
     let cancelled = false;
