@@ -45,7 +45,12 @@ export default function LeaderboardClient({ viewerId }) {
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState('');
-  const [cityMissing, setCityMissing] = useState(false);\n  const [period, setPeriod] = useState('this_week');\n  const [view, setView] = useState('leaderboard');\n  const [hall, setHall] = useState([]);\n  const [hallLoading, setHallLoading] = useState(false);\n  const [ending, setEnding] = useState(() => countdownText());
+  const [cityMissing, setCityMissing] = useState(false);
+  const [period, setPeriod] = useState('this_week');
+  const [view, setView] = useState('leaderboard');
+  const [hall, setHall] = useState([]);
+  const [hallLoading, setHallLoading] = useState(false);
+  const [ending, setEnding] = useState(() => countdownText());
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -85,7 +90,11 @@ export default function LeaderboardClient({ viewerId }) {
   }, [scope, groupId, period, view]);
 
   const viewer = useMemo(() => rows.find(row => row.user_id === viewerId) || null, [rows, viewerId]);
-  useEffect(() => { const t=window.setInterval(()=>setEnding(countdownText()),1000); return()=>window.clearInterval(t); }, []);\n\n  useEffect(() => { if(view!=='hall') return; let cancelled=false; (async()=>{ setHallLoading(true); const {data,error:e}=await createClient().rpc('get_hall_of_fame',{p_scope:scope,p_group_id:groupId,p_limit:12}); if(cancelled)return; if(e)setError(e.message||'Could not load Hall of Fame.'); else setHall(data||[]); setHallLoading(false); })(); return()=>{cancelled=true}; }, [scope,groupId,view]);\n\n  const top = rows.slice(0, 3);
+  useEffect(() => { const t=window.setInterval(()=>setEnding(countdownText()),1000); return()=>window.clearInterval(t); }, []);
+
+  useEffect(() => { if(view!=='hall') return; let cancelled=false; (async()=>{ setHallLoading(true); const {data,error:e}=await createClient().rpc('get_hall_of_fame',{p_scope:scope,p_group_id:groupId,p_limit:12}); if(cancelled)return; if(e)setError(e.message||'Could not load Hall of Fame.'); else setHall(data||[]); setHallLoading(false); })(); return()=>{cancelled=true}; }, [scope,groupId,view]);
+
+  const top = rows.slice(0, 3);
   const outsidePage = Number(myRank || 0) > PAGE_SIZE && !viewer;
 
   async function loadMore() {
@@ -232,4 +241,4 @@ function HallOfFame({rows,loading,error,onOpen}) {
   </section>;
 }
 
-\n
+
