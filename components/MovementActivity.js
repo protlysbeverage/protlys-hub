@@ -67,6 +67,20 @@ function monthRange(date) {
   };
 }
 
+function buildMonthCache(rows = []) {
+  const cache = {};
+  for (const row of rows) {
+    const key = String(row?.step_date || '').slice(0, 7);
+    if (!/^\d{4}-\d{2}$/.test(key)) continue;
+    if (!cache[key]) cache[key] = [];
+    cache[key].push(row);
+  }
+  for (const key of Object.keys(cache)) {
+    cache[key] = cache[key].slice().sort((a, b) => String(a.step_date).localeCompare(String(b.step_date)));
+  }
+  return cache;
+}
+
 function formatLongDate(key) {
   return parseKey(key).toLocaleDateString([], { weekday: 'long', month: 'short', day: 'numeric' });
 }
@@ -114,7 +128,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [expanded, setExpanded] = useState(false);
   const [todayKey, setTodayKey] = useState(() => dateKey(new Date()));
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
-  const [monthCache, setMonthCache] = useState(() => ({ [monthKey(new Date())]: days.filter(d => String(d.step_date || '').startsWith(monthKey(new Date())) ) }));
+  const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -202,6 +216,20 @@ export default function MovementActivity({ days = [], compact = false, title = '
     }
     return n;
   }, [selectedKey, selectedSteps, monthRows]);
+
+  useEffect(() => {
+    const incoming = buildMonthCache(days);
+    if (!Object.keys(incoming).length) return;
+    setMonthCache(prev => {
+      const next = { ...prev };
+      for (const [key, rows] of Object.entries(incoming)) {
+        const merged = new Map((next[key] || []).map(row => [row.step_date, row]));
+        rows.forEach(row => merged.set(row.step_date, row));
+        next[key] = [...merged.values()].sort((a, b) => String(a.step_date).localeCompare(String(b.step_date)));
+      }
+      return next;
+    });
+  }, [days]);
 
   useEffect(() => {
     if (!expanded || !userId) return;
