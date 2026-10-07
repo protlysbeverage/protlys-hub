@@ -24,7 +24,7 @@ function Avatar({ user, large=false }) {
 
 export default function LeaderboardClient({ viewerId }) {
   const router = useRouter();
-  const [scope, setScope] = useState('world');
+  const [scope, setScope] = useState('kenya');
   const [groupId, setGroupId] = useState(null);
   const [rows, setRows] = useState([]);
   const [myRank, setMyRank] = useState(null);
@@ -39,7 +39,7 @@ export default function LeaderboardClient({ viewerId }) {
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
     const requestedScope = query.get('scope');
-    setScope(requestedScope === 'city' || requestedScope === 'group' ? requestedScope : 'world');
+    setScope(requestedScope === 'city' || requestedScope === 'group' ? requestedScope : 'kenya');
     setGroupId(query.get('group') || null);
   }, []);
 
@@ -146,11 +146,11 @@ export default function LeaderboardClient({ viewerId }) {
             })}
           </section>
 
-          <div className="lb-scope-wrap">
+          <div className="lb-scope-wrap"><div className="lb-scope-caption">{scope === 'kenya' ? 'Everyone in Kenya' : scope === 'city' ? 'People in your city' : 'Members of your group'}</div>
             <div className="lb-scope" role="tablist" aria-label="Leaderboard scope">
-              {['world','city','group'].map(item => (
+              {['kenya','city','group'].map(item => (
                 <button key={item} type="button" className={scope === item ? 'active' : ''} onClick={() => selectScope(item)}>
-                  {item[0].toUpperCase() + item.slice(1)}
+                  {item === 'kenya' ? 'Kenya' : item === 'city' ? 'My City' : 'My Group'}
                 </button>
               ))}
             </div>
@@ -253,9 +253,9 @@ html.protlys-dark .lb-icon-button{background:#151815;border-color:#292D29;color:
 .lb-slot:disabled{cursor:default}.lb-slot strong{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb-slot>span{font-size:11px;color:#6F756F;margin:2px 0 6px}.lb-slot.first>span{color:#8A908A}
 .lb-avatar{width:38px;height:38px;border-radius:12px;object-fit:cover;display:grid;place-items:center;background:#B9C4B5;color:#111;font-size:14px;font-weight:800;flex:none}.lb-avatar-large{width:76px;height:76px;border-radius:22px;font-size:28px}.lb-slot:not(.first) .lb-avatar-large{width:62px;height:62px;border-radius:18px;font-size:22px}
 .lb-initial{background:#6BCB45}.lb-slot.first .lb-avatar{box-shadow:0 0 0 2px #6BCB45,0 8px 28px rgba(107,203,69,.32)}
-.lb-empty{opacity:.25;background:transparent;color:#6F756F;border:1px solid #D9DDD8}.lb-block{width:100%;border-radius:12px 12px 0 0;display:grid;place-items:start center;padding-top:8px;font-size:34px;font-weight:800;color:rgba(255,255,255,.9);background:linear-gradient(180deg,#4F9F35,rgba(79,159,53,.08))}.lb-slot.first .lb-block{height:104px;background:linear-gradient(180deg,#6BCB45,rgba(107,203,69,.08))}.lb-slot.second .lb-block{height:78px}.lb-slot.third .lb-block{height:60px}
-.lb-scope-wrap{position:relative;display:flex;justify-content:center;margin:-16px 0 12px}.lb-scope{display:inline-flex;background:#fff;border:1px solid #D9DDD8;border-radius:999px;padding:3px}.lb-scope button{border:0;background:none;color:#6F756F;font:600 13px inherit;padding:7px 16px;border-radius:999px;cursor:pointer}.lb-scope button.active{background:#6BCB45;color:#111}
-html.protlys-dark .lb-scope,html.protlys-dark .lb-card,.lb-card{background:#151815;border-color:#292D29}.lb-card{border:1px solid #D9DDD8;border-radius:20px;overflow:hidden;position:relative}.lb-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border:0;border-bottom:1px solid #D9DDD8;background:transparent;color:inherit;text-align:left;font-family:inherit;cursor:pointer}.lb-row:last-child{border-bottom:0}.lb-row:hover{background:rgba(107,203,69,.06)}html.protlys-dark .lb-row{border-bottom-color:#292D29}
+.lb-empty{opacity:.25;background:transparent;color:#6F756F;border:1px solid #D9DDD8}.lb-block{width:100%;border-radius:12px 12px 0 0;display:grid;place-items:start center;padding-top:8px;font-size:34px;font-weight:800;color:rgba(255,255,255,.9);background:linear-gradient(180deg,#4F9F35,rgba(79,159,53,.08))}.lb-slot.first .lb-block{height:104px;background:linear-gradient(180deg,#6BCB45,rgba(107,203,69,.16))}.lb-slot.second .lb-block{height:78px}.lb-slot.third .lb-block{height:60px}
+.lb-scope-wrap{position:relative;display:flex;flex-direction:column;align-items:center;gap:5px;margin:-16px 0 12px}.lb-scope-caption{font-size:10px;color:#6F756F;font-weight:600}.lb-scope{display:inline-flex;background:#fff;border:1px solid #D9DDD8;border-radius:999px;padding:3px}.lb-scope button{border:0;background:none;color:#6F756F;font:600 13px inherit;padding:7px 16px;border-radius:999px;cursor:pointer}.lb-scope button.active{background:#6BCB45;color:#111;box-shadow:0 1px 0 rgba(0,0,0,.08)}
+html.protlys-dark .lb-scope,html.protlys-dark .lb-card{background:#151815;border-color:#292D29}.lb-card{background:#fff;border-color:#D9DDD8}.lb-card{border:1px solid #D9DDD8;border-radius:20px;overflow:hidden;position:relative}.lb-row{width:100%;display:flex;align-items:center;gap:12px;padding:11px 14px;border:0;border-bottom:1px solid #D9DDD8;background:transparent;color:inherit;text-align:left;font-family:inherit;cursor:pointer}.lb-row:last-child{border-bottom:0}.lb-row:hover{background:rgba(107,203,69,.06)}html.protlys-dark .lb-row{border-bottom-color:#292D29}
 .lb-rank{width:26px;font-size:12px;color:#6F756F;text-align:center;font-variant-numeric:tabular-nums}.lb-name{flex:1;min-width:0;font-size:14px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}.lb-score{font-size:15px;font-weight:800;font-variant-numeric:tabular-nums;white-space:nowrap}.lb-score small{font-size:10px;color:#6F756F;margin-left:3px;font-weight:400}.lb-row.me{background:rgba(107,203,69,.12);box-shadow:inset 0 0 0 1px #6BCB45}
 .lb-gap{text-align:center;color:#6F756F;padding:4px 0;letter-spacing:4px;border-bottom:1px solid #292D29}.lb-load-more{width:100%;border:0;background:transparent;color:#4F9F35;padding:14px;font:700 12px inherit;cursor:pointer}.lb-notice{margin:0 0 12px;padding:11px 13px;border:1px solid #D9DDD8;border-radius:14px;background:#fff;color:#6F756F;font-size:11.5px}.lb-state{text-align:center;padding:34px 16px;color:#6F756F;font-size:13px}.lb-error{color:#B3261E}
 html.protlys-dark .lb-notice{background:#151815;border-color:#292D29;color:#8A908A}
