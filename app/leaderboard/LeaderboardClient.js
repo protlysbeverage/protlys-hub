@@ -15,7 +15,7 @@ const CSS = `
 .leaderboard-screen{transition:background-color .18s ease,color .18s ease}.leaderboard-screen .lb-row,.leaderboard-screen .lb-slot,.leaderboard-screen .lb-hall-week,.leaderboard-screen .lb-sheet{transition:background-color .18s ease,border-color .18s ease,color .18s ease}
 html.protlys-dark .leaderboard-screen{--lb-accent-foreground:#08110C}
 `;
-\nfunction countdownText(now = new Date()) {
+function countdownText(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(now);
   const get=t=>Number(parts.find(p=>p.type===t)?.value||0);
   const y=get('year'),m=get('month'),d=get('day'),h=get('hour'),mi=get('minute'),s=get('second');
