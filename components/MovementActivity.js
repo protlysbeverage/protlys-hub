@@ -406,7 +406,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       <div className="movement-recent-header">
         <div className="movement-recent-top">
           <div className="t">{title}</div>
-          {(expanded ? movementShareData.hasData : recentTotal > 0) && <ShareIconButton label={expanded ? 'Share movement calendar' : 'Share 7-day steps'} onClick={openMovementShare}/>} 
+          {(expanded ? movementShareData.hasData : recentTotal > 0) && <ShareIconButton variant="movement" label={expanded ? 'Share movement calendar' : 'Share 7-day steps'} onClick={openMovementShare}/>} 
         </div>
         <div className="movement-recent-subtitle">
           {current > 0 ? `${current} ${current === 1 ? 'day' : 'days'} movement streak` : 'Start a movement streak'}{best > current ? ` · best ${best} ${best === 1 ? 'day' : 'days'}` : ''}
@@ -463,12 +463,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
           <div className="movement-streak-grid">
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">CURRENT STREAK</span><span className="streak-label-short">CURRENT</span></div>
-              {current > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share current streak" onClick={()=>openStreakShare('current')}/></span>}
+              {current > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton variant="movement" label="Share current streak" onClick={()=>openStreakShare('current')}/></span>}
               <div className="movement-streak-value"><span>{current}</span><small>{current === 1 ? 'day' : 'days'}</small></div>
             </div>
             <div className="movement-streak-tile">
               <div className="movement-streak-label"><span className="streak-label-long">BEST STREAK</span><span className="streak-label-short">BEST</span></div>
-              {best > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton label="Share best streak" onClick={()=>openStreakShare('best')}/></span>}
+              {best > 0 && <span style={{position:'absolute',top:9,right:9}}><ShareIconButton variant="movement" label="Share best streak" onClick={()=>openStreakShare('best')}/></span>}
               <div className="movement-streak-value"><span>{best}</span><small>{best === 1 ? 'day' : 'days'}</small></div>
             </div>
           </div>
