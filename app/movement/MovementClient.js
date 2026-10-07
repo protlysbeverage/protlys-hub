@@ -72,12 +72,12 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       <div className="screen-pad" style={{paddingTop:6}}>
         <div className="hub-card" style={{padding:16}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}>
-            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div className="t">Steps today</div>{hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>} </div>
+            <div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:8}}><div className="t">Steps today</div>{hasMovement && <ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/>} </div>
             {lastSync && <span style={{fontSize:10.5,color:'var(--ink-45)',fontWeight:500}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
           </div>
           <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:4}}>{todaySteps.toLocaleString()}</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8,marginTop:9}}>
-            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div className="t">Distance</div>{hasMovement && <ShareIconButton label="Share distance" onClick={()=>openShare('distance')}/>} </div><div className="mono" style={{fontSize:18,fontWeight:800}}>{todayDistance.toFixed(1)} km</div></div>
+            <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div style={{display:"flex",alignItems:"center",justifyContent:"space-between",gap:4}}><div className="t">Distance</div>{hasMovement && <ShareIconButton variant="movement" label="Share distance" onClick={()=>openShare('distance')}/>} </div><div className="mono" style={{fontSize:18,fontWeight:800}}>{todayDistance.toFixed(1)} km</div></div>
             <div style={{padding:'9px 10px',background:'var(--green-soft)',borderRadius:11}}><div className="t">Calories</div><div className="mono" style={{fontSize:18,fontWeight:800}}>≈ {todayCalories}</div></div>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
@@ -96,13 +96,13 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
 
         <div className="hub-grid" style={{marginTop:10}}>
           <div className="hub-card" style={{position:'relative',minWidth:0}}>
-            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/></div>}
+            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton variant="movement" label="Share active days" onClick={()=>openShare('movement_days')}/></div>}
             <div className="t" style={{paddingRight:46}}>Days with movement</div>
             <div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div>
             <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the displayed range</div>
           </div>
           <div className="hub-card" style={{position:'relative',minWidth:0}}>
-            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/></div>}
+            {hasMovement && <div style={{position:'absolute',top:10,right:10}}><ShareIconButton variant="movement" label="Share lifetime steps" onClick={()=>openShare('lifetime_steps')}/></div>}
             <div className="t" style={{paddingRight:46}}>Lifetime steps</div>
             <div className="mono" style={{fontSize:20,fontWeight:800}}>{totalSteps >= 1000000 ? `${(totalSteps/1000000).toFixed(1)}M` : totalSteps >= 1000 ? `${Math.round(totalSteps/1000)}K` : totalSteps.toLocaleString()}</div>
             <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded movement</div>
