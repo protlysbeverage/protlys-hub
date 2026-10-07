@@ -1,11 +1,9 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { createPortal } from 'react-dom';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MemberShareSheet from '@/components/MemberShareSheet';
-import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -87,19 +85,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
-  const [shareStat, setShareStat] = useState(null);
   const [activityOpen, setActivityOpen] = useState(false);
   const [highlightedDay, setHighlightedDay] = useState('');
-  const [sheet, setSheet] = useState(null);
-  const sheetRef = useRef(null);
-  const sheetCloseRef = useRef(null);
-  const sheetTouchStartY = useRef(null);
-  const sheetTouchStartX = useRef(null);
-  const sheetTouchDeltaY = useRef(0);
-  const sheetTouchDeltaX = useRef(0);
-  const sheetLastFocus = useRef(null);
-  const [sheetReady, setSheetReady] = useState(false);
-  const [selectedBar, setSelectedBar] = useState(null);
   const activityRowsRef = useRef({});
   const highlightTimer = useRef(null);
 
@@ -152,42 +139,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     }
     return Math.max(longest, Number(profile?.step_streak || 0));
   }, [movementHistory, profile?.step_streak]);
-  const sheetWeek=activeDays.map(day=>({label:new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',weekday:'short'}).format(new Date(day.key+'T12:00:00+03:00')).slice(0,1),km:day.steps*.75/1000,steps:day.steps,key:day.key}));
-  const previousWeek=useMemo(()=>{const end=new Date(todayKey+'T12:00:00+03:00');return Array.from({length:7},(_,i)=>{const d=new Date(end);d.setUTCDate(d.getUTCDate()-(13-i));const key=new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi'}).format(d);return Number(movementHistory.find(row=>row.key===key)?.steps||0);});},[movementHistory,todayKey]);
-  const previousWeekTotal=previousWeek.reduce((s,v)=>s+v,0),previousWeekDays=previousWeek.filter(v=>v>0).length;
-  const sheetIds=['today','distance','days','lifetime'],sheetTitles={today:'Steps today',distance:'Estimated distance',days:'Movement days',lifetime:'Lifetime steps'};
-  useEffect(() => () => { if (highlightTimer.current) window.clearTimeout(highlightTimer.current); }, []);
-  function scrollToActivityDay(key) { setActivityOpen(true); window.setTimeout(()=>{ const row=activityRowsRef.current[key]; if(!row)return; const reduced=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches; row.scrollIntoView({behavior:reduced?'auto':'smooth',block:'center'}); setHighlightedDay(key); if(highlightTimer.current)window.clearTimeout(highlightTimer.current); highlightTimer.current=window.setTimeout(()=>setHighlightedDay(''),1200); },260); }
-
-  function openStatShare(id) {
-    const values = {
-      today: {metric:'steps_today', value:Number(todaySteps).toLocaleString(), unit:'steps', label:'Steps today', subtext:`${Math.round((Number(todaySteps)||0)/Math.max(sheetGoal,1)*100)}% of your daily step goal`, progress:Math.min(1,(Number(todaySteps)||0)/Math.max(sheetGoal,1))},
-      distance: {metric:'distance', value:formatDistance(totalDistanceKm), unit:'', label:'Estimated distance', subtext:'Based on all recorded steps', progress:Math.min(1,totalDistanceKm/42.195)},
-      days: {metric:'movement_days', value:String(activeDayCount), unit:'days', label:'Movement days', subtext:'Active days in the last 7 days', progress:Math.min(1,activeDayCount/7), heatmapDays:movementHistory.filter(row => String(row.key || '').startsWith(todayKey.slice(0,7)))},
-      lifetime: {metric:'lifetime_steps', value:totalSteps.toLocaleString(), unit:'steps', label:'Lifetime steps', subtext:'All recorded movement', progress:0}
-    };
-    setShareStat(values[id] || null);
-  }
-
-  function openSheet(id){sheetLastFocus.current=document.activeElement;setSelectedBar(null);setSheet(id);setSheetReady(false);if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(10);window.setTimeout(()=>setSheetReady(true),0);window.setTimeout(()=>sheetCloseRef.current?.focus(),0);}
-  function closeSheet(){setSheetReady(false);setSheet(null);setSelectedBar(null);if(sheetLastFocus.current&&typeof sheetLastFocus.current.focus==='function')window.setTimeout(()=>sheetLastFocus.current?.focus(),0);}
-  function handleSheetKeyDown(event){if(event.key==='Escape'){event.preventDefault();closeSheet();}}
-  function moveSheet(direction){const i=sheetIds.indexOf(sheet);if(i<0)return;setSelectedBar(null);setSheet(sheetIds[(i+direction+4)%4]);window.setTimeout(()=>sheetCloseRef.current?.focus(),0);}
-  function handleSheetTouchStart(event){const t=event.touches?.[0];sheetTouchStartY.current=t?.clientY??null;sheetTouchStartX.current=t?.clientX??null;sheetTouchDeltaY.current=0;sheetTouchDeltaX.current=0;}
-  function handleSheetTouchMove(event){if(sheetTouchStartY.current==null||sheetTouchStartX.current==null)return;const t=event.touches?.[0];if(!t)return;sheetTouchDeltaY.current=t.clientY-sheetTouchStartY.current;sheetTouchDeltaX.current=t.clientX-sheetTouchStartX.current;if(sheetTouchDeltaY.current>0&&Math.abs(sheetTouchDeltaY.current)>Math.abs(sheetTouchDeltaX.current)&&sheetRef.current)sheetRef.current.style.transform='translateY('+Math.min(sheetTouchDeltaY.current,160)+'px)';}
-  function handleSheetTouchEnd(){const dy=sheetTouchDeltaY.current,dx=sheetTouchDeltaX.current;sheetTouchStartY.current=null;sheetTouchStartX.current=null;sheetTouchDeltaY.current=0;sheetTouchDeltaX.current=0;if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)){moveSheet(dx<0?1:-1);return;}if(dy>72){closeSheet();return;}if(sheetRef.current)sheetRef.current.style.transform='';}
-  useEffect(()=>{if(!sheet)return;document.addEventListener('keydown',handleSheetKeyDown);const previousOverflow=document.body.style.overflow;document.body.style.overflow='hidden';return()=>{document.removeEventListener('keydown',handleSheetKeyDown);document.body.style.overflow=previousOverflow;if(sheetRef.current)sheetRef.current.style.transform='';};},[sheet]);
-
-  function fmt(value) {
-    return Number(value || 0).toLocaleString();
-  }
-
-  function BarChart({values,labels,unit='',selected,onSelect,accentIndex=-1}){const safe=values.map(v=>Number(v||0)),max=Math.max(...safe,1),W=360,H=138,chartH=108,bw=W/Math.max(safe.length,1);return <div style={{position:'relative'}}>{selected!=null&&safe[selected]!=null&&<div style={{position:'absolute',left:'calc('+(((selected+.5)/safe.length)*100)+'% - 22px)',top:0,minWidth:44,textAlign:'center',fontSize:10.5,fontWeight:800,color:'var(--ink)',background:'var(--card)',border:'1px solid var(--line)',borderRadius:8,padding:'4px 6px',zIndex:2}}>{Number(safe[selected]).toFixed(unit==='km'?2:0)}{unit}</div>}<svg viewBox={'0 0 '+W+' '+H} style={{width:'100%',height:'auto',maxHeight:140,display:'block'}} role="img" aria-label="Bar chart">{safe.map((v,i)=>{const bh=v>0?Math.max(4,v/max*chartH):3,a=i===accentIndex;return <g key={i} onClick={()=>onSelect?.(i)}><rect x={i*bw+bw*.22} y={chartH-bh} width={bw*.56} height={bh} rx="4" fill={a?'var(--green-dark)':'var(--ink-45)'} opacity={v?(a?1:.42):.12}/>{labels?.[i]&&<text x={i*bw+bw/2} y={H-7} fontSize="10" textAnchor="middle" fill="currentColor" opacity=".62">{labels[i]}</text>}</g>})}</svg></div>;}
-  function Ring({value,goal}){const g=Math.max(1,Number(goal)||8000),v=Math.max(0,Number(value)||0),p=Math.min(1,v/g),r=45,c=2*Math.PI*r;return <div style={{display:'flex',alignItems:'center',justifyContent:'center',gap:12,margin:'2px 0'}}><svg viewBox="0 0 110 110" style={{width:112,height:112,display:'block'}}><circle cx="55" cy="55" r={r} fill="none" stroke="var(--green-soft)" strokeWidth="10"/><circle cx="55" cy="55" r={r} fill="none" stroke="var(--green-dark)" strokeWidth="10" strokeLinecap="round" strokeDasharray={c} strokeDashoffset={c*(1-p)} transform="rotate(-90 55 55)"/><text x="55" y="60" textAnchor="middle" fontSize="19" fontWeight="800" fill="var(--ink)">{Math.round(p*100)}%</text></svg><div><div style={{fontSize:16,fontWeight:800}}>{p>=1?'Goal reached':fmt(g-v)+' to go'}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:3}}>Daily goal · {fmt(g)} steps</div></div></div>;}
-  function Comparison({children,up}){return children?<div style={{fontSize:12,fontWeight:700,color:up?'var(--green-dark)':'var(--ink-45)',margin:'3px 0 8px'}}>{children}</div>:null;}
-  function EmptyState({text}){return <div style={{padding:'18px 0 2px'}}><p style={{fontSize:13,color:'var(--ink-70)',margin:'0 0 12px'}}>{text}</p><button type="button" onClick={()=>{closeSheet();router.push('/movement');}} style={{width:'100%',minHeight:44,border:0,borderRadius:999,padding:'12px 16px',background:'#2E9E5B',color:'#fff',fontWeight:800}}>Movement &amp; steps</button></div>;}
-  function SheetBody(){const today=Number(todaySteps)||0,weekTotal=sheetWeek.reduce((s,d)=>s+d.steps,0),weekKm=sheetWeek.reduce((s,d)=>s+d.km,0),days=sheetWeek.filter(d=>d.steps>0).length;if(sheet==='today')return today>0?<><div className="sheet-big">{fmt(today)}</div><Comparison up={Number(previousWeek[6]||0)>0&&today>=previousWeek[6]}>{Number(previousWeek[6]||0)>0?(today>=previousWeek[6]?'↑':'↓')+' '+Math.abs(today-previousWeek[6]).toLocaleString()+' vs yesterday':null}</Comparison><Ring value={today} goal={sheetGoal}/><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{Math.round(today/sheetGoal*100)}% of goal</span><span className="sheet-chip">{fmt(Math.max(0,sheetGoal-today))} remaining</span></div></>:<EmptyState text="No steps yet today. Record some in Movement."/>;if(sheet==='distance'){const last=previousWeekTotal*.75/1000,up=last>0&&weekKm>=last;return <><div className="sheet-big">{formatDistance(totalDistanceKm)}</div><Comparison up={up}>{last>0?(up?'↑':'↓')+' '+formatDistance(Math.abs(weekKm-last))+' this week vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.km)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6} unit="km"/><div className="sheet-chips"><span className="sheet-chip">{weekKm.toFixed(1)} km this week</span><span className="sheet-chip">{(totalDistanceKm/42.195).toFixed(1)} marathons</span></div></>;}if(sheet==='days'){const up=previousWeekDays>0&&days>=previousWeekDays;return <><div className="sheet-big">{days} of 7</div><Comparison up={up}>{previousWeekDays>0?(up?'↑':'↓')+' '+Math.abs(days-previousWeekDays)+' days vs last week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps>0?1:0)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{consistency30}% active in 30 days</span><span className="sheet-chip">Longest: {longestMovementStreak} days</span></div></>;}if(totalSteps<=0)return <EmptyState text="No steps yet. Record some in Movement."/>;return <><div className="sheet-big">{fmt(totalSteps)}</div><Comparison up={weekTotal>0}>{weekTotal>0?'+'+fmt(weekTotal)+' steps added this week':null}</Comparison><BarChart values={sheetWeek.map(d=>d.steps)} labels={sheetWeek.map(d=>d.label)} selected={selectedBar} onSelect={setSelectedBar} accentIndex={6}/><div className="sheet-chips"><span className="sheet-chip">{fmt(weekTotal)} added this week</span><span className="sheet-chip">{fmt(totalSteps)} total</span></div></>;}
-
   function handleShareProfile() {
     if (!profile?.id) return;
     setMessage('');
@@ -308,23 +259,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           </div></div>
         </div>
       </section>
-
-      <div className="hub-grid" style={{marginBottom:20}}>
-        {[
-          ['today','Steps today',Number(todaySteps).toLocaleString(),null],
-          ['distance','Estimated distance',formatDistance(totalDistanceKm),'all recorded steps'],
-          ['days','Movement days',String(activeDayCount),'last 7 days'],
-          ['lifetime','Lifetime steps',totalSteps.toLocaleString(),'all recorded movement'],
-        ].map(([id,label,value,note]) => <div key={id} role="button" tabIndex={0} aria-haspopup="dialog" aria-expanded={sheet === id} aria-label={label + ': ' + value + '. Open details'} className="hub-card dashboard-stat-tile" onClick={() => openSheet(id)} onKeyDown={event => {
-          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); openSheet(id); }
-        }} style={{minHeight:82,display:'flex',flexDirection:'column',justifyContent:'center',alignItems:'flex-start',padding:'12px',cursor:'pointer',position:'relative'}}><span style={{position:'absolute',top:12,right:52,width:40,height:40,display:'grid',placeItems:'center'}}><ShareIconButton label={'Share '+label} onClick={()=>openStatShare(id)}/></span><span aria-hidden="true" style={{position:'absolute',top:12,right:12,width:28,height:28,display:'grid',placeItems:'center',color:'var(--ink-45)',transform:'rotate('+(sheet===id?180:0)+'deg)',transition:'transform 200ms var(--ease-out)'}}><Icon name="chevronDown" size={16}/></span>
-          <div className="t" style={{fontSize:9.5,lineHeight:1.15,marginBottom:5}}>{label}</div>
-          <div className="mono" style={{fontSize:18,fontWeight:800,lineHeight:1.1}}>{value}</div>
-          {note && <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:3}}>{note}</div>}
-        </div>)}
-      </div>
-      <p className="disclaimer" style={{marginTop:-8,marginBottom:20}}>Distance is an estimate using an average 0.75 m stride. Your actual distance may vary.</p>
-      {sheet && typeof document !== 'undefined' && createPortal(<div className="dashboard-sheet-layer"><div className="dashboard-sheet-scrim" onClick={closeSheet} aria-hidden="true"/><section ref={sheetRef} className={'dashboard-sheet'+(sheetReady?' is-open':'')} role="dialog" aria-modal="true" aria-labelledby="dashboard-sheet-title" aria-describedby="dashboard-sheet-body" onClick={event=>event.stopPropagation()} onTouchStart={handleSheetTouchStart} onTouchMove={handleSheetTouchMove} onTouchEnd={handleSheetTouchEnd}><div className="dashboard-sheet-grab" aria-hidden="true"/><div className="dashboard-sheet-dots" role="tablist" aria-label="Dashboard statistics">{sheetIds.map(id=><button key={id} type="button" role="tab" aria-selected={sheet===id} aria-label={sheetTitles[id]} className={'dashboard-sheet-dot'+(sheet===id?' is-active':'')} onClick={()=>{setSelectedBar(null);setSheet(id);}}/>)}</div><div className="dashboard-sheet-head"><h3 id="dashboard-sheet-title">{sheetTitles[sheet]}</h3><button ref={sheetCloseRef} type="button" onClick={closeSheet} aria-label="Close details" className="dashboard-sheet-close">×</button></div><div id="dashboard-sheet-body" className="dashboard-sheet-body"><SheetBody/></div></section></div>,document.body)}
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
