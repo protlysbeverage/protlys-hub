@@ -7,6 +7,12 @@ import { createClient } from '@/lib/supabase/client';
 const PAGE_SIZE = 50;
 const DAY_LABELS = ['T','F','S','S','M','T','W'];
 const TZ = 'Africa/Nairobi';
+const CSS = `
+.leaderboard-screen{min-height:100dvh;padding:18px 16px 100px;background:var(--background,#0D0F0E);color:var(--foreground,#F7F8F6);position:relative}
+.lb-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 0%,rgba(107,203,69,.08),transparent 38%)}
+.lb-header,.lb-scope-wrap,.lb-card,.lb-podium,.lb-hall,.lb-notice{position:relative;z-index:1;max-width:720px;margin-left:auto;margin-right:auto}
+.lb-header{display:flex;align-items:center;gap:12px;margin-bottom:18px}.lb-header h1{font-size:22px;margin:0;flex:1}.lb-header h1 span{display:block;font-size:12px;font-weight:500;opacity:.55;margin-top:3px}.lb-icon-button,.lb-close{border:0;background:transparent;color:inherit;font-size:28px}.lb-podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;gap:8px;align-items:end;margin-bottom:18px}.lb-slot,.lb-row,.lb-load-more{border:0;color:inherit;background:var(--card,#151815);cursor:pointer}.lb-slot{border-radius:18px;padding:14px 7px;display:flex;flex-direction:column;align-items:center;gap:7px}.lb-slot.first{padding-top:20px}.lb-avatar{width:42px;height:42px;border-radius:50%;object-fit:cover;background:#242824;display:grid;place-items:center;font-weight:700}.lb-avatar-large{width:64px;height:64px}.lb-initial{font-size:15px}.lb-slot strong{font-size:12px;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb-slot span{font-size:11px;opacity:.7}.lb-block{font-size:11px;opacity:.5}.lb-scope-wrap{margin-bottom:12px}.lb-scope-caption{font-size:12px;opacity:.55;margin-bottom:8px}.lb-scope{display:flex;gap:6px;overflow:auto}.lb-scope button,.lb-period button{border:1px solid rgba(128,128,128,.2);background:transparent;color:inherit;border-radius:999px;padding:9px 13px;white-space:nowrap}.lb-scope button.active,.lb-period button.active{background:#6BCB45;color:#0D0F0E;border-color:#6BCB45}.lb-card{border-radius:18px;overflow:hidden}.lb-row{width:100%;display:grid;grid-template-columns:34px 42px 1fr auto;align-items:center;gap:10px;padding:12px 14px;text-align:left;border-bottom:1px solid rgba(128,128,128,.1)}.lb-row.me{outline:1px solid rgba(107,203,69,.45);outline-offset:-1px}.lb-rank{font-size:12px;opacity:.6}.lb-name{font-weight:650;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.lb-score{font-size:13px;text-align:right}.lb-score small{display:block;font-size:9px;opacity:.5}.lb-state,.lb-notice{padding:28px;text-align:center;opacity:.7}.lb-error{color:#ff8b8b}.lb-gap{text-align:center;padding:10px;opacity:.4}.lb-load-more{width:100%;padding:14px}.lb-you-pill{position:fixed;bottom:88px;left:50%;transform:translateX(-50%);z-index:5;border:1px solid #6BCB45;background:#151815;color:inherit;border-radius:999px;padding:10px 15px;display:flex;gap:12px}.lb-sheet-layer{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.58);display:flex;align-items:flex-end}.lb-sheet{width:100%;max-height:88dvh;overflow:auto;background:var(--background,#0D0F0E);border-radius:24px 24px 0 0;padding:12px 16px 28px}.lb-sheet-handle{width:40px;height:4px;border-radius:99px;background:#666;margin:0 auto 16px}.lb-sheet-head{display:flex;justify-content:space-between;align-items:center}.lb-sheet-user{display:flex;align-items:center;gap:10px}.lb-sheet-user strong,.lb-sheet-user>div>span{display:block}.lb-sheet-user>div>span{font-size:11px;opacity:.55;margin-top:3px}.lb-last-badge{font-size:10px;margin-left:7px;color:#6BCB45}.lb-days{display:grid;grid-template-columns:repeat(7,1fr);gap:7px;margin:18px 0}.lb-days div{text-align:center;padding:8px 0;border-radius:10px;background:#222621;font-size:11px}.lb-days div.on{background:#6BCB45;color:#0D0F0E}.lb-tiles{display:grid;grid-template-columns:1fr 1fr;gap:8px}.lb-tiles>div{background:var(--card,#151815);border-radius:14px;padding:13px}.lb-tiles small{display:block;opacity:.55;font-size:10px}.lb-tiles strong{display:block;font-size:18px;margin-top:4px}.lb-tiles i{font-style:normal;font-size:10px;opacity:.55;margin-left:3px}.lb-hall-title{padding:12px 0 8px}.lb-hall-title strong{display:block;font-size:20px}.lb-hall-title span{font-size:12px;opacity:.55}.lb-hall-week{background:var(--card,#151815);border-radius:16px;overflow:hidden;margin-bottom:12px}.lb-hall-week-head{padding:12px 14px;font-size:12px;opacity:.55}.lb-hall-week .lb-row{background:transparent}.lb-sheet-loading{padding:30px;text-align:center;opacity:.6}
+`;
 function countdownText(now = new Date()) {
   const parts = new Intl.DateTimeFormat('en-US',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit',hour:'2-digit',minute:'2-digit',second:'2-digit',hourCycle:'h23'}).formatToParts(now);
   const get=t=>Number(parts.find(p=>p.type===t)?.value||0);
@@ -167,11 +173,11 @@ export default function LeaderboardClient({ viewerId }) {
             })}
           </section>
 
-          <div className="lb-scope-wrap"><div className="lb-scope-caption">{scope === 'kenya' ? 'Everyone in Kenya' : scope === 'city' ? 'People in your city' : 'Members of your group'}</div>
+          <div className="lb-scope-wrap"><div className="lb-scope-caption">{scope === 'world' ? 'Everyone' : scope === 'city' ? 'People in your city' : 'Members of your group'}</div>
             <div className="lb-scope" role="tablist" aria-label="Leaderboard scope">
-              {['kenya','city','group'].map(item => (
+              {['world','city','group'].map(item => (
                 <button key={item} type="button" className={scope === item ? 'active' : ''} onClick={() => selectScope(item)}>
-                  {item === 'kenya' ? 'Kenya' : item === 'city' ? 'My City' : 'My Group'}
+                  {item === 'world' ? 'World' : item === 'city' ? 'My City' : 'My Group'}
                 </button>
               ))}
             </div>
@@ -193,7 +199,7 @@ export default function LeaderboardClient({ viewerId }) {
             {outsidePage && (
               <>
                 <div className="lb-gap">···</div>
-                <OutsideViewer viewerId={viewerId} scope={scope} groupId={groupId} myRank={myRank} onOpen={openMember} />
+                <OutsideViewer viewerId={viewerId} scope={scope} groupId={groupId} period={period} myRank={myRank} onOpen={openMember} />
               </>
             )}
             {rows.length >= PAGE_SIZE && !outsidePage && <button type="button" className="lb-load-more" onClick={loadMore} disabled={loadingMore}>{loadingMore ? 'Loading…' : 'Load more'}</button>}
