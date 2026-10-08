@@ -138,13 +138,9 @@ export default function CalculatorClient({ savedTarget, profile }) {
   },[]);
 
   const step={fontSize:14,fontWeight:900,letterSpacing:'.05em'};
-  .calculator-loader{display:flex;min-height:330px;flex-direction:column;align-items:center;justify-content:center;text-align:center}
-  .calculator-loader-jump{animation:protlys-loader-jump .7s ease-out both}
-  .protlys-loader{display:flex;align-items:center;justify-content:center}
-  @keyframes protlys-loader-jump{0%{transform:translateY(0)}35%{transform:translateY(-18px)}65%{transform:translateY(0)}82%{transform:translateY(-6px)}100%{transform:translateY(0)}}
-  @media (prefers-reduced-motion: reduce){.calculator-loader-jump{animation:none}}
 
-  return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom))'}}>
+  return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom)')}}>
+    <style>{`.calculator-loader{display:flex;min-height:330px;flex-direction:column;align-items:center;justify-content:center;text-align:center}.calculator-loader-jump{animation:protlys-loader-jump .7s ease-out both}.protlys-loader{display:flex;align-items:center;justify-content:center}@keyframes protlys-loader-jump{0%{transform:translateY(0)}35%{transform:translateY(-18px)}65%{transform:translateY(0)}82%{transform:translateY(-6px)}100%{transform:translateY(0)}}@media (prefers-reduced-motion: reduce){.calculator-loader-jump{animation:none}}`}</style>
     <span className="eyebrow">Protlys</span><h1 style={{fontSize:26}}>Find your daily protein target</h1><p className="subhead">Get a clear number you can actually use. Takes about 30 seconds.</p>
     <section className="section-card" style={{marginTop:18}}><span className="field-label calculator-step-label" style={step}>STEP 1 — YOUR WEIGHT</span><div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><input id="weight" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input mono" style={{fontSize:28,fontWeight:700,flex:1}}/><span className="mono" style={{fontSize:18,opacity:.55}}>kg</span></div></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={2}/><span className="field-label calculator-step-label" style={step}>STEP 2 — BIOLOGICAL SEX</span><OptionGrid items={SEX} value={sex} onChange={setSex} getValue={i=>i.v} height={112}/></section>
