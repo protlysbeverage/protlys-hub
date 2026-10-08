@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import PostShareSheet from '@/components/PostShareSheet';
+import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 import {
   createFeedPostAction,
   updateFeedPostAction,
@@ -248,6 +249,24 @@ function ComposePost({ profile, onPosted }) {
 
 function EmptyState() { return <div style={{ textAlign: 'center', padding: '38px 20px', background: '#fff', borderRadius: 18, border: '1.5px solid var(--line)' }}><div style={{ width: 44, height: 44, margin: '0 auto 12px', borderRadius: 12, background: 'var(--green-soft)', color: 'var(--green-dark)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}><Icon name="image" size={21} /></div><div style={{ fontWeight: 800, marginBottom: 5 }}>Start the conversation</div><p className="subhead" style={{ margin: 0 }}>Share a workout, walk, milestone or photo with the community.</p></div>; }
 
+function RelaxationContextCard() {
+  return <Link href="/relaxation" className="feed-relaxation-card">
+    <div className="feed-relaxation-copy">
+      <div className="feed-relaxation-kicker">Need a reset?</div>
+      <div className="feed-relaxation-title">Take a moment to slow down.</div>
+      <div className="feed-relaxation-desc">Try a short breathing session between everything else.</div>
+      <span className="feed-relaxation-link">Relax for a few minutes →</span>
+    </div>
+    <div className="feed-relaxation-art"><ProtlysLoader /></div>
+    <style>{`
+      .feed-relaxation-card{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:-2px 0 16px;padding:14px 15px;border:1.5px solid var(--line);border-radius:18px;background:var(--card);color:inherit;text-decoration:none;overflow:hidden}
+      .feed-relaxation-copy{min-width:0;flex:1}.feed-relaxation-kicker{font-size:9px;text-transform:uppercase;letter-spacing:.1em;font-weight:800;color:var(--ink-45)}
+      .feed-relaxation-title{font-size:14px;font-weight:800;margin-top:3px}.feed-relaxation-desc{font-size:11px;line-height:1.4;color:var(--ink-45);margin-top:3px}.feed-relaxation-link{display:inline-block;margin-top:7px;font-size:10.5px;font-weight:800;color:var(--green-dark)}
+      .feed-relaxation-art{width:58px;height:58px;flex:0 0 58px;display:flex;align-items:center;justify-content:center}.feed-relaxation-art .protlys-loader,.feed-relaxation-art .protlys-loader-mascot,.feed-relaxation-art .protlys-loader-svg{width:58px!important;height:58px!important}
+    `}</style>
+  </Link>;
+}
+
 export default function FeedClient({ posts, likedIds, userId, profile }) {
   const router = useRouter();
   const [liked, setLiked] = useState(new Set(likedIds));
@@ -268,6 +287,8 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
     <ComposePost profile={profile} onPosted={() => { showToast('Posted'); router.refresh(); }} />
+
+    <RelaxationContextCard />
 
     {posts?.length ? posts.map(post => {
       const isLiked = liked.has(post.id);
