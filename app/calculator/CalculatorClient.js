@@ -43,6 +43,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
   const [calculatorState,setCalculatorState]=useState('idle'); const [loaderProgress,setLoaderProgress]=useState(0); const [calcError,setCalcError]=useState(''); const [showMethod,setShowMethod]=useState(false);
   const [saveMessage,setSaveMessage]=useState('');
   const resultRef = useRef(null);
+  const loaderRef = useRef(null);
 
   useEffect(()=>{
     try{
@@ -67,6 +68,13 @@ export default function CalculatorClient({ savedTarget, profile }) {
     raf=requestAnimationFrame(tick);
     return()=>cancelAnimationFrame(raf);
   },[result]);
+
+  useEffect(()=>{
+    if(calculatorState!=='jump'||!loaderRef.current)return;
+    const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    if(reduce)return;
+    loaderRef.current.animate([{transform:'translateY(0)'},{transform:'translateY(-18px)'},{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:700,easing:'ease-out'});
+  },[calculatorState]);
 
   useEffect(()=>{
     if(!result || !resultRef.current)return;
@@ -140,7 +148,6 @@ export default function CalculatorClient({ savedTarget, profile }) {
   const step={fontSize:14,fontWeight:900,letterSpacing:'.05em'};
 
   return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom)')}}>
-    <style>{`.calculator-loader{display:flex;min-height:330px;flex-direction:column;align-items:center;justify-content:center;text-align:center}.calculator-loader-jump{animation:protlys-loader-jump .7s ease-out both}.protlys-loader{display:flex;align-items:center;justify-content:center}@keyframes protlys-loader-jump{0%{transform:translateY(0)}35%{transform:translateY(-18px)}65%{transform:translateY(0)}82%{transform:translateY(-6px)}100%{transform:translateY(0)}}@media (prefers-reduced-motion: reduce){.calculator-loader-jump{animation:none}}`}</style>
     <span className="eyebrow">Protlys</span><h1 style={{fontSize:26}}>Find your daily protein target</h1><p className="subhead">Get a clear number you can actually use. Takes about 30 seconds.</p>
     <section className="section-card" style={{marginTop:18}}><span className="field-label calculator-step-label" style={step}>STEP 1 — YOUR WEIGHT</span><div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><input id="weight" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input mono" style={{fontSize:28,fontWeight:700,flex:1}}/><span className="mono" style={{fontSize:18,opacity:.55}}>kg</span></div></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={2}/><span className="field-label calculator-step-label" style={step}>STEP 2 — BIOLOGICAL SEX</span><OptionGrid items={SEX} value={sex} onChange={setSex} getValue={i=>i.v} height={112}/></section>
@@ -148,7 +155,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
     <div ref={resultRef} role="status" aria-live="polite" style={{marginTop:26,scrollMarginTop:90,height:calculatorState==='idle'?'0px':'760px',paddingBottom:20,boxSizing:'border-box'}}>
-      {(calculatorState==='loading'||calculatorState==='jump')&&<div className={calculatorState==='jump'?'calculator-loader calculator-loader-jump':'calculator-loader'}>
+      {(calculatorState==='loading'||calculatorState==='jump')&&<div ref={loaderRef} style={{display:'flex',minHeight:330,flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
         <ProtlysLoader progress={loaderProgress}/>
         <div className="mono" style={{fontSize:16,fontWeight:800,marginTop:4}}>{loaderProgress}%</div>
         <div className="subhead" style={{marginTop:4}}>{loaderProgress<45?'Weighing your protein':loaderProgress<72?'Counting grams':loaderProgress<100?'Checking your target':'Done!'}</div>
