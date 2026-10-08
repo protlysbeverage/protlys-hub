@@ -7,6 +7,7 @@ const STARTERS = [
   'How am I doing this week?',
   'What should I focus on today?',
   'Explain my protein target.',
+  'I need a moment to relax.',
 ];
 
 export default function PROTClient() {
