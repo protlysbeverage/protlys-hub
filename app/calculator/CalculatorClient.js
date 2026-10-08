@@ -198,10 +198,12 @@ export default function CalculatorClient({ savedTarget, profile }) {
         {PROTLYS_CALCULATOR_PRODUCTS.length>0&&<div style={{marginTop:14}}>
           <div style={{fontSize:11,fontWeight:800,color:'var(--ink-45)',textTransform:'uppercase',letterSpacing:'.08em'}}>Shop Protlys</div>
           <div className="row-scroll" style={{padding:'10px 0 3px',margin:0}}>
-            {PROTLYS_CALCULATOR_PRODUCTS.slice(0,3).map(product=><a key={product.url} href={product.url} target="_blank" rel="noopener noreferrer" style={{minWidth:150,maxWidth:180,flex:'0 0 150px',textDecoration:'none',background:'var(--white)',border:'1px solid var(--line)',borderRadius:14,padding:10}}>
-              <div style={{height:82,borderRadius:10,overflow:'hidden',background:'var(--green-soft)',marginBottom:8}}>{product.image&&<img src={product.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/></div>
-              <div style={{fontSize:12,fontWeight:800,lineHeight:1.25}}>{product.title}</div>
-            </a>)}
+            {PROTLYS_CALCULATOR_PRODUCTS.slice(0,3).map(product => (
+              <a key={product.url} href={product.url} target="_blank" rel="noopener noreferrer" style={{minWidth:150,maxWidth:180,flex:'0 0 150px',textDecoration:'none',background:'var(--white)',border:'1px solid var(--line)',borderRadius:14,padding:10}}>
+                <div style={{height:82,borderRadius:10,overflow:'hidden',background:'var(--green-soft)',marginBottom:8}}>{product.image ? <img src={product.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/> : null}</div>
+                <div style={{fontSize:12,fontWeight:800,lineHeight:1.25}}>{product.title}</div>
+              </a>
+            ))}
           </div>
         </div>}
         {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
