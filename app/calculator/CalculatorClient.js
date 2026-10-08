@@ -53,6 +53,10 @@ export default function CalculatorClient({ savedTarget, profile }) {
   },[]);
 
   useEffect(()=>{
+    loaderRef.current?.setProgress(loaderProgress);
+  },[loaderProgress]);
+
+  useEffect(()=>{
     if(!result)return;
     const finalValue=Number(result.target)||0;
     if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){ setDisplayTarget(finalValue); return; }
@@ -70,13 +74,6 @@ export default function CalculatorClient({ savedTarget, profile }) {
   },[result]);
 
   useEffect(()=>{
-    if(calculatorState!=='jump'||!loaderRef.current)return;
-    const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
-    if(reduce)return;
-    loaderRef.current.animate([{transform:'translateY(0)'},{transform:'translateY(-18px)'},{transform:'translateY(0)'},{transform:'translateY(-6px)'},{transform:'translateY(0)'}],{duration:700,easing:'ease-out'});
-  },[calculatorState]);
-
-  useEffect(()=>{
     if(!result || !resultRef.current)return;
     requestAnimationFrame(()=>{
       resultRef.current?.scrollIntoView({behavior:'smooth',block:'start'});
@@ -88,9 +85,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
     if(calculatorState==='loading'||calculatorState==='jump')return;
     const selected=GOALS.find(i=>i.id===goal)||GOALS[1]; const sexFactor=sex==='female'?0.92:sex==='other'?0.96:1;
     const target=Math.round(w*selected.v*sexFactor); const min=Math.round(w*.8); const max=Math.round(w*2.2); const pct=Math.min(100,Math.max(0,Math.round(((target-min)/(max-min))*100)));
-    const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
     setCalcError(''); setSaved(false); setShowMethod(false); setResult(null);
-    if(reduce){ setLoaderProgress(100); setResult({target,min,max,pct,goal:selected.v,activity,sex,weight:w}); setCalculatorState('done'); return; }
     setCalculatorState('loading'); setLoaderProgress(0);
     try{
       const started=performance.now();
@@ -156,9 +151,9 @@ export default function CalculatorClient({ savedTarget, profile }) {
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate} disabled={calculatorState==='loading'||calculatorState==='jump'}>
       {calculatorState==='loading'||calculatorState==='jump'?'Calculating...':calculatorState==='idle'?'Calculate my protein target →':'Calculate again →'}
     </button>
-    <div ref={resultRef} className="calculator-result-status" role="status" aria-live="polite" style={{marginTop:26,scrollMarginTop:90,height:calculatorState==='idle'?'0px':'auto',minHeight:(calculatorState==='loading'||calculatorState==='jump')?'430px':0,paddingBottom:20,boxSizing:'border-box'}}>
-      {(calculatorState==='loading'||calculatorState==='jump')&&<div ref={loaderRef} style={{display:'flex',minHeight:330,flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-        <ProtlysLoader progress={loaderProgress}/>
+    <div ref={resultRef} className="calculator-result-status" role="status" aria-live="polite" style={{marginTop:14,scrollMarginTop:90,height:calculatorState==='idle'?'0px':'auto',minHeight:0,width:'100%',gridColumn:'1 / -1',justifySelf:'stretch',alignSelf:'stretch',minWidth:0,paddingBottom:20,boxSizing:'border-box'}}>
+      {(calculatorState==='loading'||calculatorState==='jump')&&<div style={{display:'flex',width:'100%',minWidth:0,flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
+        <ProtlysLoader ref={loaderRef}/>
         <div className="mono" style={{fontSize:16,fontWeight:800,marginTop:4}}>{loaderProgress}%</div>
         <div className="subhead" style={{marginTop:4}}>{loaderProgress<45?'Weighing your protein':loaderProgress<72?'Counting grams':loaderProgress<100?'Checking your target':'Done!'}</div>
       </div>}
