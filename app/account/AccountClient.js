@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MemberShareSheet from '@/components/MemberShareSheet';
+import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -87,6 +88,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [memberShareOpen, setMemberShareOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
   const [highlightedDay, setHighlightedDay] = useState('');
+  const mascotRef = useRef(null);
   const activityRowsRef = useRef({});
   const highlightTimer = useRef(null);
 
@@ -106,6 +108,9 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const activeDayCount = activeDays.filter(day => day.steps > 0).length;
   const activeRows = activeDays.filter(day => day.steps > 0).slice().reverse();
   const weekTotalSteps = activeDays.reduce((sum,day)=>sum+day.steps,0);
+  const mascotProgress = Math.min(100, Math.max(0, Math.round((Number(todaySteps || 0) / Math.max(1, stepGoal)) * 100)));
+  const mascotMessage = mascotProgress >= 100 ? 'Goal reached. That’s the energy.' : mascotProgress >= 60 ? 'You’re getting close. Keep moving.' : mascotProgress > 0 ? 'Good start. Let’s build the day.' : 'Ready when you are. Let’s get moving.';
+  useEffect(() => { mascotRef.current?.setProgress(mascotProgress); }, [mascotProgress]);
   const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
   const sheetGoal = Number(stepGoal) || 8000;
@@ -203,6 +208,17 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       </div>
     </div>
 
+    <div className="screen-pad dashboard-mascot-wrap" style={{paddingTop:0,paddingBottom:0}}>
+      <section className="dashboard-mascot-card" aria-label="Protlys coach">
+        <div className="dashboard-mascot-art"><ProtlysLoader ref={mascotRef}/></div>
+        <div className="dashboard-mascot-copy">
+          <div className="dashboard-mascot-kicker">Your move</div>
+          <div className="dashboard-mascot-message">{mascotMessage}</div>
+          <div className="dashboard-mascot-progress">{Number(todaySteps || 0).toLocaleString()} / {Number(stepGoal).toLocaleString()} steps</div>
+        </div>
+      </section>
+    </div>
+
     <div className="screen-pad" style={{paddingTop:4,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
@@ -231,7 +247,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 .sheet-day-pill i.on{background:var(--green-dark);border-color:var(--green-dark)}
 @media (prefers-reduced-motion:reduce){.dashboard-sheet{transition:none}}
 .week-strip{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:8px;width:100%;box-sizing:border-box}.week-strip>*{min-width:0;text-align:center}.week-strip .capsule{width:100%;max-width:100%;height:10px;border-radius:999px}.week-strip-item{box-sizing:border-box}
-`}</style>
+.dashboard-mascot-wrap{padding-left:16px!important;padding-right:16px!important}.dashboard-mascot-card{display:flex;align-items:center;gap:12px;margin-top:12px;padding:12px 14px;border:1.5px solid var(--line);border-radius:18px;background:var(--card);overflow:hidden}.dashboard-mascot-art{width:72px;height:72px;flex:0 0 72px;display:flex;align-items:center;justify-content:center}.dashboard-mascot-art .protlys-loader{width:100%!important;display:flex;align-items:center;justify-content:center}.dashboard-mascot-art .protlys-loader-mascot{width:72px!important;margin:0!important}.dashboard-mascot-copy{min-width:0;flex:1}.dashboard-mascot-kicker{font-size:9px;letter-spacing:.11em;text-transform:uppercase;color:var(--ink-45);font-weight:800}.dashboard-mascot-message{font-size:14px;line-height:1.25;font-weight:800;margin-top:3px}.dashboard-mascot-progress{font-size:10.5px;color:var(--ink-45);margin-top:5px}.dashboard-mascot-card .protlys-loader-svg{width:100%!important;height:auto!important}@media(min-width:900px){.dashboard-mascot-wrap{padding-left:0!important;padding-right:0!important}}`}</style>
       <section className="hub-card" style={{padding:14,marginBottom:10,boxSizing:'border-box',overflow:'hidden'}}>
         <div role="button" tabIndex={0} aria-expanded={activityOpen} aria-controls="recent-activity-details" onClick={() => setActivityOpen(v => !v)} onKeyDown={event => { if(event.key==='Enter' || event.key===' ') { event.preventDefault(); setActivityOpen(v => !v); } }} style={{display:'block',width:'100%',minHeight:44,padding:0,margin:0,border:0,background:'transparent',color:'inherit',textAlign:'left',cursor:'pointer'}}>
           <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:10}}><div><div className="t" style={{fontSize:10}}>Recent activity</div><div style={{fontSize:15,fontWeight:800,marginTop:3}}>{activeDayCount} days with movement</div></div>
