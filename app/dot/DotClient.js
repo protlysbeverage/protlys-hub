@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useRef, useState } from 'react';
+import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 
 const STARTERS = [
   'How am I doing this week?',
@@ -17,6 +18,7 @@ export default function PROTClient() {
   const [loading, setLoading] = useState(false);
   const inputRef = useRef(null);
   const endRef = useRef(null);
+  const mascotRef = useRef(null);
 
   useEffect(() => {
     if (open) setTimeout(() => inputRef.current?.focus(), 80);
@@ -25,6 +27,10 @@ export default function PROTClient() {
   useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
   }, [messages, loading]);
+
+  useEffect(() => {
+    mascotRef.current?.setProgress(loading ? 62 : 100);
+  }, [loading]);
 
   async function send(text = input) {
     const clean = String(text || '').trim();
@@ -55,7 +61,7 @@ export default function PROTClient() {
         .protlys-prot-launch span{width:11px;height:11px;border-radius:50%;background:var(--green,#2e9e5b);box-shadow:0 0 0 5px var(--green-soft,#e4f3ea)}
         .protlys-prot-panel{position:fixed;right:16px;bottom:150px;z-index:10002;width:min(390px,calc(100vw - 24px));height:min(620px,calc(100dvh - 174px));display:flex;flex-direction:column;background:var(--card,#fff);color:var(--ink,#0f2a4a);border:1px solid var(--line,rgba(15,42,74,.12));border-radius:24px;box-shadow:0 24px 60px rgba(15,42,74,.2);overflow:hidden}
         .protlys-prot-head{display:flex;align-items:center;justify-content:space-between;padding:16px 17px;border-bottom:1px solid var(--line,rgba(15,42,74,.12))}
-        .protlys-prot-title{display:flex;align-items:center;gap:10px}.protlys-prot-mark{width:30px;height:30px;border-radius:50%;background:var(--green-soft,#e4f3ea);display:grid;place-items:center}.protlys-prot-mark i{width:8px;height:8px;border-radius:50%;background:var(--green,#2e9e5b)}
+        .protlys-prot-title{display:flex;align-items:center;gap:10px}.protlys-prot-mark{width:34px;height:34px;display:grid;place-items:center;overflow:hidden;flex:0 0 34px}.protlys-prot-mark .protlys-loader{width:34px;height:34px;display:flex;align-items:center;justify-content:center}.protlys-prot-mark .protlys-loader-mascot{width:34px;height:34px}.protlys-prot-mark .protlys-loader-svg{width:34px;height:34px}.protlys-prot-avatar{width:28px;height:28px;flex:0 0 28px;display:grid;place-items:center;overflow:hidden}.protlys-prot-avatar .protlys-loader{width:28px;height:28px;display:flex;align-items:center;justify-content:center}.protlys-prot-avatar .protlys-loader-mascot{width:28px;height:28px}.protlys-prot-avatar .protlys-loader-svg{width:28px;height:28px}.protlys-prot-message-row{display:flex;align-items:flex-end;gap:7px;margin-bottom:9px}.protlys-prot-message-row.user{justify-content:flex-end}.protlys-prot-message-row .protlys-prot-msg{margin-bottom:0}
         .protlys-prot-close{width:34px;height:34px;border:0;border-radius:50%;background:transparent;color:inherit;font-size:21px;cursor:pointer}
         .protlys-prot-body{flex:1;min-height:0;overflow:auto;padding:16px}
         .protlys-prot-msg{max-width:88%;padding:11px 13px;border-radius:16px;margin-bottom:9px;font-size:13px;line-height:1.48;white-space:pre-wrap}
@@ -75,13 +81,13 @@ export default function PROTClient() {
       {open && (
         <section className="protlys-prot-panel" role="dialog" aria-modal="false" aria-label="Protlys PROT">
           <header className="protlys-prot-head">
-            <div className="protlys-prot-title"><span className="protlys-prot-mark"><i /></span><div><div style={{fontSize:14,fontWeight:800}}>PROT</div><div style={{fontSize:10,color:'var(--ink-45)'}}>Your Protlys companion</div></div></div>
+            <div className="protlys-prot-title"><span className="protlys-prot-mark" aria-hidden="true"><ProtlysLoader ref={mascotRef} /></span><div><div style={{fontSize:14,fontWeight:800}}>PROT</div><div style={{fontSize:10,color:'var(--ink-45)'}}>Your Protlys companion</div></div></div>
             <button className="protlys-prot-close" type="button" aria-label="Close PROT" onClick={() => setOpen(false)}>×</button>
           </header>
           <div className="protlys-prot-body">
-            {messages.map((message, index) => <div key={index} className={'protlys-prot-msg '+message.role}>{message.text}</div>)}
+            {messages.map((message, index) => <div key={index} className={'protlys-prot-message-row '+message.role}>{message.role === 'prot' && <span className="protlys-prot-avatar" aria-hidden="true"><ProtlysLoader /></span>}<div className={'protlys-prot-msg '+message.role}>{message.text}</div></div>)}
             {messages.length === 1 && <div className="protlys-prot-starters">{STARTERS.map((starter) => <button key={starter} type="button" onClick={() => send(starter)}>{starter}</button>)}</div>}
-            {loading && <div className="protlys-prot-msg prot">Thinking…</div>}
+            {loading && <div className="protlys-prot-message-row prot"><span className="protlys-prot-avatar" aria-hidden="true"><ProtlysLoader ref={mascotRef} /></span><div className="protlys-prot-msg prot">Thinking…</div></div>}
             <div ref={endRef} />
           </div>
           <form className="protlys-prot-compose" onSubmit={(event) => { event.preventDefault(); send(); }}>
