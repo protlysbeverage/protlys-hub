@@ -33,7 +33,7 @@ export function ProtlysLoader({ progress = 0 }) {
           <clipPath id={id}><path d={PATH} /></clipPath>
         </defs>
         <ellipse cx="0" cy="84" rx="40" ry="6" fill="var(--ink)" opacity="0.15" />
-        <g className="protlys-loader-char">
+        <g className="protlys-loader-char" transform="translate(-20,0)">
           <g transform="translate(-30,64)">
             <line x1="0" y1="0" x2="0" y2="14" stroke="var(--ink)" strokeWidth="5" strokeLinecap="round" />
             <ellipse cx="-4" cy="18" rx="11" ry="5.5" fill="var(--ink)" />
