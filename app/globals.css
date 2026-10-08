@@ -35,7 +35,81 @@
   .protlys-app .ptile{border-radius:16px;padding:16px;display:flex;flex-direction:column;justify-content:space-between;min-height:150px;cursor:pointer;border:1px solid var(--line);}.protlys-app .ptile .pname{font-family:'Space Grotesk Variable';font-weight:700;font-size:16px;}.protlys-app .ptile .ptag{font-size:12px;color:var(--ink-70);margin-top:3px;}.protlys-app .row-scroll{display:flex;gap:12px;overflow-x:auto;padding:14px 18px 4px;scrollbar-width:none;}.protlys-app .row-scroll::-webkit-scrollbar{display:none;}.protlys-app .row-scroll .ptile{min-width:150px;flex-shrink:0;}.protlys-app .prod-card{display:flex;gap:12px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:14px;margin-bottom:12px;cursor:pointer;}.protlys-app .prod-thumb{width:64px;height:64px;border-radius:12px;flex-shrink:0;}.protlys-app .prod-card .top{display:flex;justify-content:space-between;align-items:flex-start;gap:8px;}.protlys-app .prod-card .pname{font-family:'Space Grotesk Variable';font-weight:700;font-size:15px;}.protlys-app .prod-card .pdesc{font-size:12.5px;color:var(--ink-70);margin-top:3px;line-height:1.4;}.protlys-app .flavor-pills{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px;}.protlys-app .pill{font-size:11.5px;border:1px solid var(--line);padding:5px 10px;border-radius:999px;color:var(--ink-70);}
   .protlys-app .why-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:14px;}.protlys-app .why-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px;}.protlys-app .why-item svg{width:20px;height:20px;color:var(--green);margin-bottom:8px;}.protlys-app .why-item .t{font-weight:700;font-size:13px;}.protlys-app .why-item .d{font-size:11.5px;color:var(--ink-70);margin-top:3px;line-height:1.4;}
   .protlys-app .find-item{background:#fff;border:1px solid var(--line);border-radius:14px;padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;margin-top:10px;cursor:pointer;}.protlys-app .find-q{font-size:13.5px;font-weight:600;}.protlys-app .find-a{font-size:12px;color:var(--green-dark);font-weight:700;white-space:nowrap;display:flex;align-items:center;gap:4px;}
-  .protlys-app .pill-select{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}.protlys-app .pill-opt{border:1.5px solid var(--line);background:#fff;color:var(--ink-70);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;appearance:none;-webkit-appearance:none;}.protlys-app .pill-opt:hover{border-color:var(--green);color:var(--green-dark);}.protlys-app .pill-opt.active,.protlys-app .pill-opt[aria-pressed='true']{border-color:var(--green)!important;background:var(--green)!important;color:#fff!important;box-shadow:none!important;}.protlys-app .pill-opt:focus,.protlys-app .pill-opt:focus-visible{outline:none!important;box-shadow:none!important;border-color:var(--green)!important;}.protlys-app .pbar{height:8px;background:var(--ink-20);border-radius:999px;overflow:hidden;margin-top:8px;}.protlys-app .pbar-fill{height:100%;background:var(--green);border-radius:999px;}
+  .protlys-app .pill-select{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px;}.protlys-app .pill-opt{border:1.5px solid var(--line);background:#fff;color:var(--ink-70);font-size:12.5px;font-weight:600;padding:9px 14px;border-radius:999px;cursor:pointer;appearance:none;-webkit-appearance:none;}.protlys-app .pill-opt:hover{border-color:var(--green);color:var(--green-dark);}.protlys-app .pill-opt.active,.protlys-app .pill-opt[aria-pressed='true']{border-color:var(--green)!important;background:var(--green)!important;color:#fff!important;box-shadow:none!important;}.protlys-app .pill-opt:focus,.protlys-app .pill-opt:focus-visible{outline:none!important;box-shadow:none!important;border-color:var(--green)!important;}.protlys-app .pbar{height:8px;background:var(--ink-20);border-radius:999px;overflow:hidden;margin-top:8px;}.protlys-app .calculator-result-status{
+  width:100%;
+  min-width:0;
+  box-sizing:border-box;
+}
+.protlys-app .protlys-loader{
+  width:100%;
+  min-width:0;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+  text-align:center;
+  overflow:visible;
+}
+.protlys-app .protlys-loader-mascot{
+  width:min(130px,40vw);
+  margin-inline:auto;
+  flex:0 0 auto;
+}
+.protlys-app .protlys-loader-svg{
+  display:block;
+  width:100%;
+  height:auto;
+  overflow:visible;
+}
+.protlys-app .protlys-loader .char,
+.protlys-app .protlys-loader .eye,
+.protlys-app .protlys-loader .aL,
+.protlys-app .protlys-loader .aR{
+  transform-box:fill-box;
+}
+.protlys-app .protlys-loader .char{
+  transform-origin:50% 100%;
+  animation:protlys-jump 700ms cubic-bezier(.22,1,.36,1) both paused;
+  will-change:transform;
+}
+.protlys-app .protlys-loader .eye{
+  transform-origin:center;
+  transform:translateY(-3px);
+  animation:protlys-blink 3.5s ease-in-out infinite;
+  will-change:transform;
+}
+.protlys-app .protlys-loader .wave{
+  transform-box:fill-box;
+  transform-origin:center;
+  will-change:transform;
+}
+.protlys-app .protlys-loader .aL,
+.protlys-app .protlys-loader .aR{
+  transform-origin:50% 100%;
+}
+.protlys-app .protlys-loader .mouth-smile{display:none;}
+.protlys-app .protlys-loader-svg.pop .mouth{display:none;}
+.protlys-app .protlys-loader-svg.pop .mouth-smile{display:block;opacity:1;}
+.protlys-app .protlys-loader-svg.pop .aL{transform:rotate(-28deg) translate(-2px,-7px);}
+.protlys-app .protlys-loader-svg.pop .aR{transform:rotate(28deg) translate(2px,-7px);}
+.protlys-app .protlys-loader-svg.pop .char{animation-play-state:running;}
+@keyframes protlys-blink{
+  0%,92%,100%{transform:translateY(-3px) scaleY(1);}
+  94%,97%{transform:translateY(-3px) scaleY(.08);}
+}
+@keyframes protlys-wave{
+  from{transform:translateX(0);}
+  to{transform:translateX(-40px);}
+}
+@keyframes protlys-jump{
+  0%{transform:translateY(0) rotate(0);}
+  35%{transform:translateY(-18px) rotate(-2deg);}
+  70%{transform:translateY(0) rotate(1deg);}
+  84%{transform:translateY(-6px) rotate(0);}
+  100%{transform:translateY(0) rotate(0);}
+}
+
+.protlys-app .pbar-fill{height:100%;background:var(--green);border-radius:999px;}
   .protlys-app .hub-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;}.protlys-app .hub-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:14px;}.protlys-app .hub-card .t{font-size:11px;color:var(--ink-45);font-weight:700;letter-spacing:.4px;text-transform:uppercase;margin-bottom:8px;}.protlys-app .qa-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}.protlys-app .qa-btn{background:#fff;border:1px solid var(--line);border-radius:14px;padding:13px;display:flex;flex-direction:column;gap:8px;cursor:pointer;text-align:left;}.protlys-app .qa-btn svg{width:18px;height:18px;color:var(--green-dark);}.protlys-app .qa-btn span{font-size:12.5px;font-weight:700;}
   .protlys-app .chal-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;}.protlys-app .chal-top{display:flex;justify-content:space-between;align-items:flex-start;}.protlys-app .chal-title{font-family:'Space Grotesk Variable';font-weight:700;font-size:15px;}.protlys-app .chal-meta{font-size:12px;color:var(--ink-70);margin-top:2px;}.protlys-app .chal-bottom{display:flex;justify-content:space-between;align-items:center;margin-top:12px;}
   .protlys-app .comm-card{background:#fff;border:1px solid var(--line);border-radius:16px;padding:16px;margin-bottom:12px;}.protlys-app .comm-top{display:flex;justify-content:space-between;align-items:flex-start;gap:10px;}.protlys-app .comm-title{font-family:'Space Grotesk Variable';font-weight:700;font-size:15.5px;}.protlys-app .comm-desc{font-size:12.5px;color:var(--ink-70);margin-top:5px;line-height:1.5;}
