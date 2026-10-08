@@ -1,11 +1,11 @@
 'use client';
 
-import { forwardRef, useEffect, useId, useImperativeHandle, useRef } from 'react';
+import { forwardRef, memo, useEffect, useId, useImperativeHandle, useRef } from 'react';
 
 const PATH = 'M-40 -60 H14 A46 46 0 0 1 14 32 H-6 V64 H-40 Z';
 const WAVE = 'M-100 0 q10 -5 20 0' + ' t20 0'.repeat(12) + ' V160 H-100 Z';
 
-export const ProtlysLoader = forwardRef(function ProtlysLoader(_, ref) {
+const ProtlysLoaderInner = forwardRef(function ProtlysLoader(_, ref) {
   const id = useId().replace(/:/g, '');
   const svgRef = useRef(null);
   const liquidRef = useRef(null);
@@ -101,4 +101,6 @@ export const ProtlysLoader = forwardRef(function ProtlysLoader(_, ref) {
   );
 });
 
+ProtlysLoaderInner.displayName = 'ProtlysLoader';
+export const ProtlysLoader = memo(ProtlysLoaderInner);
 ProtlysLoader.displayName = 'ProtlysLoader';
