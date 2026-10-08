@@ -151,7 +151,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    <div ref={resultRef} role="status" aria-live="polite" style={{marginTop:26,scrollMarginTop:90,minHeight:calculatorState==='idle'?'0px':'420px',paddingBottom:20}}>
+    <div ref={resultRef} role="status" aria-live="polite" style={{marginTop:26,scrollMarginTop:90,height:calculatorState==='idle'?'0px':'760px',paddingBottom:20,boxSizing:'border-box'}}>
       {(calculatorState==='loading'||calculatorState==='jump')&&<div className={calculatorState==='jump'?'calculator-loader calculator-loader-jump':'calculator-loader'}>
         <ProtlysLoader progress={loaderProgress}/>
         <div className="mono" style={{fontSize:16,fontWeight:800,marginTop:4}}>{loaderProgress}%</div>
@@ -204,7 +204,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
         {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
       </div>}
     </div>
-    <button className="btn-secondary" style={{marginTop:18}} onClick={calculate} disabled={calculatorState==='loading'||calculatorState==='jump'}>{calculatorState==='loading'||calculatorState==='jump'?'Calculating...':'Calculate again'}</button>
+    <button className="btn-secondary" style={{marginTop:18}} onClick={calculate} disabled={calculatorState==='loading'||calculatorState==='jump'}>{calculatorState==='loading'||calculatorState==='jump'?'Calculating...':calculatorState==='idle'?'Calculate my protein target':'Calculate again'}</button>
     {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button></section>}
     {savedTarget&&!result&&!saved&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
   </div>;
