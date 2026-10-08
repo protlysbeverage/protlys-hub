@@ -6,6 +6,8 @@ import { saveTargetAction } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
 import TargetShareButton from './TargetShareButton';
 import { PROTLYS_CALCULATOR_PRODUCTS } from '@/config/protlys-products';
+import { ProtlysLoader } from './ProtlysLoader';
+import { PROTEIN_CALCULATOR_CONFIG } from './protein-calculator-config';
 
 const SEX = [
   { label: 'Male', v: 'male', icon:'male' },
@@ -38,6 +40,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
   const router = useRouter();
   const [weight,setWeight]=useState(70); const [sex,setSex]=useState('male'); const [activity,setActivity]=useState(1.375); const [goal,setGoal]=useState('maintain');
   const [result,setResult]=useState(null); const [displayTarget,setDisplayTarget]=useState(0); const [saved,setSaved]=useState(false); const [isPending,start]=useTransition();
+  const [calculatorState,setCalculatorState]=useState('idle'); const [loaderProgress,setLoaderProgress]=useState(0); const [calcError,setCalcError]=useState(''); const [showMethod,setShowMethod]=useState(false);
   const [saveMessage,setSaveMessage]=useState('');
   const resultRef = useRef(null);
 
@@ -54,7 +57,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
     if(window.matchMedia?.('(prefers-reduced-motion: reduce)').matches){ setDisplayTarget(finalValue); return; }
     let raf=0;
     const started=performance.now();
-    const duration=800;
+    const duration=700;
     const ease=t=>1-Math.pow(1-t,3);
     const tick=now=>{
       const progress=Math.min(1,(now-started)/duration);
@@ -72,11 +75,29 @@ export default function CalculatorClient({ savedTarget, profile }) {
     });
   },[result]);
 
-  function calculate(){
+  async function calculate(){
     const w=Number(weight); if(!w||w<20||w>300)return;
+    if(calculatorState==='loading'||calculatorState==='jump')return;
     const selected=GOALS.find(i=>i.id===goal)||GOALS[1]; const sexFactor=sex==='female'?0.92:sex==='other'?0.96:1;
     const target=Math.round(w*selected.v*sexFactor); const min=Math.round(w*.8); const max=Math.round(w*2.2); const pct=Math.min(100,Math.max(0,Math.round(((target-min)/(max-min))*100)));
-    setResult({target,min,max,pct,goal:selected.v,activity,sex,weight:w}); setSaved(false);
+    const reduce=window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+    setCalcError(''); setSaved(false); setShowMethod(false); setResult(null);
+    if(reduce){ setLoaderProgress(100); setResult({target,min,max,pct,goal:selected.v,activity,sex,weight:w}); setCalculatorState('done'); return; }
+    setCalculatorState('loading'); setLoaderProgress(0);
+    try{
+      const started=performance.now();
+      await new Promise(resolve=>{
+        const tick=now=>{
+          const p=Math.min(1,(now-started)/2400); setLoaderProgress(Math.round(p*100));
+          if(p<1) requestAnimationFrame(tick); else resolve();
+        };
+        requestAnimationFrame(tick);
+      });
+      setLoaderProgress(100); setCalculatorState('jump');
+      window.setTimeout(()=>{ setResult({target,min,max,pct,goal:selected.v,activity,sex,weight:w}); setCalculatorState('done'); },700);
+    }catch{
+      setCalculatorState('error'); setCalcError('We couldn’t calculate your target. Try again.');
+    }
   }
 
   async function saveTarget(targetG){
@@ -117,6 +138,12 @@ export default function CalculatorClient({ savedTarget, profile }) {
   },[]);
 
   const step={fontSize:14,fontWeight:900,letterSpacing:'.05em'};
+  .calculator-loader{display:flex;min-height:330px;flex-direction:column;align-items:center;justify-content:center;text-align:center}
+  .calculator-loader-jump{animation:protlys-loader-jump .7s ease-out both}
+  .protlys-loader{display:flex;align-items:center;justify-content:center}
+  @keyframes protlys-loader-jump{0%{transform:translateY(0)}35%{transform:translateY(-18px)}65%{transform:translateY(0)}82%{transform:translateY(-6px)}100%{transform:translateY(0)}}
+  @media (prefers-reduced-motion: reduce){.calculator-loader-jump{animation:none}}
+
   return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom))'}}>
     <span className="eyebrow">Protlys</span><h1 style={{fontSize:26}}>Find your daily protein target</h1><p className="subhead">Get a clear number you can actually use. Takes about 30 seconds.</p>
     <section className="section-card" style={{marginTop:18}}><span className="field-label calculator-step-label" style={step}>STEP 1 — YOUR WEIGHT</span><div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><input id="weight" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input mono" style={{fontSize:28,fontWeight:700,flex:1}}/><span className="mono" style={{fontSize:18,opacity:.55}}>kg</span></div></section>
@@ -124,30 +151,60 @@ export default function CalculatorClient({ savedTarget, profile }) {
     <section className="section-card" style={{marginTop:14}}><StepProgress step={3}/><span className="field-label calculator-step-label" style={step}>STEP 3 — ACTIVITY LEVEL</span><OptionGrid items={ACTIVITY} value={activity} onChange={setActivity} getValue={i=>i.v} height={126}/></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={4}/><span className="field-label calculator-step-label" style={step}>STEP 4 — YOUR GOAL</span><OptionGrid items={GOALS} value={goal} onChange={setGoal} getValue={i=>i.id} height={126}/></section>
     <button className="btn-secondary" style={{marginTop:18}} onClick={calculate}>Calculate my protein target →</button>
-    {result&&<div ref={resultRef} style={{marginTop:26,scrollMarginTop:90}}><div className="hr-tight"/><section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target} activity={activityLabel(result.activity)} goal={GOALS.find(g=>g.id===goal)?.label} profile={profile}/></div><div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono motion-count" style={{fontSize:52,fontWeight:700,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{displayTarget}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div><p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p><div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div><div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div></section>
-      <button className="btn-secondary motion-tap" aria-live="polite" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)',width:'100%',minWidth:0}} onClick={()=>{
-        if(!result||isPending||saved)return;
-        start(async()=>{
-          const supabase=createClient();
-          const {data:{session}}=await supabase.auth.getSession();
-          if(session){await saveTarget(result.target);return;}
-          try{localStorage.setItem('pendingTarget',JSON.stringify({target_g:Math.min(500,Math.max(20,Math.round(result.target))),savedAt:Date.now()}));}catch{}
-          setSaveMessage('Create a free account or sign in to save your target.');
-          window.setTimeout(()=>router.push('/login?next=/calculator'),100);
-        });
-      }} disabled={isPending||saved}>{saved?<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Saved</span>:isPending?'Saving…':'Save my protein target'}</button>
-      {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
-      {PROTLYS_CALCULATOR_PRODUCTS.length>0&&<div style={{marginTop:14}}>
-        <div style={{fontSize:11,fontWeight:800,color:'var(--ink-45)',textTransform:'uppercase',letterSpacing:'.08em'}}>Shop Protlys</div>
-        <div className="row-scroll" style={{padding:'10px 0 3px',margin:0}}>
-          {PROTLYS_CALCULATOR_PRODUCTS.slice(0,3).map(product=><a key={product.url} href={product.url} target="_blank" rel="noopener noreferrer" style={{minWidth:150,maxWidth:180,flex:'0 0 150px',textDecoration:'none',background:'var(--white)',border:'1px solid var(--line)',borderRadius:14,padding:10}}>
-            <div style={{height:82,borderRadius:10,overflow:'hidden',background:'var(--green-soft)',marginBottom:8}}>{product.image&&<img src={product.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>}</div>
-            <div style={{fontSize:12,fontWeight:800,lineHeight:1.25}}>{product.title}</div>
-          </a>)}
-        </div>
+    <div ref={resultRef} role="status" aria-live="polite" style={{marginTop:26,scrollMarginTop:90,minHeight:calculatorState==='idle'?'0px':'420px',paddingBottom:20}}>
+      {(calculatorState==='loading'||calculatorState==='jump')&&<div className={calculatorState==='jump'?'calculator-loader calculator-loader-jump':'calculator-loader'}>
+        <ProtlysLoader progress={loaderProgress}/>
+        <div className="mono" style={{fontSize:16,fontWeight:800,marginTop:4}}>{loaderProgress}%</div>
+        <div className="subhead" style={{marginTop:4}}>{loaderProgress<45?'Weighing your protein':loaderProgress<72?'Counting grams':loaderProgress<100?'Checking your target':'Done!'}</div>
       </div>}
-      {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
-      <p className="disclaimer" style={{marginTop:14}}>This is a starting estimate, not medical advice. Speak with a registered dietitian for personalised guidance.</p></div>}
+      {calculatorState==='error'&&<section className="section-card" style={{marginTop:20}}>
+        <div className="eyebrow">Something went wrong</div><p className="subhead" style={{marginTop:6}}>{calcError}</p>
+        <button className="btn-secondary" style={{marginTop:12}} onClick={calculate}>Retry</button>
+      </section>}
+      {calculatorState==='done'&&result&&<div>
+        <div className="hr-tight"/>
+        <section className="section-card" style={{marginTop:20,border:'2px solid var(--green, #2E9E5B)'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',gap:10}}><span className="eyebrow" style={{marginBottom:0}}>Your daily protein target</span><TargetShareButton target={result.target} activity={activityLabel(result.activity)} goal={GOALS.find(g=>g.id===goal)?.label} profile={profile}/></div>
+          <div style={{display:'flex',alignItems:'baseline',gap:8,marginTop:6}}><span className="mono motion-count" style={{fontSize:52,fontWeight:700,lineHeight:1,fontVariantNumeric:'tabular-nums'}}>{displayTarget}</span><span style={{fontSize:18,fontWeight:700,opacity:.5}}>g / day</span></div>
+          <p className="subhead" style={{margin:'8px 0 14px'}}>Based on your weight, activity and goal: {Number.isInteger(result.weight)?result.weight:result.weight.toFixed(1)}kg · {result.goal}g/kg · {activityLabel(result.activity)} activity.</p>
+          <div style={{height:8,background:'var(--line,rgba(15,42,74,.12))',borderRadius:999,overflow:'hidden'}}><div style={{height:'100%',width:`${result.pct}%`,background:'var(--green, #2E9E5B)',borderRadius:999}}/></div>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,opacity:.55,marginTop:5}}><span>0.8g/kg</span><span>2.2g/kg</span></div>
+        </section>
+        <div style={{marginTop:10,fontSize:11,color:'var(--ink-70)',lineHeight:1.45}}>
+          Based on <a href={PROTEIN_CALCULATOR_CONFIG.sources[PROTEIN_CALCULATOR_CONFIG.formula.goals[goal]?.source]?.url||'#'} target="_blank" rel="noopener noreferrer" style={{color:'inherit',fontWeight:700}}>{PROTEIN_CALCULATOR_CONFIG.formula.goals[goal]?.label||'Protlys estimate'}</a>
+          {' '}<button type="button" onClick={()=>setShowMethod(v=>!v)} aria-expanded={showMethod} style={{border:0,background:'none',padding:0,color:'var(--green-dark)',fontWeight:800,textDecoration:'underline',cursor:'pointer'}}>How is this calculated?</button>
+          {showMethod&&<div style={{marginTop:7,padding:10,borderRadius:10,background:'var(--green-soft)',color:'var(--ink-70)'}}>
+            Formula: weight (kg) × goal grams/kg × sex adjustment, rounded to the nearest gram. Activity is shown in the summary but is not currently applied to the target calculation.
+            <div style={{marginTop:6}}>{PROTEIN_CALCULATOR_CONFIG.formula.goals[goal]?.note}</div>
+            <div style={{marginTop:6}}>Sex adjustments are Protlys estimates. The displayed activity factors are contextual labels and do not change the target in the current formula.</div>
+          </div>}
+        </div>
+        <p className="disclaimer" style={{marginTop:10}}>{PROTEIN_CALCULATOR_CONFIG.disclaimer}</p>
+        <button className="btn-secondary motion-tap" aria-live="polite" style={{marginTop:12,background:'var(--green)',borderColor:'var(--green)',color:'var(--paper)',width:'100%',minWidth:0}} onClick={()=>{
+          if(!result||isPending||saved)return;
+          start(async()=>{
+            const supabase=createClient();
+            const {data:{session}}=await supabase.auth.getSession();
+            if(session){await saveTarget(result.target);return;}
+            try{localStorage.setItem('pendingTarget',JSON.stringify({target_g:Math.min(500,Math.max(20,Math.round(result.target))),savedAt:Date.now()}));}catch{}
+            setSaveMessage('Create a free account or sign in to save your target.');
+            window.setTimeout(()=>router.push('/login?next=/calculator'),100);
+          });
+        }} disabled={isPending||saved}>{saved?<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Saved</span>:isPending?'Saving…':'Save my protein target'}</button>
+        {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
+        {PROTLYS_CALCULATOR_PRODUCTS.length>0&&<div style={{marginTop:14}}>
+          <div style={{fontSize:11,fontWeight:800,color:'var(--ink-45)',textTransform:'uppercase',letterSpacing:'.08em'}}>Shop Protlys</div>
+          <div className="row-scroll" style={{padding:'10px 0 3px',margin:0}}>
+            {PROTLYS_CALCULATOR_PRODUCTS.slice(0,3).map(product=><a key={product.url} href={product.url} target="_blank" rel="noopener noreferrer" style={{minWidth:150,maxWidth:180,flex:'0 0 150px',textDecoration:'none',background:'var(--white)',border:'1px solid var(--line)',borderRadius:14,padding:10}}>
+              <div style={{height:82,borderRadius:10,overflow:'hidden',background:'var(--green-soft)',marginBottom:8}}>{product.image&&<img src={product.image} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/></div>
+              <div style={{fontSize:12,fontWeight:800,lineHeight:1.25}}>{product.title}</div>
+            </a>)}
+          </div>
+        </div>}
+        {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
+      </div>}
+    </div>
+    <button className="btn-secondary" style={{marginTop:18}} onClick={calculate} disabled={calculatorState==='loading'||calculatorState==='jump'}>{calculatorState==='loading'||calculatorState==='jump'?'Calculating...':'Calculate again'}</button>
     {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button></section>}
     {savedTarget&&!result&&!saved&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
   </div>;
