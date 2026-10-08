@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
 import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 
 const SESSIONS = [
@@ -10,6 +11,7 @@ const SESSIONS = [
 ];
 
 export default function RelaxationClient() {
+  const router = useRouter();
   const [selected, setSelected] = useState(null);
   const [running, setRunning] = useState(false);
   const [seconds, setSeconds] = useState(0);
@@ -36,6 +38,7 @@ export default function RelaxationClient() {
   };
 
   return <div className="screen-pad" style={{paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
+    <button type="button" className="relax-back" onClick={() => router.back()} aria-label="Go back"><span aria-hidden="true">←</span><span>Back</span></button>
     <span className="eyebrow">Relaxation</span>
     <h1 style={{fontSize:28,marginBottom:5}}>Take a moment.</h1>
     <p className="subhead" style={{maxWidth:440}}>Simple breathing sessions to help you reset, unwind and slow things down.</p>
@@ -56,6 +59,9 @@ export default function RelaxationClient() {
     <section className="relax-note"><div className="relax-note-title">A little reset goes a long way.</div><div>Relaxation here is about everyday recovery — no pressure, no perfect routine.</div></section>
 
     <style>{`
+      .relax-back{display:inline-flex;align-items:center;gap:7px;margin:0 0 18px;padding:0;border:0;background:none;color:var(--ink-70);font-size:13px;font-weight:800;cursor:pointer}
+      .relax-back span:first-child{font-size:20px;line-height:1}
+      .relax-back:active{transform:translateX(-2px)}
       .relax-session-list{display:grid;gap:10px;margin-top:22px}
       .relax-session{width:100%;display:flex;align-items:center;justify-content:space-between;gap:14px;text-align:left;padding:16px;border:1.5px solid var(--line);border-radius:18px;background:var(--card);color:inherit;cursor:pointer}
       .relax-session:active{transform:scale(.99)}
