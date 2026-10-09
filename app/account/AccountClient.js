@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MemberShareSheet from '@/components/MemberShareSheet';
 import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
+import TargetHistory from './TargetHistory';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -78,7 +79,7 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], shopUrl, email }) {
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], targetHistory = [], targetG = 0, shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -87,6 +88,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
+  const [localHour, setLocalHour] = useState(() => Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',hour:'2-digit',hourCycle:'h23'}).format(new Date())));
+  useEffect(() => { const update = () => setLocalHour(Number(new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',hour:'2-digit',hourCycle:'h23'}).format(new Date()))); update(); const timer = window.setInterval(update,60000); return () => window.clearInterval(timer); }, []);
   const [highlightedDay, setHighlightedDay] = useState('');
   const mascotRef = useRef(null);
   const activityRowsRef = useRef({});
@@ -109,7 +112,9 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const activeRows = activeDays.filter(day => day.steps > 0).slice().reverse();
   const weekTotalSteps = activeDays.reduce((sum,day)=>sum+day.steps,0);
   const mascotProgress = Math.min(100, Math.max(0, Math.round((Number(todaySteps || 0) / Math.max(1, stepGoal)) * 100)));
-  const mascotMessage = mascotProgress >= 100 ? 'Goal reached. That’s the energy.' : mascotProgress >= 60 ? 'You’re getting close. Keep moving.' : mascotProgress > 0 ? 'Good start. Let’s build the day.' : 'Ready when you are. Let’s get moving.';
+  const isEvening = localHour >= 18 || localHour < 5;
+  const greetingText = localHour < 12 && localHour >= 5 ? 'Good morning' : localHour < 18 && localHour >= 12 ? 'Good afternoon' : 'Good evening';
+  const mascotMessage = isEvening ? 'Long day? Take a moment to reset.' : mascotProgress >= 100 ? 'Goal reached. That’s the energy.' : mascotProgress >= 60 ? 'You’re getting close. Keep moving.' : mascotProgress > 0 ? 'Good start. Let’s build the day.' : 'Ready when you are. Let’s get moving.';
   useEffect(() => { mascotRef.current?.setProgress(mascotProgress); }, [mascotProgress]);
   const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
@@ -185,48 +190,68 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   ];
 
   return <>
-    <div className="screen-pad">
-      <span className="eyebrow">Dashboard</span>
-      <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
-      <p className="subhead">A simple view of your movement and what you have recorded.</p>
-
-      <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
-        <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
-          {avatarUrl ? <img src={avatarUrl} alt="Profile" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:20,fontWeight:800}}>{name[0].toUpperCase()}</span>}
-          <span style={{position:'absolute',right:0,bottom:0,width:20,height:20,borderRadius:'50%',background:'var(--ink)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}><Icon name="camera" size={10}/></span>
-        </button>
-        <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
-        <div style={{minWidth:0,flex:1}}>
-          <div style={{fontWeight:800,fontSize:16}}>{name}</div>
-          <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
-          <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
-            <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}><Icon name="share" size={13}/>Share profile</button>
-          </div>
-          {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
+    <div className="screen-pad dashboard-redesign-head">
+      <div className="dashboard-greeting-row">
+        <div className="dashboard-greeting-copy"><div className="dashboard-greeting" style={{fontSize:"clamp(15px, 4.1vw, 22px)",lineHeight:1.2,whiteSpace:"normal",overflow:"visible",textOverflow:"clip",overflowWrap:"break-word",wordBreak:"normal",letterSpacing:"-0.035em",minWidth:0,maxWidth:"100%"}}>{greetingText}{profile?.username?.trim() ? ` ${profile.username.trim()}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
+        <div className="dashboard-header-actions">
+          <button type="button" aria-label="Open your profile" className="dashboard-avatar" onClick={() => router.push(profileUrl)}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{name[0].toUpperCase()}</span>}</button>
+          <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M12 2.75 14 2.75 14.55 5.1 16.15 5.75 18.25 4.55 19.65 5.95 18.45 8.05 19.1 9.65 21.45 10.2 21.45 12.2 19.1 12.75 18.45 14.35 19.65 16.45 18.25 17.85 16.15 16.65 14.55 17.3 14 19.65 12 19.65 11.45 17.3 9.85 16.65 7.75 17.85 6.35 16.45 7.55 14.35 6.9 12.75 4.55 12.2 4.55 10.2 6.9 9.65 7.55 8.05 6.35 5.95 7.75 4.55 9.85 5.75 11.45 5.1 12 2.75Z" transform="translate(0 1.3)"/><circle cx="13" cy="12" r="3.2"/></svg></button>
         </div>
       </div>
+      <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
+      {message && <div role="status" style={{fontSize:11.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:8}}>{message}</div>}
     </div>
 
     <div className="screen-pad dashboard-mascot-wrap" style={{paddingTop:0,paddingBottom:0}}>
       <section className="dashboard-mascot-card" aria-label="Protlys coach">
         <div className="dashboard-mascot-art"><ProtlysLoader ref={mascotRef}/></div>
         <div className="dashboard-mascot-copy">
-          <div className="dashboard-mascot-kicker">Your move</div>
+          <div className="dashboard-mascot-kicker">{isEvening ? "Relaxation" : "Your move"}</div>
           <div className="dashboard-mascot-message">{mascotMessage}</div>
-          <div className="dashboard-mascot-progress">{Number(todaySteps || 0).toLocaleString()} / {Number(stepGoal).toLocaleString()} steps</div>
+          {isEvening ? <a href="/relaxation" className="dashboard-relax-open">Open Relaxation →</a> : <><div className="dashboard-mascot-progress">{Number(todaySteps || 0).toLocaleString()} / {Number(stepGoal).toLocaleString()} steps</div><div className="dashboard-hero-track" role="progressbar" aria-label="Daily step goal" aria-valuenow={mascotProgress} aria-valuemin={0} aria-valuemax={100}><span style={{width:mascotProgress+"%"}} /></div></>}
         </div>
       </section>
     </div>
 
-    <div className="screen-pad" style={{paddingTop:4,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
-      <div className="hub-card" style={{padding:16,marginBottom:10}}>
-        <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
+    <div className="screen-pad dashboard-redesign-content" style={{paddingTop:8,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
+      <div className="dashboard-metric-grid">
+        <section className="hub-card dashboard-metric"><div className="t" style={{fontSize:10}}>Distance</div><div className="mono dashboard-metric-value">{formatDistance(todayDistanceKm)}</div><div className="dashboard-metric-note">Estimated from your steps</div></section>
+        <section className="hub-card dashboard-metric"><div className="t" style={{fontSize:10}}>Protein target</div><div className="mono dashboard-metric-value">{Number(targetG || 0)}<span> g/day</span></div><div className="dashboard-metric-note">Your daily calculator target</div></section>
       </div>
+      <div className="dashboard-target-history"><TargetHistory rows={targetHistory || []}/></div>
+      {!isEvening && <section className="hub-card dashboard-relax-strip"><div className="dashboard-relax-orb" aria-hidden="true"><span /></div><div className="dashboard-relax-copy"><div className="dashboard-relax-title">Relaxation</div><div className="dashboard-relax-description">Take a moment to reset. Short breathing sessions for when you need to slow down.</div></div><a href="/relaxation" className="dashboard-relax-link">Open →</a></section>}
 
+      <style>{`.dashboard-redesign-head{padding-top:22px!important;padding-bottom:10px!important}
+.dashboard-greeting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
+.dashboard-greeting-copy{min-width:0;flex:1;overflow:visible}
+.dashboard-greeting{font-size:clamp(18px,5.1vw,25px);font-weight:800;letter-spacing:-.035em;line-height:1.2;white-space:normal;overflow:visible;overflow-wrap:normal;word-break:normal;max-width:100%}
+.dashboard-greeting-sub{font-size:12px;color:var(--ink-45);margin-top:5px}
+.dashboard-header-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}.dashboard-settings svg{display:block;flex:none;overflow:visible}
+.dashboard-avatar,.dashboard-settings{width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--card);color:var(--ink);border:1.5px solid var(--line);padding:0;cursor:pointer}
+.dashboard-avatar{overflow:hidden;font-size:16px;font-weight:800}
+.dashboard-avatar img{width:100%;height:100%;object-fit:cover}
+.dashboard-avatar:focus-visible,.dashboard-settings:focus-visible{outline:3px solid var(--green);outline-offset:3px}
+.dashboard-hero-track{height:6px;background:var(--green-soft);border-radius:999px;overflow:hidden;margin-top:10px}
+.dashboard-hero-track span{display:block;height:100%;border-radius:inherit;background:var(--green);transition:width 400ms ease}
+.dashboard-relax-open{display:inline-flex;margin-top:8px;color:var(--green-dark);font-size:12px;font-weight:800;text-decoration:none;min-height:32px;align-items:center}
+.dashboard-metric-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:10px}
+.dashboard-metric{padding:14px;min-width:0}
+.dashboard-metric-value{font-size:clamp(23px,6vw,30px);font-weight:800;margin-top:7px;letter-spacing:-.04em;overflow-wrap:anywhere}
+.dashboard-metric-value span{font-family:inherit;font-size:11px;letter-spacing:0;color:var(--ink-45);font-weight:600}
+.dashboard-metric-note{font-size:10.5px;color:var(--ink-45);margin-top:4px;line-height:1.35}
+.dashboard-target-history{margin-top:10px}
+.dashboard-target-history .screen-pad{padding:0!important}
+.dashboard-target-history .hub-card{margin-bottom:10px!important}
+.dashboard-relax-strip{display:flex;align-items:center;gap:12px;padding:13px;margin:0 0 12px}
+.dashboard-relax-orb{width:40px;height:40px;border-radius:50%;flex:0 0 40px;display:grid;place-items:center;background:var(--green-soft)}
+.dashboard-relax-orb span{width:17px;height:17px;border:2px solid var(--green-dark);border-radius:50%;animation:dashboard-breathe 8s ease-in-out infinite}
+.dashboard-relax-copy{flex:1;min-width:0}
+.dashboard-relax-title{font-size:13px;font-weight:800}
+.dashboard-relax-description{font-size:10.5px;color:var(--ink-45);line-height:1.4;margin-top:3px}
+.dashboard-relax-link{font-size:11.5px;font-weight:800;color:var(--green-dark);text-decoration:none;white-space:nowrap}
+@keyframes dashboard-breathe{0%,100%{transform:scale(.8);opacity:.65}50%{transform:scale(1.25);opacity:1}}
+@media(prefers-reduced-motion:reduce){.dashboard-hero-track span,.dashboard-relax-orb span{transition:none;animation:none}}
 
-      <style>{`
 .dashboard-stat-tile:active{transform:scale(.98)}
 .dashboard-sheet-layer{position:fixed;inset:0;z-index:90}.dashboard-sheet-scrim{position:absolute;inset:0;background:rgba(10,20,35,.45)}.dashboard-sheet{--ink:#0F2A4A;--ink-45:rgba(15,42,74,.45);--green-dark:#1F7A45;--green-soft:#E4F3EA;--line:rgba(15,42,74,.12);--card:#FFFFFF;position:fixed;left:0;right:0;bottom:0;max-height:80dvh;overflow-y:auto;background:#FFFFFF;color:#0F2A4A;border:1px solid rgba(15,42,74,.12);border-bottom:0;border-radius:28px 28px 0 0;padding:10px 20px calc(96px + env(safe-area-inset-bottom));box-shadow:0 -8px 30px rgba(0,0,0,.18);transform:translateY(100%);transition:transform 250ms cubic-bezier(.2,.8,.2,1);touch-action:pan-y;overscroll-behavior:contain}.dashboard-sheet.is-open{transform:translateY(0)}html.protlys-dark .dashboard-sheet{--ink:#F2F6F2;--ink-45:rgba(242,246,242,.48);--green-dark:#76D89A;--green-soft:#193A27;--line:rgba(242,246,242,.13);--card:#171D19;background:#171D19;color:#F2F6F2;border-color:rgba(242,246,242,.13)}html.protlys-dark .dashboard-sheet .dashboard-sheet-close{background:#193A27;color:#F2F6F2}html.protlys-dark .dashboard-sheet .sheet-chip{background:#193A27;border-color:rgba(242,246,242,.13)}html.protlys-dark .dashboard-sheet .dashboard-sheet-dot{background:rgba(242,246,242,.48)}html.protlys-dark .dashboard-sheet .dashboard-sheet-dot.is-active{background:#76D89A}
 .dashboard-sheet-grab{width:44px;height:5px;border-radius:9px;background:var(--line);margin:0 auto 14px}
