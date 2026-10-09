@@ -7,11 +7,11 @@ Status: in progress. A checklist item is not complete until there is implementat
 - [x] Migration revokes anonymous execution of the data-mutating `ensure_founding_250_member()` RPC while retaining signed-in access.
 - [x] Share API returns generic client-facing database errors rather than raw database error messages.
 - [x] OAuth callback and email confirmation routes use a shared same-origin redirect validator and generic client-facing errors.
-- [x] Added regression tests for safe redirect destinations. Four test groups passed in the isolated redirect-test run.
+- [x] Added regression tests for safe redirect destinations. Four redirect test groups pass in CI.
 - [x] Added branded not-found and application-error pages using the existing Protlys Hub design styles.
-- [x] Latest Vercel preview deployment for commit `f41dd6e19534683e22d02f5d37482945f63c5f90` reports READY. Basic HTTP checks confirmed the preview serves the app shell and branded 404 content. This is not a full interactive/authenticated smoke test.
+- [x] Preview for commit `9e5a724587728c7e263e0b1ac6da441dd6ebebf3` reports READY. Basic HTTP checks confirmed the app shell and branded 404 content; this is not a full interactive/authenticated smoke test. The latest code commits are awaiting their own preview deployment results.
 - [x] Reviewed Vercel environment-variable names and targets without decrypting values. The Supabase URL and anon key are public client configuration; `OPENAI_API_KEY` is marked sensitive and configured for production only. No service-role key appears in the current Vercel variable list.
-- [ ] Confirm the GitHub Actions full test-suite result. No associated pull-request workflow run was returned for the latest commit; the Vercel build check is green.
+- [x] GitHub Actions unit tests pass on commit `687a269ca6059b3686493cdef14ab93dd3af1636` (12 tests, 12 passed). Fixed CI setup for the repo's missing lockfile and corrected stale heatmap tests to match the app's 35-day display. A lockfile is still needed for reproducible dependency installs.
 - [ ] Perform interactive preview smoke tests for sign-in, email confirmation, post sharing, and core movement/protein screens. These require a real test account/session.
 - [ ] Apply the database migration only after confirming recovery arrangements and validating expected app behavior. The migration has **not** been applied to production; do not claim the live database is hardened by this branch yet.
 
@@ -19,7 +19,7 @@ Status: in progress. A checklist item is not complete until there is implementat
 - [ ] Scan current files and full Git history for credentials; report secret types and locations without printing secret values.
 - [ ] Revoke/rotate every credential ever committed, then remove exposed values from repository history where appropriate. This requires completing the history scan first.
 - [x] Reviewed Vercel environment-variable names and targets without decrypting values. The Supabase URL and anon key are public client configuration; `OPENAI_API_KEY` is marked sensitive and configured for production only. No service-role key appears in the current Vercel variable list.
-- [ ] Confirm browser bundles contain only intentionally public configuration (Supabase URL and anon/publishable key only); server secrets must never use NEXT_PUBLIC_.
+- [ ] Confirm browser bundles contain only intentionally public configuration (Supabase URL and anon/publishable key only); server secrets must never use NEXT_PUBLIC_. Environment variable names/targets were reviewed, but bundle contents have not yet been exhaustively audited.
 - [ ] Review every Route Handler and Server Action for authentication, authorization, method restrictions, body-size limits, schema validation, and safe errors.
 - [ ] Audit RLS on every exposed table. User-owned rows must use auth.uid() ownership; public/community data needs narrowly scoped intentional policies.
 - [ ] Review SECURITY DEFINER functions: fix search_path, revoke unnecessary anon/authenticated EXECUTE grants, and validate caller authorization inside each function.
@@ -27,10 +27,11 @@ Status: in progress. A checklist item is not complete until there is implementat
 - [ ] Configure AI provider hard limits if available, plus per-user quotas and a kill switch.
 
 ## Reliability and recovery
-- [ ] Enable safe production error handling and error monitoring with source maps configured privately.
+- [ ] Enable production error monitoring with private source maps. Branded error UI is present, but monitoring is not configured/verified. Vercel runtime logs could not be retrieved for a 24-hour window on the current plan, so this is not evidence that production has no errors.
 - [ ] Configure automated database backups/PITR appropriate to plan and retention needs.
 - [ ] Restore a backup into an isolated project and verify schema, row counts, auth-dependent flows, and app smoke tests.
 - [x] Added branded 404 and application error boundary pages; basic preview response checked, interactive runtime testing remains open.
+- [x] Confirmed `next.config.mjs` already sets `nosniff`, frame denial, strict referrer policy, a restrictive permissions policy, and HSTS headers. No CSP was added because the app's inline scripts/styles and external resource needs have not been audited.
 - [ ] Measure Core Web Vitals and API timings on low-end Android/slow networks; optimize measured bottlenecks over 3 seconds.
 
 ## Launch experience
@@ -52,6 +53,7 @@ Status: in progress. A checklist item is not complete until there is implementat
 - Leaked-password protection is disabled and requires a Supabase Auth configuration change.
 - Performance advisor reported 14 unindexed foreign-key findings and 37 RLS initialization-plan findings. Validate query plans before applying indexes or policy rewrites.
 - Targeted GitHub indexed searches for several common credential markers returned no matches. This is **not** a full repository-history scan and does not prove that credentials were never committed.
+- Read-only inspection of live SECURITY DEFINER function grants confirmed the branch migration is not applied: `ensure_founding_250_member()` still lists `anon:EXECUTE` and the public functions still have `search_path=public` where applicable. No production SQL was changed.
 
 ## Safety rules
 - Do not print, commit, or paste secret values into issues or logs.
