@@ -192,7 +192,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   return <>
     <div className="screen-pad dashboard-redesign-head">
       <div className="dashboard-greeting-row">
-        <div className="dashboard-greeting-copy"><div className="dashboard-greeting">{greetingText}{profile?.display_name?.trim() ? `, ${profile.display_name.trim().split(/\\s+/)[0]}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
+        <div className="dashboard-greeting-copy"><div className="dashboard-greeting">{greetingText}{profile?.display_name?.trim() ? `, ${profile.display_name.trim().split(/\s+/)[0]}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
         <div className="dashboard-header-actions">
           <button type="button" aria-label="Open your profile" className="dashboard-avatar" onClick={() => router.push(profileUrl)}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{name[0].toUpperCase()}</span>}</button>
           <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M12 8.3a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4Z"/><path d="m19.4 15 .1.1 1.5 1.1-1.7 2.9-1.8-.7a8.3 8.3 0 0 1-1.7 1l-.3 1.9h-3.4l-.3-1.9a8.3 8.3 0 0 1-1.7-1l-1.8.7-1.7-2.9 1.5-1.1a8 8 0 0 1 0-2l-1.5-1.1 1.7-2.9 1.8.7a8.3 8.3 0 0 1 1.7-1l.3-1.9h3.4l.3 1.9a8.3 8.3 0 0 1 1.7 1l1.8-.7 1.7 2.9-1.5 1.1a8 8 0 0 1 0 2Z"/></svg></button>
