@@ -192,10 +192,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   return <>
     <div className="screen-pad dashboard-redesign-head">
       <div className="dashboard-greeting-row">
-        <div className="dashboard-greeting-copy"><div className="dashboard-greeting">{greetingText}{profile?.display_name ? ', ' + profile.display_name.split(/\s+/)[0] : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
+        <div className="dashboard-greeting-copy"><div className="dashboard-greeting">{greetingText}{profile?.display_name?.trim() ? `, ${profile.display_name.trim().split(/\\s+/)[0]}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
         <div className="dashboard-header-actions">
           <button type="button" aria-label="Open your profile" className="dashboard-avatar" onClick={() => router.push(profileUrl)}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{name[0].toUpperCase()}</span>}</button>
-          <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a7.6 7.6 0 0 0 0-6l1.4-1.1-1.4-2.4-1.7.6a7.6 7.6 0 0 0-1.6-.9L15.8 3h-2.8l-.3 2.2a7.6 7.6 0 0 0-1.6.9l-1.7-.6L8 7.9 9.4 9a7.6 7.6 0 0 0 0 6L8 16.1l1.4 2.4 1.7-.6a7.6 7.6 0 0 0 1.6.9l.3 2.2h2.8l.3-2.2a7.6 7.6 0 0 0 1.6-.9l1.7.6 1.4-2.4Z"/></svg></button>
+          <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M12 8.3a3.7 3.7 0 1 0 0 7.4 3.7 3.7 0 0 0 0-7.4Z"/><path d="m19.4 15 .1.1 1.5 1.1-1.7 2.9-1.8-.7a8.3 8.3 0 0 1-1.7 1l-.3 1.9h-3.4l-.3-1.9a8.3 8.3 0 0 1-1.7-1l-1.8.7-1.7-2.9 1.5-1.1a8 8 0 0 1 0-2l-1.5-1.1 1.7-2.9 1.8.7a8.3 8.3 0 0 1 1.7-1l.3-1.9h3.4l.3 1.9a8.3 8.3 0 0 1 1.7 1l1.8-.7 1.7 2.9-1.5 1.1a8 8 0 0 1 0 2Z"/></svg></button>
         </div>
       </div>
       <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
@@ -223,10 +223,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 
       <style>{`.dashboard-redesign-head{padding-top:22px!important;padding-bottom:10px!important}
 .dashboard-greeting-row{display:flex;align-items:center;justify-content:space-between;gap:12px;min-width:0}
-.dashboard-greeting-copy{min-width:0;flex:1}
-.dashboard-greeting{font-size:clamp(21px,5.8vw,27px);font-weight:800;letter-spacing:-.04em;line-height:1.15}
+.dashboard-greeting-copy{min-width:0;flex:1;overflow:visible}
+.dashboard-greeting{font-size:clamp(18px,5.1vw,25px);font-weight:800;letter-spacing:-.035em;line-height:1.2;white-space:normal;overflow:visible;overflow-wrap:normal;word-break:normal;max-width:100%}
 .dashboard-greeting-sub{font-size:12px;color:var(--ink-45);margin-top:5px}
-.dashboard-header-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}
+.dashboard-header-actions{display:flex;align-items:center;gap:10px;flex:0 0 auto}.dashboard-settings svg{display:block;flex:none;overflow:visible}
 .dashboard-avatar,.dashboard-settings{width:44px;height:44px;min-width:44px;border-radius:50%;display:flex;align-items:center;justify-content:center;background:var(--card);color:var(--ink);border:1.5px solid var(--line);padding:0;cursor:pointer}
 .dashboard-avatar{overflow:hidden;font-size:16px;font-weight:800}
 .dashboard-avatar img{width:100%;height:100%;object-fit:cover}
