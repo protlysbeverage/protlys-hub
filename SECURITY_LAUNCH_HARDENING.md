@@ -5,8 +5,12 @@ Status: in progress. A checklist item is not complete until there is implementat
 ## Changes committed to `security/launch-hardening`
 - [x] Added a database migration that fixes mutable search paths on `challenge_member_counts`, `ensure_founding_250_member`, and `get_hub_member_count`.
 - [x] Migration revokes anonymous execution of the data-mutating `ensure_founding_250_member()` RPC while retaining signed-in access.
-- [x] Share API now returns generic client-facing database errors rather than raw database error messages.
-- [ ] Verify the Vercel preview build for the latest branch commit before merging.
+- [x] Share API returns generic client-facing database errors rather than raw database error messages.
+- [x] OAuth callback and email confirmation routes use a shared same-origin redirect validator and generic client-facing errors.
+- [x] Added unit tests for the redirect validator and a GitHub Actions workflow to run the existing test suite on branch pushes and pull requests.
+- [x] Vercel production build completed successfully for branch commit `5d627dbbd5db18c70702340ff13e57576001e8a7`. This is a **preview** deployment; production was not changed.
+- [ ] Confirm the GitHub Actions unit-test result. The workflow was added, but its completed run has not yet been verified.
+- [ ] Perform interactive smoke tests against the preview for sign-in, email confirmation, post sharing, and core movement/protein screens.
 - [ ] Review and apply the database migration only after validating the preview and a recovery path. The migration has **not** been applied to production.
 
 ## Critical: secrets and access control
@@ -40,9 +44,11 @@ Status: in progress. A checklist item is not complete until there is implementat
 - `public.challenge_member_counts` had a mutable search_path warning; the branch migration now sets it to an empty search_path.
 - `public.ensure_founding_250_member()` was executable by anon; the branch migration revokes anon execution.
 - `public.get_hub_member_count()` is intentionally public because the app exposes a public founding-member count. The migration hardens its search_path; the returned value is aggregate-only.
+- OAuth callback and email-confirmation redirects previously accepted destinations using a simple slash-prefix check. The branch now validates against a fixed origin and has regression tests for common redirect bypasses.
 - Additional security-definer RPCs are executable by authenticated users; review grants and function-level authorization before changing them because leaderboard and group features intentionally expose some aggregate data.
 - Leaked-password protection is disabled and requires a Supabase Auth configuration change.
 - Performance advisor reported 14 unindexed foreign-key findings and 37 RLS initialization-plan findings. Validate query plans before applying indexes or policy rewrites.
+- Targeted GitHub indexed searches for several common credential markers returned no matches. This is **not** a full repository-history scan and does not prove that credentials were never committed.
 
 ## Safety rules
 - Do not print, commit, or paste secret values into issues or logs.
