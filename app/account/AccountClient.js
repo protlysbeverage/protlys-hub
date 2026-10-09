@@ -192,10 +192,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   return <>
     <div className="screen-pad dashboard-redesign-head">
       <div className="dashboard-greeting-row">
-        <div className="dashboard-greeting-copy"><div className="dashboard-greeting">{greetingText}{profile?.display_name?.trim() ? `, ${profile.display_name.trim().split(/\s+/)[0]}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
+        <div className="dashboard-greeting-copy"><div className="dashboard-greeting" style={{fontSize:"clamp(17px, 4.5vw, 24px)",lineHeight:1.2,whiteSpace:"normal",overflow:"visible",textOverflow:"clip",overflowWrap:"anywhere",letterSpacing:"-0.035em"}}>{greetingText}{profile?.display_name?.trim() ? `, ${profile.display_name.trim().split(/\s+/)[0]}` : ''}</div><div className="dashboard-greeting-sub">Your Protlys Hub, at a glance.</div></div>
         <div className="dashboard-header-actions">
           <button type="button" aria-label="Open your profile" className="dashboard-avatar" onClick={() => router.push(profileUrl)}>{avatarUrl ? <img src={avatarUrl} alt="" /> : <span>{name[0].toUpperCase()}</span>}</button>
-          <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><path d="M4 7h6M14 7h6M4 17h2M10 17h10"/><circle cx="12" cy="7" r="2"/><circle cx="8" cy="17" r="2"/></svg></button>
+          <button type="button" aria-label="Settings" className="dashboard-settings" onClick={() => router.push('/settings')}><svg viewBox="0 0 24 24" width="21" height="21" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" focusable="false"><circle cx="12" cy="12" r="3"/><path d="m19.4 15 .1.1 1.5 1.1-1.7 2.9-1.8-.7a8.3 8.3 0 0 1-1.7 1l-.3 1.9h-3.4l-.3-1.9a8.3 8.3 0 0 1-1.7-1l-1.8.7-1.7-2.9 1.5-1.1a8 8 0 0 1 0-2l-1.5-1.1 1.7-2.9 1.8.7a8.3 8.3 0 0 1 1.7-1l.3-1.9h3.4l.3 1.9a8.3 8.3 0 0 1 1.7 1l1.8-.7 1.7 2.9-1.5 1.1a8 8 0 0 1 0 2Z"/></svg></button>
         </div>
       </div>
       <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
