@@ -93,6 +93,15 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const highlightTimer = useRef(null);
 
   const name = profile?.display_name || email || 'Member';
+  const [localHour, setLocalHour] = useState(() => Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', hour: '2-digit', hourCycle: 'h23' }).format(new Date())));
+  useEffect(() => {
+    const updateLocalHour = () => setLocalHour(Number(new Intl.DateTimeFormat('en-GB', { timeZone: 'Africa/Nairobi', hour: '2-digit', hourCycle: 'h23' }).format(new Date())));
+    updateLocalHour();
+    const timer = window.setInterval(updateLocalHour, 60000);
+    return () => window.clearInterval(timer);
+  }, []);
+  const greetingText = localHour >= 5 && localHour < 12 ? 'Good morning' : localHour >= 12 && localHour < 18 ? 'Good afternoon' : 'Good evening';
+  const greetingUsername = profile?.username?.trim();
   const avatarUrl = profile?.avatar_url;
   const storeUrl = shopUrl || 'https://protlys.com/collections/all';
   const totalSteps = Number(profile?.total_steps || 0);
@@ -187,7 +196,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   return <>
     <div className="screen-pad">
       <span className="eyebrow">Dashboard</span>
-      <h1 style={{fontSize:24,marginBottom:4}}>Your Protlys dashboard</h1>
+      <h1 style={{fontSize:"clamp(20px, 5vw, 26px)",marginBottom:4,lineHeight:1.2,overflowWrap:"anywhere"}}>{greetingText}{greetingUsername ? ` ${greetingUsername}` : ""}</h1>
       <p className="subhead">A simple view of your movement and what you have recorded.</p>
 
       <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
