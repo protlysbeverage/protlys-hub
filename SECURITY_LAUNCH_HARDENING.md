@@ -7,15 +7,17 @@ Status: in progress. A checklist item is not complete until there is implementat
 - [x] Migration revokes anonymous execution of the data-mutating `ensure_founding_250_member()` RPC while retaining signed-in access.
 - [x] Share API returns generic client-facing database errors rather than raw database error messages.
 - [x] OAuth callback and email confirmation routes use a shared same-origin redirect validator and generic client-facing errors.
-- [x] Added unit tests for the redirect validator and a GitHub Actions workflow to run the existing test suite on branch pushes and pull requests.
-- [x] Vercel production build completed successfully for branch commit `5d627dbbd5db18c70702340ff13e57576001e8a7`. This is a **preview** deployment; production was not changed.
-- [ ] Confirm the GitHub Actions unit-test result. The workflow was added, but its completed run has not yet been verified.
+- [x] Added regression tests for safe redirect destinations. The four Node test cases passed in an isolated run; the full repository CI result still needs verification.
+- [x] Added branded not-found and application-error pages using the existing Protlys Hub design styles.
+- [x] Vercel production build completed successfully for code commit `5d627dbbd5db18c70702340ff13e57576001e8a7`; subsequent UI changes are waiting on the latest preview build. All are preview deployments; production has not been changed.
+- [ ] Confirm the GitHub Actions full test-suite result.
 - [ ] Perform interactive smoke tests against the preview for sign-in, email confirmation, post sharing, and core movement/protein screens.
 - [ ] Review and apply the database migration only after validating the preview and a recovery path. The migration has **not** been applied to production.
 
 ## Critical: secrets and access control
 - [ ] Scan current files and full Git history for credentials; report secret types and locations without printing secret values.
 - [ ] Revoke/rotate every credential ever committed, then remove exposed values from repository history where appropriate.
+- [x] Reviewed Vercel environment-variable names and targets without decrypting values. The Supabase URL and anon key are public client configuration; `OPENAI_API_KEY` is marked sensitive and is configured for production only. No service-role key appears in the current Vercel variable list.
 - [ ] Confirm browser bundles contain only intentionally public configuration (Supabase URL and anon/publishable key only); server secrets must never use NEXT_PUBLIC_.
 - [ ] Review every Route Handler and Server Action for authentication, authorization, method restrictions, body-size limits, schema validation, and safe errors.
 - [ ] Audit RLS on every exposed table. User-owned rows must use auth.uid() ownership; public/community data needs narrowly scoped intentional policies.
@@ -27,7 +29,7 @@ Status: in progress. A checklist item is not complete until there is implementat
 - [ ] Enable safe production error handling and error monitoring with source maps configured privately.
 - [ ] Configure automated database backups/PITR appropriate to plan and retention needs.
 - [ ] Restore a backup into an isolated project and verify schema, row counts, auth-dependent flows, and app smoke tests.
-- [ ] Add branded not-found and error pages.
+- [x] Added branded 404 and application error boundary pages; runtime smoke testing remains open.
 - [ ] Measure Core Web Vitals and API timings on low-end Android/slow networks; optimize measured bottlenecks over 3 seconds.
 
 ## Launch experience
