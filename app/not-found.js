@@ -11,7 +11,7 @@ export default function NotFound() {
           <p className="subhead" style={{ margin: '0 auto 24px', maxWidth: 320 }}>
             We couldn't find that page. Head back to the Hub and keep moving.
           </p>
-          <Link href="/" className="primary-btn" style={{ display: 'inline-flex', textDecoration: 'none', alignItems: 'center', justifyContent: 'center' }}>
+          <Link href="/" className="btn-primary" style={{ display: 'inline-flex', textDecoration: 'none', alignItems: 'center', justifyContent: 'center' }}>
             Back to Protlys Hub
           </Link>
         </section>
