@@ -1,6 +1,13 @@
 # Protlys Hub Production Hardening
 
-Status: in progress. This document tracks verification; a checklist item is not complete until there is implementation evidence and a test result.
+Status: in progress. A checklist item is not complete until there is implementation evidence and a test result.
+
+## Changes committed to `security/launch-hardening`
+- [x] Added a database migration that fixes mutable search paths on `challenge_member_counts`, `ensure_founding_250_member`, and `get_hub_member_count`.
+- [x] Migration revokes anonymous execution of the data-mutating `ensure_founding_250_member()` RPC while retaining signed-in access.
+- [x] Share API now returns generic client-facing database errors rather than raw database error messages.
+- [ ] Verify the Vercel preview build for the latest branch commit before merging.
+- [ ] Review and apply the database migration only after validating the preview and a recovery path. The migration has **not** been applied to production.
 
 ## Critical: secrets and access control
 - [ ] Scan current files and full Git history for credentials; report secret types and locations without printing secret values.
@@ -29,11 +36,12 @@ Status: in progress. This document tracks verification; a checklist item is not 
 - [ ] Document rollback triggers, previous known-good deployment, database migration compatibility, and a tested recovery procedure.
 
 ## Known findings from the initial Supabase advisor scan (2026-10-09)
-- RLS enabled but no policies: public.leaderboard_settings and public.weekly_results.
-- Mutable search_path warning: public.challenge_member_counts.
-- Security-definer functions callable by anon: public.ensure_founding_250_member(), public.get_hub_member_count().
+- RLS is enabled with no policies on `public.leaderboard_settings` and `public.weekly_results`. This currently denies direct client access; do not add broad policies without proving they are needed.
+- `public.challenge_member_counts` had a mutable search_path warning; the branch migration now sets it to an empty search_path.
+- `public.ensure_founding_250_member()` was executable by anon; the branch migration revokes anon execution.
+- `public.get_hub_member_count()` is intentionally public because the app exposes a public founding-member count. The migration hardens its search_path; the returned value is aggregate-only.
 - Additional security-definer RPCs are executable by authenticated users; review grants and function-level authorization before changing them because leaderboard and group features intentionally expose some aggregate data.
-- Leaked-password protection is disabled.
+- Leaked-password protection is disabled and requires a Supabase Auth configuration change.
 - Performance advisor reported 14 unindexed foreign-key findings and 37 RLS initialization-plan findings. Validate query plans before applying indexes or policy rewrites.
 
 ## Safety rules
