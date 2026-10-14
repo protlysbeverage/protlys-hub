@@ -3,8 +3,8 @@
     "relation": ["delegate_permission/common.handle_all_urls"],
     "target": {
       "namespace": "android_app",
-      "package_name": "REPLACE_WITH_ANDROID_PACKAGE_NAME",
-      "sha256_cert_fingerprints": ["REPLACE_WITH_PLAY_APP_SIGNING_SHA256"]
+      "package_name": "com.protlys.hub.twa",
+      "sha256_cert_fingerprints": ["B9:1D:37:F4:97:C9:DF:C8:30:FE:03:8B:FF:9B:EA:2F:F5:AF:75:5C:E5:B5:12:95:27:CA:39:F7:39:84:01:7E"]
     }
   }
 ]
