@@ -437,7 +437,7 @@
 
 
 /* Simplified first-run protein onboarding */
-.protlys-app:has(.protlys-onboarding) .bottom-nav{display:none!important;}
+.protlys-app:has(.protlys-onboarding) .app-header,.protlys-app:has(.protlys-onboarding) .desktop-sidebar,.protlys-app:has(.protlys-onboarding) .bottom-nav{display:none!important;}\n.protlys-app:has(.protlys-onboarding) .screen{grid-column:1 / -1!important;grid-row:1 / -1!important;}
 .protlys-app:has(.protlys-onboarding) .screen{padding-bottom:0!important;}
 .protlys-onboarding{
   --onboard-bg:#F7F8F6;
