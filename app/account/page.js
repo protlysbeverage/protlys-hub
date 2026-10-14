@@ -4,6 +4,7 @@ import AppShell from '@/components/AppShell';
 import AccountClient from './AccountClient';
 import ProteinTargetCard from './ProteinTargetCard';
 import TargetHistory from './TargetHistory';
+import FirstVisitDashboard from './FirstVisitDashboard';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -13,7 +14,9 @@ function getShopUrl(){return 'https://protlys.com/collections/all';}
 export const dynamic = 'force-dynamic';
 export const revalidate = 0;
 
-export default async function AccountPage(){
+export default async function AccountPage({ searchParams }){
+  const params = await searchParams;
+  const showWelcome = params?.welcome === '1';
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
   const today=localDateStr(); const weekAgoDate=new Date(today + 'T12:00:00+03:00'); weekAgoDate.setUTCDate(weekAgoDate.getUTCDate()-6); const weekAgo=localDateStr(weekAgoDate);
   const [{data:profile},{data:achievements},{data:weekSteps},{data:movementDays},{data:targetHistory}]=await Promise.all([
@@ -23,5 +26,6 @@ export default async function AccountPage(){
     supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).order('step_date',{ascending:false}).limit(365),
     supabase.from('protein_target_history').select('target_g,effective_from,source').eq('user_id',user.id).order('effective_from',{ascending:true}).order('created_at',{ascending:true}),
   ]);
-  return <AppShell><div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div><ProteinTargetCard targetG={profile?.target_g}/><div className="screen-pad" style={{paddingTop:0,paddingBottom:0}}><TargetHistory rows={targetHistory||[]}/></div><AccountClient profile={profile||{}} achievements={achievements||[]} weekSteps={weekSteps||[]} movementDays={movementDays||[]} shopUrl={getShopUrl()} email={user.email}/></AppShell>;
+  const firstName = profile?.display_name?.split(/\\s+/)[0] || 'there';
+  return <AppShell>{showWelcome && <FirstVisitDashboard name={firstName} targetG={profile?.target_g}/>}<div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div><ProteinTargetCard targetG={profile?.target_g}/><div className="screen-pad" style={{paddingTop:0,paddingBottom:0}}><TargetHistory rows={targetHistory||[]}/></div><AccountClient profile={profile||{}} achievements={achievements||[]} weekSteps={weekSteps||[]} movementDays={movementDays||[]} shopUrl={getShopUrl()} email={user.email}/></AppShell>;
 }

@@ -46,9 +46,18 @@ export async function confirmCalculatorTargetAction({ targetG }) {
   if (!user) return { error:'Not signed in' };
   const target = Math.round(Number(targetG));
   if (!Number.isFinite(target) || target < 20 || target > 500) return { error:'Target must be between 20g and 500g.' };
+
   const { error } = await supabase.from('profiles').update({ target_g:target, onboarding_complete:true }).eq('id', user.id);
   if (error) return { error:error.message };
-  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/account');
+
+  const { error: historyError } = await supabase
+    .from('protein_target_history')
+    .insert({ user_id:user.id, target_g:target, source:'calculator', effective_from:nairobiDateStr() });
+  if (historyError && !/protein_target_history|relation .* does not exist/i.test(historyError.message || '')) {
+    return { error:historyError.message };
+  }
+
+  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/account'); revalidatePath('/calculator');
   return { ok:true };
 }
 
