@@ -1,13 +1,17 @@
 {
+  "id": "/",
   "name": "Protlys Hub",
   "short_name": "Protlys",
   "description": "Movement, protein tracking, challenges and community.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
+  "display_override": ["standalone", "minimal-ui"],
   "background_color": "#F7F8F6",
   "theme_color": "#6BCB45",
   "orientation": "portrait",
+  "lang": "en-KE",
+  "categories": ["health", "fitness", "lifestyle"],
   "icons": [
     {
       "src": "/icon-192.svg",
