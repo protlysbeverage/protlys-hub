@@ -537,7 +537,7 @@ html.protlys-dark .protlys-onboarding{
 html:not(.protlys-dark) .protlys-onboarding-pill.is-selected{
   background:#4F9F35;border-color:#4F9F35;color:#FFFFFF;
 }
-.protlys-onboarding-primary{min-height:48px;margin-top:8px;}
+ .protlys-onboarding .btn-primary{background:#4F9F35;color:#111111;}\n.protlys-onboarding-primary{min-height:48px;margin-top:8px;}
 .protlys-onboarding-primary:disabled{
   opacity:.58;cursor:not-allowed;filter:none;
 }
