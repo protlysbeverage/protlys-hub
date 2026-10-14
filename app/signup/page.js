@@ -11,8 +11,8 @@ function Logo(){return <div style={{textAlign:'center',marginBottom:32}}><img sr
 function StrengthBar({score}){if(score===0)return null;const colors=['','#FCA5A5','#FCD34D','var(--green)'];const labels=['','Weak','Fair','Strong'];return <div style={{marginTop:8}}><div style={{display:'flex',gap:4,marginBottom:4}}>{[0,1,2].map(i=><div key={i} style={{flex:1,height:4,borderRadius:99,background:i<score?colors[score]:'var(--ink-20)'}}/>)}</div><span style={{fontSize:11,fontWeight:700,color:colors[score]}}>{labels[score]}</span></div>}
 const errStyle={background:'#FEE2E2',borderRadius:10,padding:'10px 14px',fontSize:13,color:'#B3261E',marginBottom:10};
 const Spinner=({text})=><span style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}}><span style={{width:16,height:16,border:'2px solid rgba(255,255,255,.4)',borderTopColor:'#fff',borderRadius:'50%',animation:'spin .7s linear infinite',display:'inline-block'}}/>{text}</span>;
-function getSafeNext(value){return value&&value.startsWith('/')&&!value.startsWith('//')?value:'/';}
-function getAuthCallbackUrl(nextPath='/'){const host=window.location.hostname;const local=host==='localhost'||host==='127.0.0.1';const preview=host.endsWith('.vercel.app');const configured=process.env.NEXT_PUBLIC_SITE_URL?.trim();const base=!local&&!preview&&configured?configured.replace(/\/$/,''):window.location.origin;return `${base}/auth/callback?next=${encodeURIComponent(nextPath)}`;}
+function getSafeNext(value){return value&&value.startsWith('/')&&!value.startsWith('//')?value:'/hub';}
+function getAuthCallbackUrl(nextPath='/hub'){const host=window.location.hostname;const local=host==='localhost'||host==='127.0.0.1';const preview=host.endsWith('.vercel.app');const configured=process.env.NEXT_PUBLIC_SITE_URL?.trim();const base=!local&&!preview&&configured?configured.replace(/\/$/,''):window.location.origin;return `${base}/auth/callback?next=${encodeURIComponent(nextPath)}`;}
 
 export default function SignupPage(){
  const rawNext=typeof window!=='undefined'?new URLSearchParams(window.location.search).get('next'):null;
