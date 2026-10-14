@@ -57,11 +57,11 @@
       "name": "Protein",
       "url": "/account",
       "description": "Protein"
-    }
-  ]
-}
+    },
     {
       "name": "Calculator",
       "url": "/calculator",
       "description": "Calculator"
     }
+  ]
+}
