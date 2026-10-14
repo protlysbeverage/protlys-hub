@@ -2,37 +2,66 @@
   "id": "/",
   "name": "Protlys Hub",
   "short_name": "Protlys",
-  "description": "Movement, protein tracking, challenges and community.",
+  "description": "Your home for movement, protein tracking, challenges and the Protlys community.",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
-  "display_override": ["standalone", "minimal-ui"],
+  "display_override": [
+    "window-controls-overlay",
+    "standalone",
+    "minimal-ui"
+  ],
   "background_color": "#F7F8F6",
   "theme_color": "#6BCB45",
   "orientation": "portrait",
   "lang": "en-KE",
-  "categories": ["health", "fitness", "lifestyle"],
+  "categories": [
+    "health",
+    "fitness",
+    "lifestyle"
+  ],
   "icons": [
-  {
-    "src": "/icon-192.png",
-    "sizes": "192x192",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/icon-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "any"
-  },
-  {
-    "src": "/icon-maskable-512.png",
-    "sizes": "512x512",
-    "type": "image/png",
-    "purpose": "maskable"
-  }
-],
+    {
+      "src": "/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-maskable-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "dir": "ltr",
+  "prefer_related_applications": false,
+  "shortcuts": [
+    {
+      "name": "Movement",
+      "url": "/movement",
+      "description": "Movement"
+    },
+    {
+      "name": "Challenges",
+      "url": "/challenges",
+      "description": "Challenges"
+    },
+    {
+      "name": "Protein",
+      "url": "/account",
+      "description": "Protein"
+    },
+    {
+      "name": "Calculator",
+      "url": "/calculator",
+      "description": "Calculator"
     }
   ]
 }
