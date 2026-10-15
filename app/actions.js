@@ -31,7 +31,7 @@ export async function saveTargetAction({ targetG, source = 'custom', effectiveDa
 
   // Keep the current profile target for the rest of the app, while also recording
   // the effective date so historical week views remain accurate after edits.
-  const { error } = await supabase.from('profiles').update({ target_g:target }).eq('id', user.id);
+  const { error } = await supabase.from('profiles').update({ target_g:target, ...(safeSource === 'calculator' ? { onboarding_complete:true } : {}) }).eq('id', user.id);
   if (error) return { error:error.message };
   const { error: historyError } = await supabase.from('protein_target_history').insert({ user_id:user.id, target_g:target, source:safeSource, effective_from:effectiveFrom });
   if (historyError && !/protein_target_history|relation .* does not exist/i.test(historyError.message || '')) return { error:historyError.message };
