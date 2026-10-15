@@ -10,6 +10,7 @@ import ProfileConnectionLauncher from '@/components/ProfileConnectionLauncher';
 import FollowButton from '@/components/FollowButton';
 import ShareProfileButton from '@/components/ShareProfileButton';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
+import ProfilePhotoUploader from '@/components/ProfilePhotoUploader';
 import ProfileLiveRefresh from '@/components/ProfileLiveRefresh';
 
 function Avatar({ name, url, size = 72 }) { if(url)return <ProfilePhotoLightbox name={name} url={url} size={size}/>; const style={width:size,height:size,minWidth:size,minHeight:size,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block',flexShrink:0}; return <div style={{...style,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*.34,fontWeight:800,color:'var(--green-dark)'}}>{(name||'?')[0].toUpperCase()}</div>; }
@@ -59,11 +60,10 @@ export default async function MemberProfilePage({params}){
     : 0;
   const displayName=profile.display_name?.trim()||'Protlys Member'; const photoPosts=(posts||[]).filter(post=>post.image_url); const isOwnProfile=String(user.id)===String(id); const bio=profile.bio?.trim()||'';
   return <AppShell><ProfileLiveRefresh profileId={id}/><style>{`html{scroll-behavior:smooth}.profile-section-slider::-webkit-scrollbar{display:none}`}</style><div className="screen-pad" style={{paddingTop:14}}>
-    <Link href="/" style={{display:'inline-flex',alignItems:'center',gap:7,color:'var(--ink-70)',textDecoration:'none',fontSize:12,fontWeight:800,marginBottom:10}}><Icon name="arrow" size={16}/> Back to Feed</Link>
+    <Link href={isOwnProfile ? '/account' : '/'} style={{display:'inline-flex',alignItems:'center',gap:7,color:'var(--ink-70)',textDecoration:'none',fontSize:12,fontWeight:800,marginBottom:10}}><Icon name="arrow" size={16}/> {isOwnProfile ? 'Back to Dashboard' : 'Back to Feed'}</Link>
     <section style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:20,padding:'16px 14px 14px',boxShadow:'0 2px 8px rgba(0,0,0,.035)'}}>
       <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-        <Avatar name={displayName} url={profile.avatar_url} size={64}/>
-        <div style={{minWidth:0,flex:1,paddingTop:1}}>
+        {isOwnProfile ? <ProfilePhotoUploader name={displayName} url={profile.avatar_url} size={64}/> : <Avatar name={displayName} url={profile.avatar_url} size={64}/>}\n        <div style={{minWidth:0,flex:1,paddingTop:1}}>
           <div className="eyebrow" style={{marginBottom:3}}>Protlys member</div>
           <h1 style={{fontSize:22,margin:0,lineHeight:1.12,overflowWrap:'anywhere'}}>{displayName}</h1>
         </div>
