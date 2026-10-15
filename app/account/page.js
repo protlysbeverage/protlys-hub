@@ -18,8 +18,6 @@ export default async function AccountPage({ searchParams }){
   const params = await searchParams;
   const showWelcome = params?.welcome === '1';
   const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
-  const {data:profileGate}=await supabase.from('profiles').select('onboarding_complete').eq('id',user.id).single();
-  if (!profileGate?.onboarding_complete) redirect('/calculator');
   const today=localDateStr(); const weekAgoDate=new Date(today + 'T12:00:00+03:00'); weekAgoDate.setUTCDate(weekAgoDate.getUTCDate()-6); const weekAgo=localDateStr(weekAgoDate);
   const [{data:profile},{data:achievements},{data:weekSteps},{data:movementDays},{data:targetHistory}]=await Promise.all([
     supabase.from('profiles').select('id,display_name,avatar_url,created_at,streak,target_g,step_streak,total_steps,step_goal,onboarding_complete').eq('id',user.id).single(),
