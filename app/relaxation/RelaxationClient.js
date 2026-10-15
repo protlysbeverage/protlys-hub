@@ -231,7 +231,7 @@ export default function RelaxationClient() {
     lastFrameRef.current = null;
     stopVibration();
     void releaseWakeLock();
-    vibrate(HAPTICS.pause);
+    if (!auto) vibrate(HAPTICS.pause);
     setStatus('paused');
     statusRef.current = 'paused';
   }, [releaseWakeLock, stopVibration, vibrate]);
@@ -301,11 +301,8 @@ export default function RelaxationClient() {
     stopVibration();
     void releaseWakeLock();
     setCompleted(false);
-    setStatus('list');
-    statusRef.current = 'list';
-    setSelected(null);
-    elapsedRef.current = 0;
-    setElapsed(0);
+    setStatus('complete');
+    statusRef.current = 'complete';
   }, [selected, releaseWakeLock, stopVibration]);
 
   const goBack = () => {
@@ -313,7 +310,17 @@ export default function RelaxationClient() {
       router.back();
       return;
     }
-    endSession();
+    if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
+    rafRef.current = null;
+    lastFrameRef.current = null;
+    stopVibration();
+    void releaseWakeLock();
+    setSelected(null);
+    setElapsed(0);
+    elapsedRef.current = 0;
+    setCompleted(false);
+    setStatus('list');
+    statusRef.current = 'list';
   };
 
   const chooseSession = (session) => {
@@ -504,7 +511,7 @@ export default function RelaxationClient() {
         .relax-phase-label{font-size:22px;font-weight:850;line-height:1.15;}
         .relax-cue{font-size:11.5px;color:var(--ink-45);margin-top:6px;}
         .relax-whole-timer{font-size:14px;font-weight:700;color:var(--ink-70);margin-top:8px;}
-        .relax-primary{min-height:52px;margin-top:17px;}
+        .relax-primary{min-height:52px;margin-top:17px;color:var(--ink)!important;}
         .relax-controls{width:100%;display:flex;flex-direction:column;gap:9px;margin-top:17px;}
         .relax-end{min-height:48px;width:100%;font-size:12.5px;padding:11px 20px;}
         .relax-complete{text-align:center;padding:38px 0 10px;}
