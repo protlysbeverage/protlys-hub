@@ -21,8 +21,9 @@ export default async function HubPage(){
   // A first-time user must complete the protein calculator before entering the Hub.
   if (!profile?.onboarding_complete) redirect('/calculator');
 
-  // Established users with a completed onboarding flow go straight to the dashboard.
-  if (profile?.target_g) redirect('/account');
+  // Established users with a completed onboarding flow enter the Hub on the Feed.
+  // The Dashboard remains available from the bottom navigation.
+  if (profile?.target_g) redirect('/');
 
   // Safety fallback: if a profile is marked complete but has no target, send it through the calculator.
   redirect('/calculator');
