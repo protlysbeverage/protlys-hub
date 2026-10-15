@@ -107,8 +107,6 @@ export default function RelaxationClient() {
   const wakeLockRef = useRef(null);
   const audioContextRef = useRef(null);
 
-  const supportsVibration = typeof navigator !== 'undefined' && 'vibrate' in navigator;
-
   useEffect(() => {
     setHaptics(readPreference(STORAGE.haptics, true));
     setChime(readPreference(STORAGE.chime, true));
@@ -402,8 +400,6 @@ export default function RelaxationClient() {
               <span className="relax-switch" aria-hidden="true"><span /></span>
             </label>
           </div>
-
-          {!supportsVibration && <div className="relax-support-note">Vibration isn't supported on this device.</div>}
 
           <section className="relax-note">
             <div className="relax-note-title">A little reset goes a long way.</div>
