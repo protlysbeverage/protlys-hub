@@ -44,20 +44,18 @@ export default function ProfilePhotoUploader({ name, url, size = 64 }) {
 
   return (
     <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:5, flexShrink:0 }}>
-      <button
-        type="button"
-        onClick={() => fileRef.current?.click()}
-        disabled={uploading}
+      <label
+        htmlFor="protlys-profile-photo-input"
         aria-label={uploading ? 'Uploading profile photo' : 'Change profile photo'}
         style={{ width:size, height:size, borderRadius:'50%', border:0, padding:0, overflow:'hidden', position:'relative', display:'flex', alignItems:'center', justifyContent:'center', background:'var(--green-soft)', color:'var(--green-dark)', cursor:uploading?'wait':'pointer', flexShrink:0 }}
       >
         {url ? <img src={url} alt="Profile" style={{ width:'100%', height:'100%', objectFit:'cover' }} /> : <span style={{ fontSize:size*.34, fontWeight:800 }}>{(name || '?')[0].toUpperCase()}</span>}
         <span style={{ position:'absolute', right:0, bottom:0, width:20, height:20, borderRadius:'50%', background:'var(--ink)', color:'#fff', display:'flex', alignItems:'center', justifyContent:'center', border:'2px solid #fff', fontSize:11 }}>+</span>
-      </button>
-      <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ display:'none' }} />
-      <button type="button" onClick={() => fileRef.current?.click()} disabled={uploading} style={{ border:0, background:'none', padding:0, color:'var(--green-dark)', fontSize:10.5, fontWeight:800, cursor:'pointer' }}>
+      </label>
+      <input id="protlys-profile-photo-input" ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{ position:'absolute', width:1, height:1, opacity:0, pointerEvents:'none' }} />
+      <label htmlFor="protlys-profile-photo-input" style={{ border:0, background:'none', padding:0, color:'var(--green-dark)', fontSize:10.5, fontWeight:800, cursor:uploading?'wait':'pointer' }}>
         {uploading ? 'Uploading…' : url ? 'Change photo' : 'Add photo'}
-      </button>
+      </label>
       {message && <div style={{ fontSize:9.5, color:message.includes('updated') ? 'var(--green-dark)' : '#B3261E', textAlign:'center', maxWidth:100 }}>{message}</div>}
     </div>
   );
