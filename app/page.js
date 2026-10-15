@@ -14,9 +14,6 @@ export default async function FeedPage({ searchParams }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const { data: member } = await supabase.from('profiles').select('onboarding_complete').eq('id', user.id).single();
-  if (member && !member.onboarding_complete) redirect('/hub');
-
   const [{ data: profile }, { data: followingRows }] = await Promise.all([
     supabase.from('profiles').select('display_name, avatar_url, points, step_streak').eq('id', user.id).single(),
     supabase.from('follows').select('following_id').eq('follower_id', user.id),
