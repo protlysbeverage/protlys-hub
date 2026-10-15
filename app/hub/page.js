@@ -18,9 +18,13 @@ export default async function HubPage(){
 
   const {data:profile}=await supabase.from('profiles').select('display_name,target_g,onboarding_complete').eq('id',user.id).single();
 
-  // A saved target means onboarding is already complete for the purposes of this flow.
-  // Always take established users to the Dashboard rather than showing first-run UI.
+  // New profiles receive a database default of 120g, but that is only a placeholder.
+  // A first-time user must complete the protein calculator before entering the Hub.
+  if (!profile?.onboarding_complete) redirect('/calculator');
+
+  // Established users with a completed onboarding flow go straight to the dashboard.
   if (profile?.target_g) redirect('/account');
 
-  return <AppShell><OnboardingClient /></AppShell>;
+  // Safety fallback: if a profile is marked complete but has no target, send it through the calculator.
+  redirect('/calculator');
 }
