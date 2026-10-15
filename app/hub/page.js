@@ -23,7 +23,7 @@ export default async function HubPage(){
 
   // Established users with a completed onboarding flow enter the Hub on the Feed.
   // The Dashboard remains available from the bottom navigation.
-  if (profile?.target_g) redirect('/');
+  redirect('/');
 
   // Safety fallback: if a profile is marked complete but has no target, send it through the calculator.
   redirect('/calculator');
