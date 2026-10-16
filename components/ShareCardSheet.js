@@ -54,11 +54,10 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     return {...data,metric:data?.metric||metric,type:data?.type||type||metric,value:Number(data?.value??data?.number??value)||0,number:Number(data?.number??data?.value??value)||0,unit:data?.unit||unit,label:data?.label||label,subtext:data?.subtext||subtext,progress:data?.progress??progress,hasData:data?.hasData??(Number(data?.number??data?.value??value)>0||Number(progress)>0||Boolean(data?.visual?.days?.some?.(d=>d?.logged)))};
   },[data,metric,value,unit,label,subtext,progress,type,isMeditation]);
   const [mounted,setMounted]=useState(false);
-  const actionHeight=suggestions?.length?168:116;
+  const actionHeight=116;
   const lookOptions=isMeditation?MEDITATION_LOOKS:LOOKS;
   const labels=isMeditation?MEDITATION_LABELS:LABELS;
   const [selected,setSelected]=useState(isMeditation?'mist':'dark');
-  const [meditationTab,setMeditationTab]=useState('share');
   const [assets,setAssets]=useState({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
@@ -73,7 +72,6 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   useEffect(()=>{
     if(!open)return;
     setSelected(isMeditation?'mist':'dark');
-    setMeditationTab('share');
     setMessage('');
     setBusy(false);
     setScale(computeScale(cardWidth,cardHeight,actionHeight));
@@ -175,15 +173,12 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
         <div style={{fontSize:18,fontWeight:800}}>{sheetTitle}</div>
         <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
       </div>
-      {isMeditation&&<div style={{height:42,flex:'0 0 42px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:12}}>
-        {['share','suggestions'].map(tab=><button key={tab} type="button" aria-selected={meditationTab===tab} onPointerUp={e=>{e.stopPropagation();setMeditationTab(tab)}} style={{height:42,border:'1px solid '+(meditationTab===tab?'#4F9F35':'#D7DDD8'),borderRadius:21,background:meditationTab===tab?'var(--surface)':'transparent',color:meditationTab===tab?'var(--ink)':'var(--ink-45)',fontSize:12,fontWeight:800}}>{tab==='share'?'Share':'Suggested next'}</button>)}
-      </div>}
       {isMeditation ? (meditationTab==='share' ? (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
           <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
           </div>
-          <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:16,marginBottom:12}}>
+          <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:24,marginBottom:16}}>
             {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
           </div>
           <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
