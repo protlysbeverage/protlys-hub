@@ -191,7 +191,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
           </div>
         </div>
       
-      ) : ((
+      ) : (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
           <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
