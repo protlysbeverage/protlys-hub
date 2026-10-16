@@ -325,6 +325,7 @@ export default function RelaxationClient() {
     setStatus('running');
     statusRef.current = 'running';
     setCompleted(false);
+    savedCompletionRef.current=false;
   };
 
   const resumeSession = async () => {
@@ -383,6 +384,7 @@ export default function RelaxationClient() {
     elapsedRef.current = 0;
     setPhase(phaseAt(selected.pattern, 0));
     setCompleted(false);
+    savedCompletionRef.current=false;
     setStatus('ready');
     statusRef.current = 'ready';
   };
