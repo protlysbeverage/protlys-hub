@@ -2,6 +2,9 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
+import { chooseMessage, currentStreak, monthlyCardData, sessionCardData, suggestions as meditationSuggestions } from '@/lib/meditation-share';
 
 const STORAGE = {
   haptics: 'protlys-relaxation-haptics',
@@ -97,6 +100,11 @@ export default function RelaxationClient() {
   const [chime, setChime] = useState(true);
   const [completed, setCompleted] = useState(false);
   const [reducedMotion, setReducedMotion] = useState(false);
+  const [meditationRows, setMeditationRows] = useState([]);
+  const [profileUsername, setProfileUsername] = useState('protlys');
+  const [shareOpen, setShareOpen] = useState(false);
+  const [shareData, setShareData] = useState(null);
+  const [shareSuggestions, setShareSuggestions] = useState([]);
 
   const elapsedRef = useRef(0);
   const phaseRef = useRef(phase);
@@ -106,6 +114,24 @@ export default function RelaxationClient() {
   const previousPhaseRef = useRef(null);
   const wakeLockRef = useRef(null);
   const audioContextRef = useRef(null);
+  const savedCompletionRef = useRef(false);
+
+  useEffect(() => {
+    let cancelled=false;
+    (async()=>{
+      const supabase=createClient();
+      const {data:{user}}=await supabase.auth.getUser();
+      if(!user)return;
+      const [{data:rows},{data:profile}]=await Promise.all([
+        supabase.from('meditation_sessions').select('id,user_id,minutes,completed_at').order('completed_at',{ascending:false}).limit(1000),
+        supabase.from('profiles').select('display_name').eq('id',user.id).maybeSingle(),
+      ]);
+      if(cancelled)return;
+      setMeditationRows(rows||[]);
+      setProfileUsername(profile?.display_name||'protlys');
+    })().catch(error=>console.error('[Protlys Meditation] load failed',error));
+    return()=>{cancelled=true};
+  },[]);
 
   useEffect(() => {
     setHaptics(readPreference(STORAGE.haptics, true));
@@ -205,11 +231,12 @@ export default function RelaxationClient() {
       statusRef.current = 'complete';
       setCompleted(true);
       lastFrameRef.current = null;
+      void saveCompletedMeditation(Math.max(1, Math.round(selected.duration / 60)), new Date());
       return;
     }
 
     rafRef.current = window.requestAnimationFrame(animationFrame);
-  }, [selected, syncPhase, stopVibration, releaseWakeLock, vibrate, chime, playTone]);
+  }, [selected, syncPhase, stopVibration, releaseWakeLock, vibrate, chime, playTone, saveCompletedMeditation]);
 
   useEffect(() => {
     if (status !== 'running' || !selected) return;
@@ -258,6 +285,24 @@ export default function RelaxationClient() {
     window.addEventListener('pagehide', handleBeforeUnload);
     return () => window.removeEventListener('pagehide', handleBeforeUnload);
   }, [stopVibration]);
+
+  const saveCompletedMeditation = useCallback(async (minutes, completedAt) => {
+    if (savedCompletionRef.current) return;
+    savedCompletionRef.current = true;
+    const supabase=createClient();
+    const {data:{user}}=await supabase.auth.getUser();
+    if(!user){savedCompletionRef.current=false;return;}
+    const row={user_id:user.id,minutes,completed_at:completedAt.toISOString()};
+    const {data,error}=await supabase.from('meditation_sessions').insert(row).select('id,user_id,minutes,completed_at').single();
+    if(error){console.error('[Protlys Meditation] save failed',error);savedCompletionRef.current=false;return;}
+    const nextRows=[data,...meditationRows];
+    setMeditationRows(nextRows);
+    const message=chooseMessage();
+    const card=sessionCardData(nextRows,minutes,completedAt,message);
+    setShareData(card);
+    setShareSuggestions(meditationSuggestions(minutes,card.currentStreak,nextRows,completedAt));
+    setShareOpen(true);
+  },[meditationRows]);
 
   const beginSession = async () => {
     if (!selected) return;
@@ -401,6 +446,11 @@ export default function RelaxationClient() {
             </label>
           </div>
 
+          <section className="relax-history" aria-label="Meditation history">
+            <div className="relax-history-head"><div><span className="eyebrow">Stillness</span><h2>Past sessions</h2></div><button type="button" className="relax-monthly-link" onClick={()=>{setShareData(monthlyCardData(meditationRows));setShareSuggestions([]);setShareOpen(true);}}>Monthly recap <span aria-hidden="true">→</span></button></div>
+            {meditationRows.length ? <div className="relax-history-list">{meditationRows.slice(0,6).map(row=><div className="relax-history-row" key={row.id}><div><strong>{row.minutes} {row.minutes===1?'minute':'minutes'}</strong><small>{new Date(row.completed_at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</small></div><ShareIconButton variant="movement" label="Share meditation session" onClick={()=>{setShareData(sessionCardData(meditationRows,row.minutes,new Date(row.completed_at),''));setShareSuggestions(meditationSuggestions(row.minutes,currentStreak(meditationRows),meditationRows,new Date(row.completed_at)));setShareOpen(true);}}/></div>)}</div> : <div className="relax-history-empty">Complete a session to start your stillness history.</div>}
+          </section>
+
           <section className="relax-note">
             <div className="relax-note-title">A little reset goes a long way.</div>
             <div>Relaxation here is about everyday recovery — no pressure, no perfect routine.</div>
@@ -468,6 +518,19 @@ export default function RelaxationClient() {
 
       <style>{`
         .relaxation-page{min-height:100%;}
+        .relax-history{margin-top:20px;padding-top:18px;border-top:1px solid var(--line);}
+        .relax-history-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px;}
+        .relax-history-head h2{font-size:18px;margin:4px 0 0;}
+        .relax-monthly-link{border:0;background:none;color:var(--green-dark);font-size:11px;font-weight:800;padding:6px 0;cursor:pointer;white-space:nowrap;}
+        .relax-history-list{display:grid;gap:1px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--line);}
+        .relax-history-row{min-height:58px;padding:9px 10px 9px 13px;background:var(--white);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+        .relax-history-row>div{display:flex;align-items:baseline;gap:8px;min-width:0;}
+        .relax-history-row strong{font-size:13px;white-space:nowrap;}
+        .relax-history-row small{font-size:10.5px;color:var(--ink-45);white-space:nowrap;}
+        .relax-history-empty{padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--ink-45);font-size:11px;}
+        html.protlys-dark .relax-history-row{background:#151815;}
+
+
         .relax-back{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:6px 4px;border:0;background:none;color:var(--ink-70);font-size:13px;font-weight:800;cursor:pointer;}
         .relax-back span:first-child{font-size:20px;line-height:1;}
         .relax-back:focus-visible,.relax-session:focus-visible,.relax-setting:focus-within,.relax-primary:focus-visible,.relax-end:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
@@ -531,6 +594,7 @@ export default function RelaxationClient() {
           .relax-session-screen.is-reduced-motion .relax-orb{animation:relax-opacity-pulse 3s ease-in-out infinite;}
         }
       `}</style>
+      <ShareCardSheet open={shareOpen} onClose={()=>setShareOpen(false)} data={shareData} type={shareData?.type} metric={shareData?.metric} username={profileUsername} lookSet="meditation" cardWidth={320} cardHeight={568} sheetTitle={shareData?.type==='meditation-monthly'?'Monthly recap':'Your session'} primaryLabel="Share" showSave={false} showCopy={false} onDone={()=>setShareOpen(false)} suggestions={shareSuggestions} />
     </div>
   );
 }
