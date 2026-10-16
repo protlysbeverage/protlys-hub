@@ -146,9 +146,9 @@ const MEDITATION_PALETTES={
 };
 
 function MeditationFooter({palette,username,qrDataUrl,logoDataUrl}){
-  return <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:10,marginTop:'auto',position:'relative',zIndex:2}}>
+  return <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:10,marginTop:'auto',paddingTop:8,position:'relative',zIndex:2,flex:'0 0 auto'}}>
     <div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:800,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div><div style={{fontSize:9,color:palette.muted,marginTop:3}}>protlys.com</div></div>
-    <div style={{width:58,height:58,padding:4,boxSizing:'border-box',background:'#FFFFFF',borderRadius:9,flex:'0 0 auto'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{display:'block',width:50,height:50,objectFit:'contain'}}/>}</div>
+    <div style={{width:60,height:60,padding:4,boxSizing:'border-box',background:'#FFFFFF',borderRadius:9,flex:'0 0 auto'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{display:'block',width:52,height:52,objectFit:'contain'}}/>}</div>
   </div>;
 }
 
@@ -156,16 +156,16 @@ function MeditationSessionCard({data,look='mist',username,qrDataUrl,logoDataUrl}
   const palette=MEDITATION_PALETTES[look]||MEDITATION_PALETTES.mist;
   const week=data.weekDays||[];
   const streak=Number(data.currentStreak||0);
-  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,padding:18,display:'flex',flexDirection:'column',fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
-    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,position:'relative',zIndex:2}}><div style={{display:'flex',alignItems:'center',gap:8}}><img src={logoDataUrl} alt="Protlys" style={{width:82,height:24,objectFit:'contain',objectPosition:'left center'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{meditationDateLabel(data.completedAt)}</span></div>
-    <div style={{height:218,display:'grid',placeItems:'center',position:'relative',marginTop:2}}>
-      <div style={{position:'absolute',width:198,height:198,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:152,height:152,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:106,height:106,borderRadius:'50%',border:'1px solid '+palette.ring}}/>
-      <div style={{position:'relative',zIndex:1,textAlign:'center'}}><div style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:88,lineHeight:.86,fontWeight:400,letterSpacing:'-.05em'}}>{Number(data.minutes||0)}</div><div style={{fontSize:9,fontWeight:900,letterSpacing:'2.1px',marginTop:9}}>MINUTES OF CALM</div></div>
+  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,padding:16,display:'flex',flexDirection:'column',fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,position:'relative',zIndex:2,flex:'0 0 30px',minHeight:30}}><div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}><img src={logoDataUrl} alt="Protlys" style={{width:100,height:28,objectFit:'contain',objectPosition:'left center',display:'block',flex:'0 0 auto'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{meditationDateLabel(data.completedAt)}</span></div>
+    <div style={{height:188,flex:'0 0 188px',display:'grid',placeItems:'center',position:'relative',marginTop:2}}>
+      <div style={{position:'absolute',width:176,height:176,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:136,height:136,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:96,height:96,borderRadius:'50%',border:'1px solid '+palette.ring}}/>
+      <div style={{position:'relative',zIndex:1,textAlign:'center'}}><div style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:82,lineHeight:.86,fontWeight:400,letterSpacing:'-.05em'}}>{Number(data.minutes||0)}</div><div style={{fontSize:9,fontWeight:900,letterSpacing:'2.1px',marginTop:9}}>MINUTES OF CALM</div></div>
     </div>
-    <div style={{fontFamily:'Georgia,Times New Roman,serif',fontStyle:'italic',fontSize:14,lineHeight:1.35,textAlign:'center',padding:'0 8px',minHeight:48,display:'grid',placeItems:'center'}}>{data.message||''}</div>
-    <div style={{marginTop:8,padding:'11px 11px 10px',borderRadius:14,background:palette.soft,border:'1px solid '+palette.ring}}>
+    <div style={{fontFamily:'Georgia,Times New Roman,serif',fontStyle:'italic',fontSize:14,lineHeight:1.35,textAlign:'center',padding:'0 8px',minHeight:42,maxHeight:42,display:'grid',placeItems:'center'}}>{data.message||''}</div>
+    <div style={{marginTop:7,padding:'9px 10px 9px',borderRadius:14,background:palette.soft,border:'1px solid '+palette.ring}}>
       <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,fontSize:9,fontWeight:800}}><span>{streak} {streak===1?'day':'days'} of calm</span><span>{Number(data.weekCount||0)} of 7 this week</span></div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,marginTop:9}}>{week.map((d,i)=><div key={d.key||i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><div style={{width:25,height:25,borderRadius:'50%',background:d.hasSession?palette.accent:'rgba(30,42,34,.10)',color:d.hasSession?'#FFFFFF':palette.muted,outline:d.today?'1.5px solid '+palette.accent:'none',outlineOffset:2,display:'grid',placeItems:'center',fontSize:11,fontWeight:900}}>{d.hasSession?'✓':''}</div><span style={{fontSize:7,fontWeight:800,color:palette.muted}}>{d.label}</span></div>)}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,marginTop:7}}>{week.map((d,i)=><div key={d.key||i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><div style={{width:24,height:24,borderRadius:'50%',background:d.hasSession?palette.accent:'rgba(30,42,34,.10)',color:d.hasSession?'#FFFFFF':palette.muted,outline:d.today?'1.5px solid '+palette.accent:'none',outlineOffset:2,display:'grid',placeItems:'center',fontSize:11,fontWeight:900}}>{d.hasSession?'✓':''}</div><span style={{fontSize:7,fontWeight:800,color:palette.muted}}>{d.label}</span></div>)}</div>
     </div>
     <MeditationFooter palette={palette} username={username} qrDataUrl={qrDataUrl} logoDataUrl={logoDataUrl}/>
   </div>;
