@@ -498,7 +498,7 @@ export default function RelaxationClient() {
         .relax-session-name{font:600 10.5px/1 'IBM Plex Mono',monospace;letter-spacing:1.5px;text-transform:uppercase;color:var(--green-dark);}
         .relax-session-screen{display:flex;flex-direction:column;align-items:center;padding:8px 0 0;}
         .relax-stage{width:min(320px,82vw);height:min(320px,82vw);display:grid;place-items:center;margin:8px auto 0;}
-        .relax-progress-ring{width:100%;height:100%;display:grid;place-items:center;border-radius:50%;padding:4px;background:conic-gradient(var(--green) var(--relax-progress),var(--line) 0);}
+        .relax-progress-ring{position:relative;width:100%;height:100%;display:grid;place-items:center;border-radius:50%;padding:4px;background:conic-gradient(var(--green) var(--relax-progress),var(--line) 0);}
         .relax-progress-ring::after{content:'';position:absolute;width:calc(min(320px,82vw) - 8px);height:calc(min(320px,82vw) - 8px);border-radius:50%;background:var(--paper);}
         .relax-orb{position:relative;z-index:1;width:70%;height:70%;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 42% 36%,var(--green) 0%,var(--green-dark) 78%);box-shadow:0 0 34px var(--green-soft),0 0 70px var(--green-soft);will-change:transform;}
         .relax-countdown{font-size:clamp(42px,13vw,58px);font-weight:700;letter-spacing:-.05em;color:var(--white);text-shadow:0 1px 2px var(--ink-20);}
