@@ -152,10 +152,12 @@ export default function CalculatorClient({ savedTarget, profile }) {
       {calculatorState==='loading'||calculatorState==='jump'?'Calculating...':calculatorState==='idle'?'Calculate my protein target →':'Calculate again →'}
     </button>
     <div ref={resultRef} className="calculator-result-status" role="status" aria-live="polite" style={{marginTop:14,scrollMarginTop:90,height:calculatorState==='idle'?'0px':'auto',minHeight:0,width:'100%',gridColumn:'1 / -1',justifySelf:'stretch',alignSelf:'stretch',minWidth:0,paddingBottom:20,boxSizing:'border-box'}}>
-      {(calculatorState==='loading'||calculatorState==='jump')&&<div style={{display:'flex',width:'100%',minWidth:0,flexDirection:'column',alignItems:'center',justifyContent:'center',textAlign:'center'}}>
-        <ProtlysLoader ref={loaderRef}/>
-        <div className="mono" style={{fontSize:16,fontWeight:800,marginTop:4}}>{loaderProgress}%</div>
-        <div className="subhead" style={{marginTop:4}}>{loaderProgress<45?'Weighing your protein':loaderProgress<72?'Counting grams':loaderProgress<100?'Checking your target':'Done!'}</div>
+      {(calculatorState==='loading'||calculatorState==='jump')&&<div className="calculator-loading-state">
+        <div className="calculator-loading-mascot"><ProtlysLoader ref={loaderRef}/></div>
+        <div className="calculator-loading-copy">
+          <div className="mono calculator-loading-percent">{loaderProgress}%</div>
+          <div className="calculator-loading-message">{loaderProgress<45?'Weighing your protein':loaderProgress<72?'Counting grams':loaderProgress<100?'Checking your target':'Done!'}</div>
+        </div>
       </div>}
       {calculatorState==='error'&&<section className="section-card" style={{marginTop:20}}>
         <div className="eyebrow">Something went wrong</div><p className="subhead" style={{marginTop:6}}>{calcError}</p>
