@@ -8,6 +8,8 @@ import ShareCard from './ShareCard';
 
 const LOOKS=['dark','light','surface'];
 const LABELS={dark:'Dark',light:'Light',surface:'Surface'};
+const MEDITATION_LOOKS=['mist','dusk','dawn'];
+const MEDITATION_LABELS={mist:'Mist',dusk:'Dusk',dawn:'Dawn'};
 const LOGOS={dark:'/protlys-logo-dark.png',light:'/protlys-logo-exact.png',surface:'/protlys-logo-dark.png'};
 function publicShareUrl(metric,data){
   if(data?.publicUrl)return data.publicUrl;
@@ -22,8 +24,8 @@ function assetDataUrl(path){return fetch(path,{cache:'force-cache'}).then(r=>{if
 async function waitForImages(node){await Promise.all([...node.querySelectorAll('img')].map(async img=>{if(img.decode)try{await img.decode();return}catch{}if(img.complete)return;await new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})}))}
 function computeScale(){
   if(typeof window==='undefined')return 1;
-  const w=(window.innerWidth-32)/360;
-  const h=(window.innerHeight-56-42-42-116-16)/640;
+  const w=(window.innerWidth-32)/cardWidth;
+  const h=(window.innerHeight-56-42-42-116-16)/cardHeight;
   return Math.max(0.35,Math.min(1.2,w,h));
 }
 function idle(fn){if(typeof window==='undefined')return()=>{};if('requestIdleCallback'in window){const id=window.requestIdleCallback(fn,{timeout:500});return()=>window.cancelIdleCallback?.(id)}const id=window.setTimeout(fn,120);return()=>window.clearTimeout(id)}
@@ -35,18 +37,21 @@ export class ShareSheetErrorBoundary extends Component{
   render(){if(this.state.error)return <div role="alert" style={{position:'fixed',inset:0,zIndex:2147483001,background:'#FFFFFF',color:'#111111',display:'grid',placeItems:'center',padding:24,fontFamily:'Manrope,sans-serif'}}><div style={{textAlign:'center'}}><strong>Share card unavailable</strong><div style={{fontSize:12,marginTop:8,color:'#555'}}>Close this sheet and try again.</div></div></div>;return this.props.children}
 }
 
-function CardPreview({data,type,look,assets,username,avatarUrl,scale}){
-  return <div style={{width:360*scale,height:640*scale,flex:'0 0 auto',position:'relative'}}>
-    <div style={{width:360,height:640,position:'absolute',left:0,top:0,transform:'scale('+scale+')',transformOrigin:'top left'}}>
-      <ShareCard type={type} metric={data.metric} data={data} username={username} avatarUrl={avatarUrl} look={look} qrDataUrl={assets.qr||''} logoDataUrl={assets[look]||LOGOS[look]||LOGOS.dark}/>
+function CardPreview({data,type,look,assets,username,avatarUrl,scale,cardWidth=360,cardHeight=640}){
+  return <div style={{width:cardWidth*scale,height:cardHeight*scale,flex:'0 0 auto',position:'relative'}}>
+    <div style={{width:cardWidth,height:cardHeight,position:'absolute',left:0,top:0,transform:'scale('+scale+')',transformOrigin:'top left'}}>
+      <ShareCard cardWidth={cardWidth} cardHeight={cardHeight} type={type} metric={data.metric} data={data} username={username} avatarUrl={avatarUrl} look={look} qrDataUrl={assets.qr||''} logoDataUrl={assets[look]||LOGOS[look]||LOGOS.dark}/>
     </div>
   </div>
 }
 
-function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,subtext,progress,username,avatarUrl='',type}){
+function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,subtext,progress,username,avatarUrl='',type,lookSet='default',cardWidth=360,cardHeight=640,sheetTitle='Share your progress',primaryLabel,showSave=true,showCopy=true,onDone,suggestions=[]}){
   const shareData=useMemo(()=>({...data,metric:data?.metric||metric,type:data?.type||type||metric,value:Number(data?.value??data?.number??value)||0,number:Number(data?.number??data?.value??value)||0,unit:data?.unit||unit,label:data?.label||label,subtext:data?.subtext||subtext,progress:data?.progress??progress,hasData:data?.hasData??(Number(data?.number??data?.value??value)>0||Number(progress)>0||Boolean(data?.visual?.days?.some?.(d=>d?.logged)))}),[data,metric,value,unit,label,subtext,progress,type]);
   const [mounted,setMounted]=useState(false);
-  const [selected,setSelected]=useState('dark');
+  const isMeditation=lookSet==='meditation';
+  const lookOptions=isMeditation?MEDITATION_LOOKS:LOOKS;
+  const labels=isMeditation?MEDITATION_LABELS:LABELS;
+  const [selected,setSelected]=useState(isMeditation?'mist':'dark');
   const [assets,setAssets]=useState({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
@@ -60,7 +65,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
 
   useEffect(()=>{
     if(!open)return;
-    setSelected('dark');
+    setSelected(isMeditation?'mist':'dark');
     setMessage('');
     setBusy(false);
     setScale(computeScale());
@@ -95,7 +100,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     })();
 
     return()=>{window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);window.removeEventListener('popstate',onPop);window.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;document.body.style.touchAction=previousTouch};
-  },[open,shareData.metric]);
+  },[open,shareData.metric,isMeditation]);
 
   function closeSheet(){
     if(!open)return;
@@ -114,14 +119,14 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     const source=cardHostRef.current?.querySelector('[data-protlys-share-card="true"]');
     if(!source)throw new Error('Share card is not mounted.');
     const holder=document.createElement('div');
-    holder.style.cssText='position:fixed;left:-30000px;top:0;width:360px;height:640px;overflow:hidden;pointer-events:none;opacity:1;';
+    holder.style.cssText='position:fixed;left:-30000px;top:0;width:${cardWidth}px;height:${cardHeight}px;overflow:hidden;pointer-events:none;opacity:1;';
     const clone=source.cloneNode(true);
-    clone.style.width='360px';clone.style.height='640px';clone.style.transform='none';clone.style.transformOrigin='top left';clone.style.overflow='hidden';
+    clone.style.width=cardWidth+'px';clone.style.height=cardHeight+'px';clone.style.transform='none';clone.style.transformOrigin='top left';clone.style.overflow='hidden';
     holder.appendChild(clone);document.body.appendChild(holder);
     try{
       if(document.fonts?.ready)await document.fonts.ready;
       await waitForImages(clone);
-      const dataUrl=await toPng(clone,{cacheBust:true,pixelRatio:3,width:360,height:640,style:{width:'360px',height:'640px',transform:'none',overflow:'hidden'}});
+      const dataUrl=await toPng(clone,{cacheBust:true,pixelRatio:3,width:cardWidth,height:cardHeight,style:{width:cardWidth+'px',height:cardHeight+'px',transform:'none',overflow:'hidden'}});
       const blob=await (await fetch(dataUrl)).blob();
       cacheRef.current.set(key,blob);
       return blob;
@@ -159,21 +164,23 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     <div aria-hidden="true" onPointerUp={closeSheet} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.6)'}}/>
     <section ref={node=>{cardHostRef.current=node}} role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={touchStart} onTouchEnd={touchEnd} style={{position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',padding:'max(env(safe-area-inset-top),12px) 16px calc(10px + env(safe-area-inset-bottom))',background:(document.documentElement.dataset.theme==='dark'?'#0D0F0E':'#F7F8F6'),color:(document.documentElement.dataset.theme==='dark'?'#FFFFFF':'#111111'),display:'flex',flexDirection:'column',overflow:'hidden',touchAction:'pan-y'}}>
       <div style={{height:56,flex:'0 0 56px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
-        <div style={{fontSize:18,fontWeight:800}}>Share your progress</div>
+        <div style={{fontSize:18,fontWeight:800}}>{sheetTitle}</div>
         <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
       </div>
       <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-        {shareData.hasData?<CardPreview shareData={shareData} data={shareData} type={shareData.type} selected={selected} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
+        {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
       </div>
       <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center'}}>
-        {LOOKS.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{LABELS[look]}</button>)}
+        {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
       </div>
       <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
         <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {LABELS[selected]} card</>}</button>
-        <div style={{height:44,display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
-          <button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>
-          <button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>
+        <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
+          {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
+          {showCopy&&<button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>}
+          {onDone&&<button type="button" onClick={onDone} style={{gridColumn:'1 / -1',height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800}}>Done</button>}
         </div>
+        {suggestions?.length>0&&<div style={{fontSize:10.5,lineHeight:1.35,color:'var(--ink-45)',textAlign:'left',padding:'2px 4px 0'}}>{suggestions.map((s,i)=><div key={i}>• {s}</div>)}</div>}
       </div>
       {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc(124px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
