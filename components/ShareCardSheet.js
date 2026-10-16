@@ -178,7 +178,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       {isMeditation&&<div style={{height:42,flex:'0 0 42px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:12}}>
         {['share','suggestions'].map(tab=><button key={tab} type="button" aria-selected={meditationTab===tab} onPointerUp={e=>{e.stopPropagation();setMeditationTab(tab)}} style={{height:42,border:'1px solid '+(meditationTab===tab?'#4F9F35':'#D7DDD8'),borderRadius:21,background:meditationTab===tab?'var(--surface)':'transparent',color:meditationTab===tab?'var(--ink)':'var(--ink-45)',fontSize:12,fontWeight:800}}>{tab==='share'?'Share':'Suggested next'}</button>)}
       </div>}
-      {(!isMeditation||meditationTab==='share')&&<>
+      {(!isMeditation||meditationTab==='share')&&<div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
         <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
           {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
         </div>
@@ -193,7 +193,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
             {onDone&&<button type="button" onClick={onDone} style={{gridColumn:'1 / -1',height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800}}>Done</button>}
           </div>
         </div>
-      </>}
+      </div>}
       {isMeditation&&meditationTab==='suggestions'&&<div style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',padding:'8px 2px 16px'}}>
         <div style={{fontSize:12,fontWeight:900,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--ink-45)',marginBottom:12}}>Suggested next</div>
         <div style={{borderTop:'1px solid var(--line)'}}>
@@ -202,7 +202,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
             <div style={{fontSize:14,lineHeight:1.55,color:'var(--ink)'}}>{s}</div>
           </div>)}
         </div>
-      </div>      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
+      </div>
+      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
   </div>;
   return createPortal(<ShareSheetErrorBoundary>{content}</ShareSheetErrorBoundary>,document.body);
