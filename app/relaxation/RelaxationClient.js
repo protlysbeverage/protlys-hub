@@ -212,6 +212,26 @@ export default function RelaxationClient() {
     }
   }, [selected, vibrate, playTone]);
 
+  const saveCompletedMeditation = useCallback(async (minutes, completedAt) => {
+    if (savedCompletionRef.current) return;
+    savedCompletionRef.current = true;
+    const supabase=createClient();
+    const {data:{user}}=await supabase.auth.getUser();
+    if(!user){savedCompletionRef.current=false;return;}
+    const row={user_id:user.id,minutes,completed_at:completedAt.toISOString()};
+    const {data,error}=await supabase.from('meditation_sessions').insert(row).select('id,user_id,minutes,completed_at').single();
+    if(error){console.error('[Protlys Meditation] save failed',error);savedCompletionRef.current=false;return;}
+    const nextRows=[data,...meditationRows];
+    setMeditationRows(nextRows);
+    const message=chooseMessage();
+    rememberSessionMessage(data.id,message);
+    const card=sessionCardData(nextRows,minutes,completedAt,message);
+    setShareData(card);
+    setShareSuggestions(meditationSuggestions(minutes,card.currentStreak,nextRows,completedAt));
+    setShareOpen(true);
+  },[meditationRows]);
+
+
   const animationFrame = useCallback((timestamp) => {
     if (statusRef.current !== 'running' || !selected) return;
 
@@ -285,25 +305,6 @@ export default function RelaxationClient() {
     window.addEventListener('pagehide', handleBeforeUnload);
     return () => window.removeEventListener('pagehide', handleBeforeUnload);
   }, [stopVibration]);
-
-  const saveCompletedMeditation = useCallback(async (minutes, completedAt) => {
-    if (savedCompletionRef.current) return;
-    savedCompletionRef.current = true;
-    const supabase=createClient();
-    const {data:{user}}=await supabase.auth.getUser();
-    if(!user){savedCompletionRef.current=false;return;}
-    const row={user_id:user.id,minutes,completed_at:completedAt.toISOString()};
-    const {data,error}=await supabase.from('meditation_sessions').insert(row).select('id,user_id,minutes,completed_at').single();
-    if(error){console.error('[Protlys Meditation] save failed',error);savedCompletionRef.current=false;return;}
-    const nextRows=[data,...meditationRows];
-    setMeditationRows(nextRows);
-    const message=chooseMessage();
-    rememberSessionMessage(data.id,message);
-    const card=sessionCardData(nextRows,minutes,completedAt,message);
-    setShareData(card);
-    setShareSuggestions(meditationSuggestions(minutes,card.currentStreak,nextRows,completedAt));
-    setShareOpen(true);
-  },[meditationRows]);
 
   const beginSession = async () => {
     if (!selected) return;
