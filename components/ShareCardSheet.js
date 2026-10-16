@@ -22,7 +22,7 @@ function SaveGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill
 function LinkGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15"/><path d="M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15"/></svg>}
 function assetDataUrl(path){return fetch(path,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Unable to load '+path);return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const f=new FileReader();f.onload=()=>resolve(f.result);f.onerror=reject;f.readAsDataURL(blob)}))}
 async function waitForImages(node){await Promise.all([...node.querySelectorAll('img')].map(async img=>{if(img.decode)try{await img.decode();return}catch{}if(img.complete)return;await new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})}))}
-function computeScale(){
+function computeScale(cardWidth=360,cardHeight=640){
   if(typeof window==='undefined')return 1;
   const w=(window.innerWidth-32)/cardWidth;
   const h=(window.innerHeight-56-42-42-116-16)/cardHeight;
@@ -68,8 +68,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     setSelected(isMeditation?'mist':'dark');
     setMessage('');
     setBusy(false);
-    setScale(computeScale());
-    const onResize=()=>setScale(computeScale());
+    setScale(computeScale(cardWidth,cardHeight));
+    const onResize=()=>setScale(computeScale(cardWidth,cardHeight));
     window.addEventListener('resize',onResize);
     window.addEventListener('orientationchange',onResize);
 
@@ -93,9 +93,9 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       try{
         const [dark,light,qr]=await Promise.all([
           assetDataUrl(LOGOS.dark),assetDataUrl(LOGOS.light),
-          QRCode.toDataURL(publicShareUrl(shareData.metric,shareData),{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}})
+          QRCode.toDataURL(shareData.publicUrl||publicShareUrl(shareData.metric,shareData),{margin:1,width:220,errorCorrectionLevel:'M',color:{dark:'#111111',light:'#FFFFFF'}})
         ]);
-        setAssets({dark,light,surface:dark,qr});
+        setAssets({dark,light,surface:dark,mist:light,dusk:dark,dawn:light,qr});
       }catch(error){console.error('[Protlys ShareSheet] asset load failed',error);setMessage('Some share assets could not be loaded.')}
     })();
 
@@ -109,7 +109,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   }
 
   function cacheKey(look=selected){
-    return JSON.stringify({look,type:shareData.type,metric:shareData.metric,number:shareData.number,unit:shareData.unit,label:shareData.label,subtext:shareData.subtext,progress:shareData.progress,visual:shareData.visual,highlight:shareData.highlight,username,avatarUrl,publicUrl:shareData.publicUrl});
+    return JSON.stringify({look,cardWidth,cardHeight,type:shareData.type,metric:shareData.metric,number:shareData.number,unit:shareData.unit,label:shareData.label,subtext:shareData.subtext,progress:shareData.progress,visual:shareData.visual,highlight:shareData.highlight,username,avatarUrl,publicUrl:shareData.publicUrl});
   }
 
   async function createExportBlob(look=selected){
@@ -119,7 +119,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     const source=cardHostRef.current?.querySelector('[data-protlys-share-card="true"]');
     if(!source)throw new Error('Share card is not mounted.');
     const holder=document.createElement('div');
-    holder.style.cssText='position:fixed;left:-30000px;top:0;width:${cardWidth}px;height:${cardHeight}px;overflow:hidden;pointer-events:none;opacity:1;';
+    holder.style.cssText='position:fixed;left:-30000px;top:0;width:'+cardWidth+'px;height:'+cardHeight+'px;overflow:hidden;pointer-events:none;opacity:1;';
     const clone=source.cloneNode(true);
     clone.style.width=cardWidth+'px';clone.style.height=cardHeight+'px';clone.style.transform='none';clone.style.transformOrigin='top left';clone.style.overflow='hidden';
     holder.appendChild(clone);document.body.appendChild(holder);
