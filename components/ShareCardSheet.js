@@ -223,7 +223,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
           </div>
         </div>
       )}
-      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>    </section>
+      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
+    </section>
   </div>;
   return createPortal(<ShareSheetErrorBoundary>{content}</ShareSheetErrorBoundary>,document.body);
 }
