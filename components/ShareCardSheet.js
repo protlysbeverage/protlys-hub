@@ -46,9 +46,14 @@ function CardPreview({data,type,look,assets,username,avatarUrl,scale,cardWidth=3
 }
 
 function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,subtext,progress,username,avatarUrl='',type,lookSet='default',cardWidth=360,cardHeight=640,sheetTitle='Share your progress',primaryLabel,showSave=true,showCopy=true,onDone,suggestions=[]}){
-  const shareData=useMemo(()=>({...data,metric:data?.metric||metric,type:data?.type||type||metric,value:Number(data?.value??data?.number??value)||0,number:Number(data?.number??data?.value??value)||0,unit:data?.unit||unit,label:data?.label||label,subtext:data?.subtext||subtext,progress:data?.progress??progress,hasData:data?.hasData??(Number(data?.number??data?.value??value)>0||Number(progress)>0||Boolean(data?.visual?.days?.some?.(d=>d?.logged)))}),[data,metric,value,unit,label,subtext,progress,type]);
-  const [mounted,setMounted]=useState(false);
   const isMeditation=lookSet==='meditation';
+  const shareData=useMemo(()=>{
+    if(isMeditation){
+      return {...(data||{}),metric:data?.metric||metric,type:data?.type||type||'meditation-session',hasData:true};
+    }
+    return {...data,metric:data?.metric||metric,type:data?.type||type||metric,value:Number(data?.value??data?.number??value)||0,number:Number(data?.number??data?.value??value)||0,unit:data?.unit||unit,label:data?.label||label,subtext:data?.subtext||subtext,progress:data?.progress??progress,hasData:data?.hasData??(Number(data?.number??data?.value??value)>0||Number(progress)>0||Boolean(data?.visual?.days?.some?.(d=>d?.logged)))};
+  },[data,metric,value,unit,label,subtext,progress,type,isMeditation]);
+  const [mounted,setMounted]=useState(false);
   const actionHeight=suggestions?.length?168:116;
   const lookOptions=isMeditation?MEDITATION_LOOKS:LOOKS;
   const labels=isMeditation?MEDITATION_LABELS:LABELS;
