@@ -22,10 +22,10 @@ function SaveGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill
 function LinkGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15"/><path d="M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15"/></svg>}
 function assetDataUrl(path){return fetch(path,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Unable to load '+path);return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const f=new FileReader();f.onload=()=>resolve(f.result);f.onerror=reject;f.readAsDataURL(blob)}))}
 async function waitForImages(node){await Promise.all([...node.querySelectorAll('img')].map(async img=>{if(img.decode)try{await img.decode();return}catch{}if(img.complete)return;await new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})}))}
-function computeScale(cardWidth=360,cardHeight=640){
+function computeScale(cardWidth=360,cardHeight=640,actionHeight=116){
   if(typeof window==='undefined')return 1;
   const w=(window.innerWidth-32)/cardWidth;
-  const h=(window.innerHeight-56-42-42-116-16)/cardHeight;
+  const h=(window.innerHeight-56-42-actionHeight-16)/cardHeight;
   return Math.max(0.35,Math.min(1.2,w,h));
 }
 function idle(fn){if(typeof window==='undefined')return()=>{};if('requestIdleCallback'in window){const id=window.requestIdleCallback(fn,{timeout:500});return()=>window.cancelIdleCallback?.(id)}const id=window.setTimeout(fn,120);return()=>window.clearTimeout(id)}
@@ -49,6 +49,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   const shareData=useMemo(()=>({...data,metric:data?.metric||metric,type:data?.type||type||metric,value:Number(data?.value??data?.number??value)||0,number:Number(data?.number??data?.value??value)||0,unit:data?.unit||unit,label:data?.label||label,subtext:data?.subtext||subtext,progress:data?.progress??progress,hasData:data?.hasData??(Number(data?.number??data?.value??value)>0||Number(progress)>0||Boolean(data?.visual?.days?.some?.(d=>d?.logged)))}),[data,metric,value,unit,label,subtext,progress,type]);
   const [mounted,setMounted]=useState(false);
   const isMeditation=lookSet==='meditation';
+  const actionHeight=suggestions?.length?168:116;
   const lookOptions=isMeditation?MEDITATION_LOOKS:LOOKS;
   const labels=isMeditation?MEDITATION_LABELS:LABELS;
   const [selected,setSelected]=useState(isMeditation?'mist':'dark');
@@ -68,8 +69,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     setSelected(isMeditation?'mist':'dark');
     setMessage('');
     setBusy(false);
-    setScale(computeScale(cardWidth,cardHeight));
-    const onResize=()=>setScale(computeScale(cardWidth,cardHeight));
+    setScale(computeScale(cardWidth,cardHeight,actionHeight));
+    const onResize=()=>setScale(computeScale(cardWidth,cardHeight,actionHeight));
     window.addEventListener('resize',onResize);
     window.addEventListener('orientationchange',onResize);
 
@@ -100,7 +101,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     })();
 
     return()=>{window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);window.removeEventListener('popstate',onPop);window.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;document.body.style.touchAction=previousTouch};
-  },[open,shareData.metric,isMeditation]);
+  },[open,shareData.metric,isMeditation,cardWidth,cardHeight,actionHeight]);
 
   function closeSheet(){
     if(!open)return;
@@ -173,7 +174,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center'}}>
         {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
       </div>
-      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
+      <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
         <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {LABELS[selected]} card</>}</button>
         <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
           {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
@@ -182,7 +183,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
         </div>
         {suggestions?.length>0&&<div style={{fontSize:10.5,lineHeight:1.35,color:'var(--ink-45)',textAlign:'left',padding:'2px 4px 0'}}>{suggestions.map((s,i)=><div key={i}>• {s}</div>)}</div>}
       </div>
-      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc(124px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
+      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
   </div>;
   return createPortal(<ShareSheetErrorBoundary>{content}</ShareSheetErrorBoundary>,document.body);
