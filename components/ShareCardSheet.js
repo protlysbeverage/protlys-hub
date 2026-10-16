@@ -58,6 +58,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   const lookOptions=isMeditation?MEDITATION_LOOKS:LOOKS;
   const labels=isMeditation?MEDITATION_LABELS:LABELS;
   const [selected,setSelected]=useState(isMeditation?'mist':'dark');
+  const [meditationTab,setMeditationTab]=useState('share');
   const [assets,setAssets]=useState({});
   const [busy,setBusy]=useState(false);
   const [message,setMessage]=useState('');
@@ -72,6 +73,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   useEffect(()=>{
     if(!open)return;
     setSelected(isMeditation?'mist':'dark');
+    setMeditationTab('share');
     setMessage('');
     setBusy(false);
     setScale(computeScale(cardWidth,cardHeight,actionHeight));
@@ -173,22 +175,34 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
         <div style={{fontSize:18,fontWeight:800}}>{sheetTitle}</div>
         <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
       </div>
-      <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden'}}>
-        {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
-      </div>
-      <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center'}}>
-        {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
-      </div>
-      <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
-        <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {LABELS[selected]} card</>}</button>
-        <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
-          {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
-          {showCopy&&<button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>}
-          {onDone&&<button type="button" onClick={onDone} style={{gridColumn:'1 / -1',height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800}}>Done</button>}
+      {isMeditation&&<div style={{height:42,flex:'0 0 42px',display:'grid',gridTemplateColumns:'1fr 1fr',gap:6,marginBottom:12}}>
+        {['share','suggestions'].map(tab=><button key={tab} type="button" aria-selected={meditationTab===tab} onPointerUp={e=>{e.stopPropagation();setMeditationTab(tab)}} style={{height:42,border:'1px solid '+(meditationTab===tab?'#4F9F35':'#D7DDD8'),borderRadius:21,background:meditationTab===tab?'var(--surface)':'transparent',color:meditationTab===tab?'var(--ink)':'var(--ink-45)',fontSize:12,fontWeight:800}}>{tab==='share'?'Share':'Suggested next'}</button>)}
+      </div>}
+      {(!isMeditation||meditationTab==='share')&&<>
+        <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
+          {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
         </div>
-        {suggestions?.length>0&&<div style={{fontSize:10.5,lineHeight:1.35,color:'var(--ink-45)',textAlign:'left',padding:'2px 4px 0'}}>{suggestions.map((s,i)=><div key={i}>• {s}</div>)}</div>}
-      </div>
-      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
+        <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:16,marginBottom:12}}>
+          {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
+        </div>
+        <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
+          <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {LABELS[selected]} card</>}</button>
+          <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
+            {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
+            {showCopy&&<button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>}
+            {onDone&&<button type="button" onClick={onDone} style={{gridColumn:'1 / -1',height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800}}>Done</button>}
+          </div>
+        </div>
+      </>}
+      {isMeditation&&meditationTab==='suggestions'&&<div style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',padding:'8px 2px 16px'}}>
+        <div style={{fontSize:12,fontWeight:900,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--ink-45)',marginBottom:12}}>Suggested next</div>
+        <div style={{borderTop:'1px solid var(--line)'}}>
+          {(suggestions?.length?suggestions:['Come back tomorrow to keep your rhythm going.']).slice(0,3).map((s,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'28px 1fr',gap:12,alignItems:'start',padding:'16px 4px',borderBottom:'1px solid var(--line)'}}>
+            <div style={{width:8,height:8,borderRadius:'50%',background:'#6BCB45',marginTop:5}}/>
+            <div style={{fontSize:14,lineHeight:1.55,color:'var(--ink)'}}>{s}</div>
+          </div>)}
+        </div>
+      </div>      {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc('+actionHeight+'px + 8px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:700,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
   </div>;
   return createPortal(<ShareSheetErrorBoundary>{content}</ShareSheetErrorBoundary>,document.body);
