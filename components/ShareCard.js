@@ -135,6 +135,57 @@ function TargetVisual({target,look}){
   </div>;
 }
 
+function meditationDateLabel(value){
+  return new Intl.DateTimeFormat(undefined,{day:'numeric',month:'short',year:'numeric'}).format(value?new Date(value):new Date());
+}
+
+const MEDITATION_PALETTES={
+  mist:{bg:'linear-gradient(145deg,#F4F7F2 0%,#E3ECE0 52%,#D4E3D0 100%)',ink:'#1E2A22',muted:'rgba(30,42,34,.58)',accent:'#4F9F35',soft:'rgba(79,159,53,.12)',ring:'rgba(79,159,53,.24)'},
+  dusk:{bg:'linear-gradient(145deg,#1B231E 0%,#131815 52%,#0D0F0E 100%)',ink:'#EAF1E8',muted:'rgba(234,241,232,.58)',accent:'#6BCB45',soft:'rgba(107,203,69,.11)',ring:'rgba(107,203,69,.28)'},
+  dawn:{bg:'linear-gradient(145deg,#FBF8F1 0%,#F3EEE2 52%,#E6EDDD 100%)',ink:'#2B2A24',muted:'rgba(43,42,36,.58)',accent:'#4F9F35',soft:'rgba(79,159,53,.12)',ring:'rgba(79,159,53,.24)'}
+};
+
+function MeditationFooter({palette,username,qrDataUrl,logoDataUrl}){
+  return <div style={{display:'flex',alignItems:'flex-end',justifyContent:'space-between',gap:10,marginTop:'auto',position:'relative',zIndex:2}}>
+    <div style={{minWidth:0}}><div style={{fontSize:12,fontWeight:800,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>@{String(username||'protlys').replace(/^@/,'')}</div><div style={{fontSize:9,color:palette.muted,marginTop:3}}>protlys.com</div></div>
+    <div style={{width:58,height:58,padding:4,boxSizing:'border-box',background:'#FFFFFF',borderRadius:9,flex:'0 0 auto'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{display:'block',width:50,height:50,objectFit:'contain'}}/>}</div>
+  </div>;
+}
+
+function MeditationSessionCard({data,look='mist',username,qrDataUrl,logoDataUrl}){
+  const palette=MEDITATION_PALETTES[look]||MEDITATION_PALETTES.mist;
+  const week=data.weekDays||[];
+  const streak=Number(data.currentStreak||0);
+  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,padding:18,display:'flex',flexDirection:'column',fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,position:'relative',zIndex:2}}><div style={{display:'flex',alignItems:'center',gap:8}}><img src={logoDataUrl} alt="Protlys" style={{width:82,height:24,objectFit:'contain',objectPosition:'left center'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{meditationDateLabel(data.completedAt)}</span></div>
+    <div style={{height:218,display:'grid',placeItems:'center',position:'relative',marginTop:2}}>
+      <div style={{position:'absolute',width:198,height:198,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:152,height:152,borderRadius:'50%',border:'1px solid '+palette.ring}}/><div style={{position:'absolute',width:106,height:106,borderRadius:'50%',border:'1px solid '+palette.ring}}/>
+      <div style={{position:'relative',zIndex:1,textAlign:'center'}}><div style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:88,lineHeight:.86,fontWeight:400,letterSpacing:'-.05em'}}>{Number(data.minutes||0)}</div><div style={{fontSize:9,fontWeight:900,letterSpacing:'2.1px',marginTop:9}}>MINUTES OF CALM</div></div>
+    </div>
+    <div style={{fontFamily:'Georgia,Times New Roman,serif',fontStyle:'italic',fontSize:14,lineHeight:1.35,textAlign:'center',padding:'0 8px',minHeight:48,display:'grid',placeItems:'center'}}>{data.message||''}</div>
+    <div style={{marginTop:8,padding:'11px 11px 10px',borderRadius:14,background:palette.soft,border:'1px solid '+palette.ring}}>
+      <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:8,fontSize:9,fontWeight:800}}><span>{streak} {streak===1?'day':'days'} of calm</span><span>{Number(data.weekCount||0)} of 7 this week</span></div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:5,marginTop:9}}>{week.map((d,i)=><div key={d.key||i} style={{display:'flex',flexDirection:'column',alignItems:'center',gap:4}}><div style={{width:25,height:25,borderRadius:'50%',background:d.hasSession?palette.accent:'rgba(30,42,34,.10)',color:d.hasSession?'#FFFFFF':palette.muted,outline:d.today?'1.5px solid '+palette.accent:'none',outlineOffset:2,display:'grid',placeItems:'center',fontSize:11,fontWeight:900}}>{d.hasSession?'✓':''}</div><span style={{fontSize:7,fontWeight:800,color:palette.muted}}>{d.label}</span></div>)}</div>
+    </div>
+    <MeditationFooter palette={palette} username={username} qrDataUrl={qrDataUrl} logoDataUrl={logoDataUrl}/>
+  </div>;
+}
+
+function MeditationMonthlyCard({data,look='mist',username,qrDataUrl,logoDataUrl}){
+  const palette=MEDITATION_PALETTES[look]||MEDITATION_PALETTES.mist;
+  const days=data.calendarDays||[];
+  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,padding:18,display:'flex',flexDirection:'column',fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}><div style={{display:'flex',alignItems:'center',gap:8}}><img src={logoDataUrl} alt="Protlys" style={{width:82,height:24,objectFit:'contain',objectPosition:'left center'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted}}>{data.monthLabel}</span></div>
+    <div style={{marginTop:12}}><div style={{fontSize:8,fontWeight:900,letterSpacing:'2px',color:palette.muted}}>YOUR MONTH</div><div style={{display:'flex',alignItems:'baseline',gap:7,marginTop:3}}><span style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:58,lineHeight:.9}}>{Number(data.monthDays||0)}</span><span style={{fontSize:12,fontWeight:800}}>days</span></div><div style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:11.5,fontStyle:'italic',marginTop:5}}>{data.monthNote}</div></div>
+    <div style={{marginTop:12,padding:'10px 10px 11px',borderRadius:14,background:palette.soft,border:'1px solid '+palette.ring}}>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:4,textAlign:'center',fontSize:7,fontWeight:900,color:palette.muted,marginBottom:6}}>{['M','T','W','T','F','S','S'].map((x,i)=><span key={i}>{x}</span>)}</div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(7,1fr)',gap:'5px 4px'}}>{days.map((d,i)=>d?<div key={d.key||i} style={{height:28,display:'grid',placeItems:'center',borderRadius:'50%',background:d.hasSession?palette.accent:'transparent',color:d.hasSession?'#FFFFFF':palette.ink,outline:d.today?'1.5px solid '+palette.accent:'none',outlineOffset:2,fontSize:8.5,fontWeight:800}}>{d.day}</div>:<div key={i} style={{height:28}}/>)}</div>
+    </div>
+    <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:7,marginTop:11}}>{[[''+Number(data.totalMinutes||0),'minutes'],[''+Number(data.totalSessions||0),'sessions'],[''+Number(data.bestStreak||0),'best streak']].map(([v,l],i)=><div key={i} style={{padding:'9px 7px',borderRadius:11,background:palette.soft,border:'1px solid '+palette.ring,textAlign:'center'}}><div style={{fontFamily:'Georgia,Times New Roman,serif',fontSize:20,lineHeight:1}}>{v}</div><div style={{fontSize:7,fontWeight:800,color:palette.muted,marginTop:4}}>{l}</div></div>)}</div>
+    <MeditationFooter palette={palette} username={username} qrDataUrl={qrDataUrl} logoDataUrl={logoDataUrl}/>
+  </div>;
+}
+
 function LifetimeVisual({value,look}){
   const n=Number(value)||0, milestones=[50000,100000,150000,250000,500000,1000000], next=milestones.find(x=>x>n)||1000000, prev=milestones[milestones.indexOf(next)-1]||0, pct=Math.max(0,Math.min(1,(n-prev)/(next-prev||1)));
   const km=(n*.00075).toFixed(1);
@@ -146,7 +197,9 @@ function LifetimeVisual({value,look}){
   </div>;
 }
 
-export default function ShareCard({type='steps',metric,data={},username='',avatarUrl='',look='dark',qrDataUrl='',logoDataUrl='',showUsername=true}){
+export default function ShareCard({type='steps',metric,data={},username='',avatarUrl='',look='dark',qrDataUrl='',logoDataUrl='',showUsername=true,cardWidth=360,cardHeight=640}){
+  if(type==='meditation-session') return <MeditationSessionCard data={data} look={look} username={username} qrDataUrl={qrDataUrl} logoDataUrl={logoDataUrl}/>;
+  if(type==='meditation-monthly') return <MeditationMonthlyCard data={data} look={look} username={username} qrDataUrl={qrDataUrl} logoDataUrl={logoDataUrl}/>;
   const requestedType=type||metric||data.cardType||data.metric||'steps';
   const cardType=TYPE_BY_METRIC[requestedType]||requestedType||'steps';
   const palette=LOOKS[look]||LOOKS.dark;
