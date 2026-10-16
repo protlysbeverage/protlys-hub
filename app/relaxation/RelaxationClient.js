@@ -4,7 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
-import { chooseMessage, currentStreak, monthlyCardData, sessionCardData, suggestions as meditationSuggestions } from '@/lib/meditation-share';
+import { chooseMessage, currentStreak, messageForSession, monthlyCardData, rememberSessionMessage, sessionCardData, suggestions as meditationSuggestions } from '@/lib/meditation-share';
 
 const STORAGE = {
   haptics: 'protlys-relaxation-haptics',
@@ -298,6 +298,7 @@ export default function RelaxationClient() {
     const nextRows=[data,...meditationRows];
     setMeditationRows(nextRows);
     const message=chooseMessage();
+    rememberSessionMessage(data.id,message);
     const card=sessionCardData(nextRows,minutes,completedAt,message);
     setShareData(card);
     setShareSuggestions(meditationSuggestions(minutes,card.currentStreak,nextRows,completedAt));
@@ -450,7 +451,7 @@ export default function RelaxationClient() {
 
           <section className="relax-history" aria-label="Meditation history">
             <div className="relax-history-head"><div><span className="eyebrow">Stillness</span><h2>Past sessions</h2></div><button type="button" className="relax-monthly-link" onClick={()=>{setShareData(monthlyCardData(meditationRows));setShareSuggestions([]);setShareOpen(true);}}>Monthly recap <span aria-hidden="true">→</span></button></div>
-            {meditationRows.length ? <div className="relax-history-list">{meditationRows.slice(0,6).map(row=><div className="relax-history-row" key={row.id}><div><strong>{row.minutes} {row.minutes===1?'minute':'minutes'}</strong><small>{new Date(row.completed_at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</small></div><ShareIconButton variant="movement" label="Share meditation session" onClick={()=>{setShareData(sessionCardData(meditationRows,row.minutes,new Date(row.completed_at),''));setShareSuggestions(meditationSuggestions(row.minutes,currentStreak(meditationRows),meditationRows,new Date(row.completed_at)));setShareOpen(true);}}/></div>)}</div> : <div className="relax-history-empty">Complete a session to start your stillness history.</div>}
+            {meditationRows.length ? <div className="relax-history-list">{meditationRows.slice(0,6).map(row=><div className="relax-history-row" key={row.id}><div><strong>{row.minutes} {row.minutes===1?'minute':'minutes'}</strong><small>{new Date(row.completed_at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</small></div><ShareIconButton variant="movement" label="Share meditation session" onClick={()=>{setShareData(sessionCardData(meditationRows,row.minutes,new Date(row.completed_at),messageForSession(row.id)));setShareSuggestions(meditationSuggestions(row.minutes,currentStreak(meditationRows),meditationRows,new Date(row.completed_at)));setShareOpen(true);}}/></div>)}</div> : <div className="relax-history-empty">Complete a session to start your stillness history.</div>}
           </section>
 
           <section className="relax-note">
