@@ -63,7 +63,8 @@ export default async function MemberProfilePage({params}){
     <Link href={isOwnProfile ? '/account' : '/'} style={{display:'inline-flex',alignItems:'center',gap:7,color:'var(--ink-70)',textDecoration:'none',fontSize:12,fontWeight:800,marginBottom:10}}><Icon name="arrow" size={16}/> {isOwnProfile ? 'Back to Dashboard' : 'Back to Feed'}</Link>
     <section style={{background:'#fff',border:'1.5px solid var(--line)',borderRadius:20,padding:'16px 14px 14px',boxShadow:'0 2px 8px rgba(0,0,0,.035)'}}>
       <div style={{display:'flex',alignItems:'flex-start',gap:12}}>
-        {isOwnProfile ? <ProfilePhotoUploader name={displayName} url={profile.avatar_url} size={64}/> : <Avatar name={displayName} url={profile.avatar_url} size={64}/>}\n        <div style={{minWidth:0,flex:1,paddingTop:1}}>
+        {isOwnProfile ? <ProfilePhotoUploader name={displayName} url={profile.avatar_url} size={64}/> : <Avatar name={displayName} url={profile.avatar_url} size={64}/>}
+        <div style={{minWidth:0,flex:1,paddingTop:1}}>
           <div className="eyebrow" style={{marginBottom:3}}>Protlys member</div>
           <h1 style={{fontSize:22,margin:0,lineHeight:1.12,overflowWrap:'anywhere'}}>{displayName}</h1>
         </div>
