@@ -173,7 +173,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
         <div style={{fontSize:18,fontWeight:800}}>{sheetTitle}</div>
         <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
       </div>
-      {isMeditation ? (meditationTab==='share' ? (
+      {isMeditation ? (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
           <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
@@ -190,17 +190,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
             </div>
           </div>
         </div>
-      ) : (
-        <div style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',padding:'8px 2px 16px'}}>
-          <div style={{fontSize:12,fontWeight:900,letterSpacing:'.08em',textTransform:'uppercase',color:'var(--ink-45)',marginBottom:12}}>Suggested next</div>
-          <div style={{borderTop:'1px solid var(--line)'}}>
-            {(suggestions?.length?suggestions:['Come back tomorrow to keep your rhythm going.']).slice(0,3).map((s,i)=><div key={i} style={{display:'grid',gridTemplateColumns:'28px 1fr',gap:12,alignItems:'start',padding:'16px 4px',borderBottom:'1px solid var(--line)'}}>
-              <div style={{width:8,height:8,borderRadius:'50%',background:'#6BCB45',marginTop:5}}/>
-              <div style={{fontSize:14,lineHeight:1.55,color:'var(--ink)'}}>{s}</div>
-            </div>)}
-          </div>
-        </div>
-      )) : (
+      
+      ) : ((
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
           <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
