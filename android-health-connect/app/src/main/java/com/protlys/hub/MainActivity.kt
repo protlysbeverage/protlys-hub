@@ -108,7 +108,6 @@ class MainActivity : ComponentActivity() {
 
     private fun requestPostMessageChannel() {
         val currentSession = session ?: return
-        if (!validated) return
         val requested = currentSession.requestPostMessageChannel(ORIGIN, ORIGIN, Bundle())
         Log.d(TAG, "PostMessage channel requested: " + requested)
     }
