@@ -20,30 +20,42 @@ export async function POST(request) {
     return NextResponse.json({ error: 'Invalid step date' }, { status: 400 });
   }
 
-  const { data: existing, error: existingError } = await supabase
+  const { data: existing, error } = await supabase
     .from('daily_steps')
     .select('steps')
     .eq('user_id', user.id)
     .eq('step_date', stepDate)
     .maybeSingle();
 
-  if (existingError) return NextResponse.json({ error: existingError.message }, { status: 500 });
+  if (error) return NextResponse.json({ error: error.message }, { status: 500 });
 
   const currentSteps = Number(existing?.steps || 0);
-  const delta = steps - currentSteps;
 
-  if (delta === 0) return NextResponse.json({ ok: true, dailyTotal: steps });
+  // Health Connect reports the authoritative running total for the day.
+  // Never subtract manually entered movement if it is higher; this keeps
+  // manual entry as a safe fallback and prevents duplicate accumulation.
+  const nextSteps = Math.max(currentSteps, steps);
+  const delta = nextSteps - currentSteps;
+
+  if (delta === 0) {
+    return NextResponse.json({ ok: true, dailyTotal: currentSteps, stepDate, source: 'health_connect' });
+  }
 
   const result = await applyMovementDelta({
     supabase,
     userId: user.id,
     stepDate,
     delta,
-    source: 'native',
+    source: 'health_connect',
     syncedAt: stepTimestamp || new Date().toISOString(),
   });
 
   if (result?.error) return NextResponse.json({ error: result.error }, { status: 500 });
 
-  return NextResponse.json({ ok: true, dailyTotal: result.dailyTotal, stepDate, source: 'native' });
+  return NextResponse.json({
+    ok: true,
+    dailyTotal: result.dailyTotal,
+    stepDate,
+    source: 'health_connect',
+  });
 }
