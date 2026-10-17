@@ -116,7 +116,7 @@ class MainActivity : ComponentActivity() {
         scope.launch {
             val status = HealthConnectClient.getSdkStatus(
                 this@MainActivity,
-                HealthConnectClient.DEFAULT_PROVIDER_PACKAGE_NAME
+                "com.google.android.apps.healthdata"
             )
             if (status != HealthConnectClient.SDK_AVAILABLE) {
                 sendStatusToWeb("unavailable")
