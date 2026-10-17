@@ -9,6 +9,12 @@ export async function proxy(request) {
     return NextResponse.next();
   }
 
+  // PWA discovery files must remain publicly accessible so browsers,
+  // app stores and external PWA analyzers can read them without logging in.
+  if (request.nextUrl.pathname === '/manifest' || request.nextUrl.pathname === '/manifest.json') {
+    return NextResponse.next();
+  }
+
   let supabaseResponse = NextResponse.next({ request });
 
   const supabase = createServerClient(
