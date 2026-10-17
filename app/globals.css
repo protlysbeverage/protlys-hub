@@ -1,3 +1,5 @@
+html,body{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:400;}
+button,input,textarea,select{font:inherit;font-family:inherit;}
   .protlys-app{
     --ink:#0F2A4A;
     --ink-70:rgba(15,42,74,.7);
@@ -19,9 +21,9 @@
   }
   .protlys-app *{box-sizing:border-box;}
   .protlys-app{margin:0;padding:0;}
-  .protlys-app{font-family:'Manrope Variable',sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;}
-  .protlys-app h1,.protlys-app h2,.protlys-app h3,.protlys-app .display{font-family:'Space Grotesk Variable',sans-serif;font-weight:700;letter-spacing:-.01em;margin:0;}
-  .protlys-app .mono{font-family:'IBM Plex Mono',monospace;font-variant-numeric:tabular-nums;}
+  .protlys-app{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:var(--paper);color:var(--ink);-webkit-font-smoothing:antialiased;}
+  .protlys-app h1,.protlys-app h2,.protlys-app h3,.protlys-app .display{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-weight:700;letter-spacing:-.01em;margin:0;}
+  .protlys-app .mono{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;font-variant-numeric:tabular-nums;}
   .protlys-app p{margin:0;}.protlys-app button{font-family:inherit;}.protlys-app a{color:inherit;text-decoration:none;}
   .protlys-app .app-shell{width:100%;max-width:432px;margin:0 auto;background:var(--paper);height:100dvh;min-height:100vh;display:flex;flex-direction:column;position:relative;overflow:hidden;}
   @media (min-width:600px){.protlys-app{background:#DCE8DF;display:flex;justify-content:center;padding:36px 16px;}.protlys-app .app-shell{height:874px;min-height:874px;border-radius:38px;overflow:hidden;box-shadow:0 46px 90px -24px rgba(15,42,74,.4),0 0 0 10px var(--ink);}}
@@ -136,7 +138,7 @@
 
 /* Calculator typography follows the active Protlys theme in every mode. */
 .protlys-app .calculator-step-progress-label{
-  font-family:'Manrope Variable',sans-serif;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:12px;
   font-weight:900;
   letter-spacing:.05em;
@@ -144,7 +146,7 @@
   margin-bottom:6px;
 }
 .protlys-app .calculator-step-label{
-  font-family:'Manrope Variable',sans-serif;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   font-size:14px;
   font-weight:900;
   letter-spacing:.05em;
@@ -158,7 +160,7 @@
 .protlys-app input,
 .protlys-app select,
 .protlys-app textarea {
-  font-family:'Manrope Variable',sans-serif;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 .protlys-app h1,
 .protlys-app h2,
@@ -174,13 +176,13 @@
 .protlys-app .comm-title,
 .protlys-app .learn-title,
 .protlys-app .section-title {
-  font-family:'Space Grotesk Variable',sans-serif;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 .protlys-app .mono,
 .protlys-app .eyebrow,
 .protlys-app .tag,
 .protlys-app .section-kicker {
-  font-family:'IBM Plex Mono',monospace;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
 }
 .protlys-app .section-label,
 .protlys-app .step-progress-label,
@@ -191,7 +193,7 @@
 .protlys-app .btn,
 .protlys-app .weight-input,
 .protlys-app .result-g {
-  font-family:'Manrope Variable',sans-serif !important;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif !important;
 }
 .protlys-app .section-label,
 .protlys-app .step-progress-label {
@@ -249,14 +251,14 @@
   font-size:13px;
   font-weight:500;
   color:var(--green-dark);
-  font-family:'Manrope Variable',sans-serif;
+  font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
   max-width:min(150px,42vw);
   min-height:36px;
   cursor:pointer;
   outline:none;
 }
 .protlys-app .tag-select:focus{border-color:var(--green);}
-.protlys-app .tag-select option{font-family:'Manrope Variable',sans-serif;color:var(--ink);background:var(--white);}
+.protlys-app .tag-select option{font-family:'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink);background:var(--white);}
 .protlys-app .feed-category-menu,
 .protlys-app .feed-category-option{all:revert;}
 
@@ -392,7 +394,7 @@
   padding:10px 8px;
   background:transparent;
   box-shadow:none;
-  font:800 13px/1 Manrope,sans-serif;
+  font:800 13px/1 "Plus Jakarta Sans",sans-serif;
   color:var(--ink-45);
   cursor:pointer;
   transition:color 260ms var(--motion-smooth);
@@ -602,7 +604,7 @@ html.protlys-dark .protlys-app .protlys-onboarding .btn-secondary{
 .first-visit-target .mono{font-size:15px;color:var(--ink-45);}
 .first-visit-saved{
   border:1px solid var(--line);border-radius:999px;padding:5px 9px;
-  font:700 9px/1 'IBM Plex Mono',monospace;color:var(--ink-70);
+  font:700 9px/1 'Plus Jakarta Sans',system-ui,-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;color:var(--ink-70);
 }
 .first-visit-start h2{font-family:'Space Grotesk',sans-serif;font-size:19px;margin:6px 0 14px;}
 .first-visit-primary{display:flex;align-items:center;justify-content:center;text-decoration:none;min-height:48px;}
