@@ -5,6 +5,7 @@ import '@fontsource/plus-jakarta-sans/500.css';
 import '@fontsource/plus-jakarta-sans/600.css';
 import '@fontsource/plus-jakarta-sans/700.css';
 import '@fontsource/plus-jakarta-sans/800.css';
+import NativeMovementBridge from './NativeMovementBridge';
 
 const EXACT_LOGO = '/protlys-logo-exact.png?v=2';
 const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || 'local';
@@ -57,7 +58,10 @@ export default function RootLayout({ children }) {
         <meta name="theme-color" content="#F7F8F6" />
         <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(()=>{});}}catch(e){}})()" }} />
       </head>
-      <body data-build-id={BUILD_ID}>{children}</body>
+      <body data-build-id={BUILD_ID}>
+        <NativeMovementBridge />
+        {children}
+      </body>
     </html>
   );
 }
