@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-function getSafeNext(value) {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
-}
+import { getSafeNext } from '@/lib/safe-redirect.mjs';
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
@@ -18,14 +15,12 @@ export async function GET(request) {
   }
 
   const supabase = await createClient();
-  const { error } = await supabase.auth.verifyOtp({
-    token_hash: tokenHash,
-    type,
-  });
+  const { error } = await supabase.auth.verifyOtp({ token_hash: tokenHash, type });
 
   if (error) {
+    console.error('Email confirmation: token verification failed.');
     return NextResponse.redirect(
-      new URL(`/login?error_message=${encodeURIComponent(error.message)}`, requestUrl.origin)
+      new URL('/login?error_message=Email%20verification%20failed.%20Please%20request%20a%20new%20link.', requestUrl.origin)
     );
   }
 

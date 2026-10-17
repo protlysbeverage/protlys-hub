@@ -1,9 +1,6 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
-
-function getSafeNext(value) {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
-}
+import { getSafeNext } from '@/lib/safe-redirect.mjs';
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
@@ -13,9 +10,8 @@ export async function GET(request) {
   const errorDescription = requestUrl.searchParams.get('error_description');
 
   if (error || errorDescription) {
-    const message = errorDescription || error || 'OAuth sign-in failed.';
     return NextResponse.redirect(
-      new URL(`/login?error_message=${encodeURIComponent(message)}`, requestUrl.origin)
+      new URL('/login?error_message=OAuth%20sign-in%20failed.%20Please%20try%20again.', requestUrl.origin)
     );
   }
 
@@ -29,8 +25,9 @@ export async function GET(request) {
   const { error: exchangeError } = await supabase.auth.exchangeCodeForSession(code);
 
   if (exchangeError) {
+    console.error('OAuth callback: code exchange failed.');
     return NextResponse.redirect(
-      new URL(`/login?error_message=${encodeURIComponent(exchangeError.message)}`, requestUrl.origin)
+      new URL('/login?error_message=Sign-in%20could%20not%20be%20completed.%20Please%20try%20again.', requestUrl.origin)
     );
   }
 
