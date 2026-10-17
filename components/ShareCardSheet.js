@@ -34,7 +34,7 @@ export class ShareSheetErrorBoundary extends Component{
   constructor(props){super(props);this.state={error:null}}
   static getDerivedStateFromError(error){return {error}}
   componentDidCatch(error,info){console.error('[Protlys ShareSheet]',error,info)}
-  render(){if(this.state.error)return <div role="alert" style={{position:'fixed',inset:0,zIndex:2147483001,background:'#FFFFFF',color:'#111111',display:'grid',placeItems:'center',padding:24,fontFamily:'Manrope,sans-serif'}}><div style={{textAlign:'center'}}><strong>Share card unavailable</strong><div style={{fontSize:12,marginTop:8,color:'#555'}}>Close this sheet and try again.</div></div></div>;return this.props.children}
+  render(){if(this.state.error)return <div role="alert" style={{position:'fixed',inset:0,zIndex:2147483001,background:'#FFFFFF',color:'#111111',display:'grid',placeItems:'center',padding:24,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif'}}><div style={{textAlign:'center'}}><strong>Share card unavailable</strong><div style={{fontSize:12,marginTop:8,color:'#555'}}>Close this sheet and try again.</div></div></div>;return this.props.children}
 }
 
 function CardPreview({data,type,look,assets,username,avatarUrl,scale,cardWidth=360,cardHeight=640}){
@@ -166,7 +166,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   function touchEnd(e){if(touchStartRef.current==null)return;const dy=(e.changedTouches?.[0]?.clientY??touchStartRef.current)-touchStartRef.current;touchStartRef.current=null;if(dy>90)closeSheet()}
 
   if(!open||!mounted)return null;
-  const content=<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
+  const content=<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif'}}>
     <div aria-hidden="true" onPointerUp={closeSheet} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.6)'}}/>
     <section ref={node=>{cardHostRef.current=node}} role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={touchStart} onTouchEnd={touchEnd} style={{position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',padding:'max(env(safe-area-inset-top),12px) 16px calc(10px + env(safe-area-inset-bottom))',background:(document.documentElement.dataset.theme==='dark'?'#0D0F0E':'#F7F8F6'),color:(document.documentElement.dataset.theme==='dark'?'#FFFFFF':'#111111'),display:'flex',flexDirection:'column',overflow:'hidden',touchAction:'pan-y'}}>
       <div style={{height:56,flex:'0 0 56px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
