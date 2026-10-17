@@ -46,7 +46,7 @@ function StatBoxes({stats,t}) {
   return <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(items.length,3)},minmax(0,1fr))`,gap:8,marginTop:14}}>
     {items.map(([label,value])=><div key={label} style={{border:`1px solid ${t.line}`,borderRadius:10,padding:'9px 10px',background:t.surface,minWidth:0}}>
       <div style={{fontSize:8,textTransform:'uppercase',letterSpacing:'.07em',fontWeight:900,color:t.muted}}>{label}</div>
-      <div style={{fontFamily:'IBM Plex Mono,monospace',fontSize:12,fontWeight:700,marginTop:3,overflowWrap:'anywhere'}}>{label==='Distance'?String(value):formatNumber(value)}</div>
+      <div style={{fontFamily:'Plus Jakarta Sans,system-ui,sans-serif',fontSize:12,fontWeight:700,marginTop:3,overflowWrap:'anywhere'}}>{label==='Distance'?String(value):formatNumber(value)}</div>
     </div>)}
   </div>;
 }
@@ -85,7 +85,7 @@ export default function PostShareCard({
   const story=size==='story';
   const contentStyle=story?{minHeight:600,justifyContent:'center'}:{};
   const footerUrl=`/p/${post?.id}?utm_source=share&utm_medium=card&utm_campaign=post`;
-  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,minHeight:story?640:undefined,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,minHeight:story?640:undefined,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif',isolation:'isolate'}}>
     <div style={{borderRadius:20,background:t.surface,border:`1px solid ${t.line}`,overflow:'hidden'}}>
       <div style={{padding:20,...contentStyle}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
