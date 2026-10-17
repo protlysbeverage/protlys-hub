@@ -2,9 +2,9 @@ package com.protlys.hub
 
 import android.content.Context
 import androidx.health.connect.client.HealthConnectClient
-import androidx.health.connect.client.aggregate.AggregateRequest
+import androidx.health.connect.client.request.AggregateRequest
 import androidx.health.connect.client.records.StepsRecord
-import androidx.health.connect.client.request.TimeRangeFilter
+import androidx.health.connect.client.time.TimeRangeFilter
 import androidx.health.connect.client.permission.HealthPermission
 import java.time.Instant
 import java.time.ZoneId
