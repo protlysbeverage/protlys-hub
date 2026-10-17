@@ -67,7 +67,7 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onPostMessage(message: String, extras: Bundle?) {
-            if (message == "PROTLYS_REQUEST_STEPS") sendStepsToWeb()
+            if (message == "PROTLYS_REQUEST_NATIVE_STEPS") sendStepsToWeb()
         }
     }
 
@@ -139,7 +139,7 @@ class MainActivity : ComponentActivity() {
                 val date = manager.todayDate()
                 val timestamp = manager.nowIso()
                 val message =
-                    "{\"type\":\"PROTLYS_HEALTH_CONNECT_STEPS\",\"steps\":" +
+                    "{\"type\":\"PROTLYS_NATIVE_STEPS\",\"steps\":" +
                         steps + ",\"date\":\"" + date + "\",\"timestamp\":\"" + timestamp + "\"}"
                 session?.postMessage(message, null)
             } catch (error: Exception) {
@@ -152,7 +152,7 @@ class MainActivity : ComponentActivity() {
     private fun sendStatusToWeb(status: String) {
         if (!channelReady) return
         session?.postMessage(
-            "{\"type\":\"PROTLYS_HEALTH_CONNECT_STATUS\",\"status\":\"" + status + "\"}",
+            "{\"type\":\"PROTLYS_NATIVE_STATUS\",\"status\":\"" + status + "\"}",
             null
         )
     }
