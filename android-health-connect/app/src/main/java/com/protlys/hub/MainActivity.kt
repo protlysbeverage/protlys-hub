@@ -77,6 +77,11 @@ class MainActivity : ComponentActivity() {
             customTabsClient.warmup(0L)
             session = customTabsClient.newSession(callback)
             session?.let {
+                it.validateRelationship(
+                    androidx.browser.customtabs.CustomTabsService.RELATION_HANDLE_ALL_URLS,
+                    ORIGIN,
+                    null
+                )
                 TrustedWebActivityIntentBuilder(LAUNCH_URL)
                     .build(it)
                     .launchTrustedWebActivity(this@MainActivity)
