@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Protlys Hub</string>
+    <string name="default_url">https://hub.protlys.com/</string>
+    <string name="source_origin">https://hub.protlys.com</string>
+    <string name="target_origin">https://hub.protlys.com</string>
+</resources>
