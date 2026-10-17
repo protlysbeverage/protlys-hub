@@ -5,6 +5,7 @@ import androidx.health.connect.client.HealthConnectClient
 import androidx.health.connect.client.aggregate.AggregateRequest
 import androidx.health.connect.client.records.StepsRecord
 import androidx.health.connect.client.request.TimeRangeFilter
+import androidx.health.connect.client.permission.HealthPermission
 import java.time.Instant
 import java.time.ZoneId
 import java.time.ZonedDateTime
@@ -14,19 +15,17 @@ class HealthConnectManager(context: Context) {
     private val zone = ZoneId.of("Africa/Nairobi")
 
     suspend fun grantedReadSteps(): Boolean {
-        val permission = androidx.health.connect.client.permission.HealthPermission
-            .getReadPermission(StepsRecord::class)
+        val permission = HealthPermission.getReadPermission(StepsRecord::class)
         return client.permissionController.getGrantedPermissions().contains(permission)
     }
 
     suspend fun todaySteps(): Long {
         val now = ZonedDateTime.now(zone)
         val start = now.toLocalDate().atStartOfDay(zone).toInstant()
-        val end = Instant.now()
         val response = client.aggregate(
             AggregateRequest(
                 metrics = setOf(StepsRecord.COUNT_TOTAL),
-                timeRangeFilter = TimeRangeFilter.between(start, end)
+                timeRangeFilter = TimeRangeFilter.between(start, Instant.now())
             )
         )
         return response[StepsRecord.COUNT_TOTAL] ?: 0L
