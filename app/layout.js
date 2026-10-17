@@ -13,7 +13,7 @@ export const metadata = {
   metadataBase: new URL('https://hub.protlys.com'),
   title: 'Protlys Hub',
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
-  manifest: '/manifest.json',
+  manifest: '/manifest',
   icons: {
     icon: '/protlys-logo-exact.png?v=3',
     shortcut: '/protlys-logo-exact.png?v=3',
@@ -52,7 +52,7 @@ export default function RootLayout({ children }) {
   return (
     <html lang="en">
       <head>
-        <link rel="manifest" href="/manifest.json" />
+        <link rel="manifest" href="/manifest" />
         <meta name="color-scheme" content="light dark" />
         <meta name="theme-color" content="#F7F8F6" />
         <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}}catch(e){}})()" }} />
