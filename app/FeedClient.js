@@ -103,7 +103,9 @@ async function prepareImage(file) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
   const ctx = canvas.getContext('2d'); ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+  if (!blob) throw new Error('Could not compress that image.');
+  if (blob.size > 3 * 1024 * 1024) throw new Error('Image is still too large after compression. Choose a smaller image.');
   const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = reject; reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(blob); });
   return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.jpg`, type: 'image/jpeg' };
 }
@@ -226,7 +228,7 @@ function ComposePost({ profile, onPosted }) {
   const bodyRef = useRef(null); const fileRef = useRef(null);
   const [postType, setPostType] = useState('progress'); const [preview, setPreview] = useState(null); const [imageData, setImageData] = useState(null);
   const [stats, setStats] = useState({ steps: '', distance: '', duration: '' }); const [loading, setLoading] = useState(false); const [error, setError] = useState(''); const [showStats, setShowStats] = useState(false);
-  function handleFile(e) { const file = e.target.files?.[0]; if (!file) return; if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; } setError(''); setPreview(URL.createObjectURL(file)); prepareImage(file).then(setImageData).catch(() => setError('Could not prepare that photo.')); }
+  function handleFile(e) { const file = e.target.files?.[0]; if (!file) return; if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; } setError(''); setPreview(URL.createObjectURL(file)); prepareImage(file).then(setImageData).catch(error => { setImageData(null); setError(error?.message || 'Could not prepare that photo.'); }); }
   const handleStatChange = useCallback(key => e => setStats(current => ({ ...current, [key]: e.target.value })), []);
   async function handlePost() {
     const body = bodyRef.current?.value ?? ''; if (!body.trim() && !imageData) { setError('Add a caption or photo before posting.'); return; }

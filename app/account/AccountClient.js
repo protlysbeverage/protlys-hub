@@ -78,6 +78,22 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
+async function compressUploadImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 1600 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) { bitmap.close(); throw new Error('Could not prepare that image.'); }
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.8));
+  if (!blob) throw new Error('Could not compress that image.');
+  if (blob.size > 3 * 1024 * 1024) throw new Error('Image is still too large after compression. Choose a smaller image.');
+  return new File([blob], `${file.name.replace(/\.[^.]+$/, '') || 'profile'}.jpg`, { type: 'image/jpeg' });
+}
+
 export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], shopUrl, email }) {
   const router = useRouter();
   const fileRef = useRef(null);
@@ -163,14 +179,13 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     const file = event.target.files?.[0]; event.target.value = '';
     if (!file) return;
     if (!file.type.startsWith('image/')) return setMessage('Choose an image file.');
-    if (file.size > 5 * 1024 * 1024) return setMessage('Photo must be 5MB or smaller.');
     setUploading(true); setMessage('');
     try {
+      const uploadFile = await compressUploadImage(file);
       const supabase = createClient(); const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('feed-images').upload(path, file, { cacheControl:'3600', upsert:false });
+      const path = `avatars/${user.id}/profile-${Date.now()}.jpg`;
+      const { error } = await supabase.storage.from('feed-images').upload(path, uploadFile, { cacheControl:'3600', contentType:'image/jpeg', upsert:false });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
       const { error: profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id);

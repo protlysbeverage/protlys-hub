@@ -18,6 +18,13 @@ export async function POST(request) {
     const { data: { user } } = await supabase.auth.getUser();
     if (!user) return NextResponse.json({ error: 'Please sign in to use PROT.' }, { status: 401 });
 
+    const { data: rateAllowed, error: rateError } = await supabase.rpc('consume_prot_rate_limit', { p_limit: 20, p_window_seconds: 60 });
+    if (rateError) {
+      console.error('PROT rate limit error:', rateError);
+      return NextResponse.json({ error: 'PROT is temporarily unavailable. Please try again.' }, { status: 503 });
+    }
+    if (!rateAllowed) return NextResponse.json({ error: 'Too many requests. Please wait a minute and try again.' }, { status: 429 });
+
     const [{ data: profile }, { data: steps }, { data: proteinLogs }] = await Promise.all([
       supabase.from('profiles').select('display_name,target_g,streak,step_streak,total_steps,last_step_date,activity_level').eq('id', user.id).maybeSingle(),
       supabase.from('daily_steps').select('step_date,steps').eq('user_id', user.id).order('step_date', { ascending: false }).limit(14),

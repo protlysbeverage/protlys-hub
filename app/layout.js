@@ -13,6 +13,7 @@ export const metadata = {
   metadataBase: new URL('https://hub.protlys.com'),
   title: 'Protlys Hub',
   description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
+  applicationName: 'Protlys Hub',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/protlys-logo-exact.png?v=3',
@@ -45,7 +46,10 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#F5F6F1',
+  themeColor: [
+    { media: '(prefers-color-scheme: light)', color: '#F7F8F6' },
+    { media: '(prefers-color-scheme: dark)', color: '#0D0F0E' },
+  ],
 };
 
 export default function RootLayout({ children }) {
@@ -53,8 +57,7 @@ export default function RootLayout({ children }) {
     <html lang="en">
       <head>
         <meta name="color-scheme" content="light dark" />
-        <meta name="theme-color" content="#F7F8F6" />
-        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.getRegistrations().then(rs=>rs.forEach(r=>r.unregister())).catch(()=>{});}}catch(e){}})()" }} />
+        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){window.addEventListener('load',()=>navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(()=>{}),{once:true});}}catch(e){}})()" }} />
       </head>
       <body data-build-id={BUILD_ID}>{children}</body>
     </html>
