@@ -10,11 +10,16 @@ export async function GET() {
     display_override: ["window-controls-overlay", "standalone"],
     background_color: "#F7F8F6",
     theme_color: "#6BCB45",
-    orientation: "portrait",
-    icons: [
+    orientation: "portrait",    icons: [
       {
-        src: "/protlys-logo-exact.png",
-        sizes: "any",
+        src: "/icon-192.png",
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any"
+      },
+      {
+        src: "/icon-512.png",
+        sizes: "512x512",
         type: "image/png",
         purpose: "any maskable"
       }
