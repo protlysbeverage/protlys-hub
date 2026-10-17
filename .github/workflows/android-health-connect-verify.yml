@@ -1,0 +1,34 @@
+name: Android Health Connect Verify
+
+on:
+  push:
+    branches: [health-connect-native]
+    paths:
+      - 'android-health-connect/**'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: android-health-connect
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - name: Set up Gradle
+        uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.13'
+      - name: Build debug APK
+        run: gradle :app:assembleDebug
+      - name: Build unsigned release AAB
+        run: gradle :app:bundleRelease
