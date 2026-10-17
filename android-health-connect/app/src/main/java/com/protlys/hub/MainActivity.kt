@@ -41,11 +41,8 @@ class MainActivity : ComponentActivity() {
         registerForActivityResult(
             PermissionController.createRequestPermissionResultContract()
         ) { granted ->
-            if (granted.containsAll(requiredPermissions)) {
-                sendStepsToWeb()
-            } else {
-                sendStatusToWeb("permission_denied")
-            }
+            if (granted.containsAll(requiredPermissions)) sendStepsToWeb()
+            else sendStatusToWeb("permission_denied")
         }
 
     private val callback = object : CustomTabsCallback() {
@@ -56,13 +53,11 @@ class MainActivity : ComponentActivity() {
             extras: Bundle?
         ) {
             validated = result
-            Log.d(TAG, "Digital Asset Links validation: $result")
+            Log.d(TAG, "Digital Asset Links validation: " + result)
         }
 
         override fun onNavigationEvent(navigationEvent: Int, extras: Bundle?) {
-            if (navigationEvent == CustomTabsCallback.NAVIGATION_FINISHED) {
-                requestPostMessageChannel()
-            }
+            if (navigationEvent == CustomTabsCallback.NAVIGATION_FINISHED) requestPostMessageChannel()
         }
 
         override fun onMessageChannelReady(extras: Bundle?) {
@@ -72,9 +67,7 @@ class MainActivity : ComponentActivity() {
         }
 
         override fun onPostMessage(message: String, extras: Bundle?) {
-            if (message == "PROTLYS_REQUEST_STEPS") {
-                sendStepsToWeb()
-            }
+            if (message == "PROTLYS_REQUEST_STEPS") sendStepsToWeb()
         }
     }
 
@@ -117,7 +110,7 @@ class MainActivity : ComponentActivity() {
         val currentSession = session ?: return
         if (!validated) return
         val requested = currentSession.requestPostMessageChannel(ORIGIN, ORIGIN, Bundle())
-        Log.d(TAG, "PostMessage channel requested: $requested")
+        Log.d(TAG, "PostMessage channel requested: " + requested)
     }
 
     private fun requestHealthConnectPermissionIfNeeded() {
@@ -131,11 +124,8 @@ class MainActivity : ComponentActivity() {
                 return@launch
             }
             val manager = HealthConnectManager(this@MainActivity)
-            if (manager.grantedReadSteps()) {
-                sendStepsToWeb()
-            } else {
-                permissionLauncher.launch(requiredPermissions)
-            }
+            if (manager.grantedReadSteps()) sendStepsToWeb()
+            else permissionLauncher.launch(requiredPermissions)
         }
     }
 
@@ -148,10 +138,12 @@ class MainActivity : ComponentActivity() {
                 val steps = manager.todaySteps()
                 val date = manager.todayDate()
                 val timestamp = manager.nowIso()
-                val message = "{\"type\":\"PROTLYS_HEALTH_CONNECT_STEPS\",\"steps\":" + steps + ",\"date\":\"" + date + "\",\"timestamp\":\"" + timestamp + "\"}"
+                val message =
+                    "{\"type\":\"PROTLYS_HEALTH_CONNECT_STEPS\",\"steps\":" +
+                        steps + ",\"date\":\"" + date + "\",\"timestamp\":\"" + timestamp + "\"}"
                 session?.postMessage(message, null)
             } catch (error: Exception) {
-                Log.e(TAG, "Unable to read Health Connect steps", error)
+                Log.e(TAG, "Unable to read step data", error)
                 sendStatusToWeb("read_error")
             }
         }
@@ -159,7 +151,10 @@ class MainActivity : ComponentActivity() {
 
     private fun sendStatusToWeb(status: String) {
         if (!channelReady) return
-        session?.postMessage("{\"type\":\"PROTLYS_HEALTH_CONNECT_STATUS\",\"status\":\"" + status + "\"}", null)
+        session?.postMessage(
+            "{\"type\":\"PROTLYS_HEALTH_CONNECT_STATUS\",\"status\":\"" + status + "\"}",
+            null
+        )
     }
 
     override fun onDestroy() {
