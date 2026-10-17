@@ -1,0 +1,37 @@
+package com.protlys.hub
+
+import android.content.Context
+import androidx.health.connect.client.HealthConnectClient
+import androidx.health.connect.client.aggregate.AggregateRequest
+import androidx.health.connect.client.records.StepsRecord
+import androidx.health.connect.client.request.TimeRangeFilter
+import java.time.Instant
+import java.time.ZoneId
+import java.time.ZonedDateTime
+
+class HealthConnectManager(context: Context) {
+    private val client = HealthConnectClient.getOrCreate(context)
+    private val zone = ZoneId.of("Africa/Nairobi")
+
+    suspend fun grantedReadSteps(): Boolean {
+        val permission = androidx.health.connect.client.permission.HealthPermission
+            .getReadPermission(StepsRecord::class)
+        return client.permissionController.getGrantedPermissions().contains(permission)
+    }
+
+    suspend fun todaySteps(): Long {
+        val now = ZonedDateTime.now(zone)
+        val start = now.toLocalDate().atStartOfDay(zone).toInstant()
+        val end = Instant.now()
+        val response = client.aggregate(
+            AggregateRequest(
+                metrics = setOf(StepsRecord.COUNT_TOTAL),
+                timeRangeFilter = TimeRangeFilter.between(start, end)
+            )
+        )
+        return response[StepsRecord.COUNT_TOTAL] ?: 0L
+    }
+
+    fun todayDate(): String = ZonedDateTime.now(zone).toLocalDate().toString()
+    fun nowIso(): String = Instant.now().toString()
+}
