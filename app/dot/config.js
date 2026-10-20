@@ -1,4 +1,4 @@
-export const PROT_MODEL = 'claude-haiku-4-5-20251001';
+export const PROT_MODEL = 'gpt-6-luna';
 export const PROT_MAX_INPUT_CHARS = 500;
 export const PROT_MAX_OUTPUT_TOKENS = 250;
 export const PROT_HOURLY_LIMIT = 30;
