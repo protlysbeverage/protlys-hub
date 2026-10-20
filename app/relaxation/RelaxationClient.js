@@ -598,7 +598,7 @@ export default function RelaxationClient() {
           .relax-session-screen.is-reduced-motion .relax-orb{animation:relax-opacity-pulse 3s ease-in-out infinite;}
         }
       `}</style>
-      <ShareCardSheet open={shareOpen} onClose={()=>setShareOpen(false)} data={shareData} type={shareData?.type} metric={shareData?.metric} username={profileUsername} lookSet="meditation" cardWidth={320} cardHeight={568} sheetTitle={shareData?.type==='meditation-monthly'?'Monthly recap':'Your session'} primaryLabel="Share" showSave={false} showCopy={false} onDone={()=>setShareOpen(false)} suggestions={shareSuggestions} />
+      <ShareCardSheet open={shareOpen} onClose={()=>setShareOpen(false)} data={shareData} type={shareData?.type} metric={shareData?.metric} username={profileUsername} lookSet="meditation" cardWidth={320} cardHeight={640} sheetTitle={shareData?.type==='meditation-monthly'?'Monthly recap':'Your session'} primaryLabel="Share" showSave={false} showCopy={false} onDone={()=>setShareOpen(false)} suggestions={shareSuggestions} />
     </div>
   );
 }
