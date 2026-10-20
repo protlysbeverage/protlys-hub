@@ -17,6 +17,11 @@
     "react-dom": "^19.0.0",
     "html-to-image": "^1.11.13",
     "@fontsource/plus-jakarta-sans": "^5.2.6",
+    "@fontsource-variable/manrope": "^5.2.6",
+    "@fontsource-variable/space-grotesk": "^5.2.6",
+    "@fontsource/ibm-plex-mono": "^5.2.6",
+    "@fontsource/anton": "^5.2.6",
+    "@fontsource/archivo": "^5.2.6",
     "sharp": "^0.34.3"
   }
 }
