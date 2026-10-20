@@ -131,7 +131,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
         {THEMES.map(item=><button key={item} type="button" aria-pressed={theme===item} onClick={()=>setTheme(item)} style={{height:40,minWidth:0,width:'100%',border:'1px solid #D7DDD8',borderRadius:20,background:theme===item?'#323A33':'#FFFFFF',color:theme===item?'#FFFFFF':'#111111',fontSize:12,fontWeight:900,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[item]}</button>)}
       </div>
 
-      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,marginTop:16,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
+      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:12,marginTop:16,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
         <button type="button" onClick={share} disabled={busy||!assets.qr} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,opacity:(busy||!assets.qr)?.6:1}}>{busy?'Preparing…':'Share card'}</button>
         <div style={{height:44,display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           <button type="button" onClick={save} disabled={busy} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Save image</button>
