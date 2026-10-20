@@ -106,7 +106,7 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   if(!open||!mounted)return null;
   const previewStyle={width:360*scale,height:cardHeight*scale,position:'relative',flex:'0 0 auto'};
   const themeIsDark=document.documentElement.dataset.theme==='dark';
-  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
+  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif'}}>
     <div aria-hidden="true" onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.62)'}}/>
     <section role="dialog" aria-modal="true" aria-label="Share post" style={{position:'absolute',inset:0,height:'100dvh',padding:'max(env(safe-area-inset-top),10px) 16px calc(8px + env(safe-area-inset-bottom))',boxSizing:'border-box',background:themeIsDark?'#121513':'#F7F8F6',color:themeIsDark?'#fff':'#111',display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{height:52,flex:'0 0 52px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:20}}>
