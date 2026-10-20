@@ -30,12 +30,13 @@ export async function POST(request){
   const sm=Object.fromEntries(steps.map(r=>[r.step_date,Number(r.steps||0)])),pm={};protein.forEach(r=>pm[r.log_date]=(pm[r.log_date]||0)+Number(r.grams||0));
   const weekSteps=days.reduce((s,d)=>s+(sm[d]||0),0),weekProtein=days.reduce((s,d)=>s+(pm[d]||0),0);
   const userData={name:(profile?.display_name||profile?.username||'').split(/\s+/)[0]||null,steps:{today:sm[today]??0,this_week:weekSteps,daily_average:Math.round(weekSteps/7),goal:STEP_GOAL,last_7_days:days.map(d=>({date:d,steps:sm[d]??0}))},protein:{target_g:profile?.target_g??null,today_g:pm[today]??0,this_week_g:weekProtein,last_7_days:days.map(d=>({date:d,grams:pm[d]??0}))},streak:{current:Number(profile?.step_streak??profile?.streak??0),best:profile?.best_streak==null?null:Number(profile.best_streak)},stillness_sessions_this_month:stillness.length,leaderboard:{this_week:rankThis??null,last_week:rankLast??null},active_challenges:challenges.map(r=>r.challenges?.name).filter(Boolean)};
-  if(!process.env.ANTHROPIC_API_KEY)return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:503});
+  if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:503});
   const messages=history.filter(m=>['user','assistant','prot'].includes(m?.role)&&typeof m?.text==='string').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text.slice(0,PROT_MAX_INPUT_CHARS)}));
   if(!messages.length||messages.at(-1).content!==message)messages.push({role:'user',content:message});
-  const ai=await fetch('https://api.anthropic.com/v1/messages',{method:'POST',headers:{'content-type':'application/json','x-api-key':process.env.ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01'},body:JSON.stringify({model:PROT_MODEL,max_tokens:PROT_MAX_OUTPUT_TOKENS,system:PROT_SYSTEM_PROMPT+'\n\nUSER DATA:\n'+JSON.stringify(userData),messages})});
-  if(!ai.ok)throw new Error('Anthropic '+ai.status);
-  const result=await ai.json(),reply=result?.content?.find(x=>x.type==='text')?.text?.trim();if(!reply)throw new Error('Empty response');
-  return NextResponse.json({reply,suggestions:chips(message),mode:'anthropic'});
+  const input=messages.map(m=>({role:m.role,content:[{type:'input_text',text:m.content}]}));
+  const ai=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:PROT_MODEL,instructions:PROT_SYSTEM_PROMPT+'\\n\\nUSER DATA:\\n'+JSON.stringify(userData),input,max_output_tokens:PROT_MAX_OUTPUT_TOKENS})});
+  if(!ai.ok)throw new Error('OpenAI '+ai.status);
+  const result=await ai.json(),reply=(result.output_text||result?.output?.flatMap(x=>x.content||[]).find(x=>x.type==='output_text')?.text||'').trim();if(!reply)throw new Error('Empty response');
+  return NextResponse.json({reply,suggestions:chips(message),mode:'openai'});
  }catch(error){console.error('PROT route error:',error);return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:500})}
 }
