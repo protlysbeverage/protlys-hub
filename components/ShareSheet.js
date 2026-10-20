@@ -131,7 +131,7 @@ export default function ShareSheet({
         <div className="protlys-share-drag-zone" onTouchStart={handleTouchStart} onTouchEnd={handleTouchEnd} aria-hidden="true"><div className="protlys-share-handle" /></div>
         <div className="protlys-share-header">
           <h2 id="protlys-share-title">{title}</h2>
-          <button type="button" className="protlys-share-close" onClick={() => requestClose()} aria-label="Close share sheet">×</button>
+          <button type="button" className="protlys-share-close" onClick={() => requestClose()} aria-label="Close share sheet"><span aria-hidden="true">×</span></button>
         </div>
         <div className="protlys-share-scroll">
           <div className="protlys-share-preview-wrap">
@@ -163,7 +163,8 @@ export default function ShareSheet({
         .protlys-share-drag-zone{min-height:26px;display:flex;align-items:flex-start;justify-content:center;touch-action:none;cursor:grab;flex:0 0 auto;}.protlys-share-handle{width:42px;height:5px;border-radius:999px;background:var(--share-line);margin:0 auto 12px;}
         .protlys-share-header{display:flex;align-items:center;justify-content:space-between;gap:10px;flex:0 0 auto;}
         .protlys-share-header h2{font-family:Space Grotesk,sans-serif;font-size:19px;line-height:1.2;margin:0;color:var(--share-ink);}
-        .protlys-share-close{width:44px;height:44px;min-width:44px;border:1px solid var(--share-line);border-radius:50%;background:var(--share-white);color:var(--share-ink);font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;}
+        .protlys-share-close{width:44px;height:44px;min-width:44px;padding:0;border:1px solid var(--share-line);border-radius:50%;background:var(--share-white);color:var(--share-ink);font-size:22px;line-height:1;display:grid;place-items:center;cursor:pointer;}
+        .protlys-share-close span{display:block;line-height:1;margin:0;}
         .protlys-share-scroll{overflow:auto;min-height:0;padding:12px 0 4px;-webkit-overflow-scrolling:touch;}
         .protlys-share-preview-wrap{min-height:260px;display:flex;align-items:center;justify-content:center;padding:4px 0 14px;}
         .protlys-share-preview{display:block;width:min(60%,260px);height:auto;aspect-ratio:1080/1350;object-fit:contain;border-radius:14px;box-shadow:0 12px 28px rgba(15,42,74,.16);background:var(--share-white);}

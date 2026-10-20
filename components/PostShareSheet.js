@@ -29,9 +29,8 @@ function publicUrl(postId){
 export default function PostShareSheet({open,onClose,post,replies=[],currentUserId=null}){
   const [mounted,setMounted]=useState(false);
   const [theme,setTheme]=useState('dark');
-  const [layout,setLayout]=useState('post');
-  const [size,setSize]=useState('standard');
-  const [showAvatar,setShowAvatar]=useState(false);
+  const layout='post';
+  const size='standard';
   const [assets,setAssets]=useState({});
   const [shareReplies,setShareReplies]=useState(replies||[]);
   const [busy,setBusy]=useState(false);
@@ -40,13 +39,12 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   const previewRef=useRef(null);
   const cardRef=useRef(null);
 
-  const isAuthor=Boolean(currentUserId&&post?.user_id&&String(currentUserId)===String(post.user_id));
 
   useEffect(()=>setMounted(true),[]);
   useEffect(()=>{
     if(!open)return;
     setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
-    setLayout('post');setSize('standard');setShowAvatar(false);setBusy(false);setMessage('');setShareReplies(replies||[]);
+setBusy(false);setMessage('');setShareReplies(replies||[]);
     fetch(`/api/posts/${post.id}/share`).then(r=>r.ok?r.json():Promise.reject(new Error('share data failed'))).then(data=>setShareReplies(data.comments||[])).catch(()=>{});
     (async()=>{
       try{
@@ -66,16 +64,16 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
     if(!open)return;
     const measure=()=>{
       const node=cardRef.current?.querySelector('[data-protlys-post-card="true"]');
-      if(node)setCardHeight(Math.ceil(node.getBoundingClientRect().height));
+      if(node)setCardHeight(Math.ceil(node.offsetHeight || node.scrollHeight || 0));
     };
     measure();
     const raf=requestAnimationFrame(measure);
     const ro=typeof ResizeObserver!=='undefined'&&cardRef.current?new ResizeObserver(measure):null;
     ro?.observe(cardRef.current);
     return()=>{cancelAnimationFrame(raf);ro?.disconnect()};
-  },[open,theme,layout,size,showAvatar,assets,replies]);
+  },[open,theme,layout,size,assets,replies]);
 
-  const availableHeight=()=>Math.max(180,(window.innerHeight-56-48-124-24));
+  const availableHeight=()=>Math.max(180,window.innerHeight-56-16-20-42-16-116-28);
   const scale=typeof window==='undefined'?1:Math.max(0.3,Math.min(1,(window.innerWidth-32)/360,availableHeight()/(Math.max(cardHeight,1))));
   
   async function exportBlob(){
@@ -113,37 +111,34 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   if(!open||!mounted)return null;
   const previewStyle={width:360*scale,height:cardHeight*scale,position:'relative',flex:'0 0 auto'};
   const themeIsDark=document.documentElement.dataset.theme==='dark';
-  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
+  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif'}}>
     <div aria-hidden="true" onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.62)'}}/>
     <section role="dialog" aria-modal="true" aria-label="Share post" style={{position:'absolute',inset:0,height:'100dvh',padding:'max(env(safe-area-inset-top),10px) 16px calc(8px + env(safe-area-inset-bottom))',boxSizing:'border-box',background:themeIsDark?'#121513':'#F7F8F6',color:themeIsDark?'#fff':'#111',display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{height:52,flex:'0 0 52px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:20}}>
-        <div><div style={{fontSize:18,fontWeight:900}}>Share post</div><div style={{fontSize:10,color:themeIsDark?'rgba(255,255,255,.55)':'rgba(17,17,17,.55)'}}>Card height {cardHeight||'—'} px</div></div>
-        <button type="button" onClick={onClose} aria-label="Close share sheet" style={{width:46,height:46,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:23,background:themeIsDark?'#202520':'#111',color:'#fff',fontSize:22,fontWeight:800}}>×</button>
+        <div style={{fontSize:18,fontWeight:900}}>Share post</div>
+        <button type="button" onClick={onClose} aria-label="Close share sheet" style={{width:44,height:44,minWidth:44,padding:0,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:'50%',background:themeIsDark?'#202520':'#111',color:'#fff',fontSize:22,fontWeight:800,lineHeight:1,display:'grid',placeItems:'center'}}><span aria-hidden="true" style={{display:'block',lineHeight:1,margin:0}}>×</span></button>
       </div>
 
-      <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 8px',position:'relative',zIndex:1}}>
+      <div style={{flex:'0 0 auto',display:'flex',alignItems:'center',justifyContent:'center',padding:'16px 0 0',position:'relative',zIndex:1}}>
         <div style={previewStyle}>
           <div ref={cardRef} style={{position:'absolute',left:0,top:0,width:360,transform:`scale(${scale})`,transformOrigin:'top left'}}>
-            <PostShareCard post={post} replies={shareReplies} theme={theme} layout={layout} size={size} showAvatar={showAvatar} avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'} moreReplies={Math.max(0,(shareReplies?.length||0)-3)}/>
+            <PostShareCard post={post} replies={shareReplies} theme={theme} layout="post" size="standard" avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'}/>
           </div>
         </div>
       </div>
 
-      <div style={{height:48,flex:'0 0 48px',display:'flex',gap:8,alignItems:'center',overflowX:'auto',padding:'4px 0',position:'relative',zIndex:20}}>
-        {THEMES.map(item=><button key={item} type="button" aria-pressed={theme===item} onClick={()=>setTheme(item)} style={{height:40,minWidth:82,border:'1px solid #D7DDD8',borderRadius:20,background:theme===item?'#323A33':'#FFFFFF',color:theme===item?'#FFFFFF':'#111111',fontSize:12,fontWeight:900,flex:'0 0 auto'}}>{LABELS[item]}</button>)}
-        {['post','thread','clean'].map(item=><button key={item} type="button" aria-pressed={layout===item} onClick={()=>setLayout(item)} style={{height:40,minWidth:82,border:'1px solid #D7DDD8',borderRadius:20,background:layout===item?'#4F9F35':'#FFFFFF',color:layout===item?'#111111':'#111111',fontSize:12,fontWeight:900,flex:'0 0 auto'}}>{item === 'post' ? 'Post' : item === 'thread' ? 'Thread' : 'Clean'}</button>)}
-        {isAuthor ? <button type="button" aria-pressed={showAvatar} onClick={()=>setShowAvatar(v=>!v)} style={{height:40,minWidth:112,border:'1px solid #D7DDD8',borderRadius:20,background:showAvatar?'#4F9F35':'#FFFFFF',color:'#111111',fontSize:12,fontWeight:900,flex:'0 0 auto'}}>Avatar {showAvatar?'On':'Off'}</button> : null}
-        <button type="button" aria-pressed={size==='story'} onClick={()=>setSize(v=>v==='story'?'standard':'story')} style={{height:40,minWidth:88,border:'1px solid #D7DDD8',borderRadius:20,background:size==='story'?'#4F9F35':'#FFFFFF',color:'#111111',fontSize:12,fontWeight:900,flex:'0 0 auto'}}>Story</button>
+      <div style={{height:42,flex:'0 0 42px',display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,alignItems:'center',padding:0,marginTop:20,position:'relative',zIndex:20}}>
+        {THEMES.map(item=><button key={item} type="button" aria-pressed={theme===item} onClick={()=>setTheme(item)} style={{height:40,minWidth:0,width:'100%',border:'1px solid #D7DDD8',borderRadius:20,background:theme===item?'#323A33':'#FFFFFF',color:theme===item?'#FFFFFF':'#111111',fontSize:12,fontWeight:900,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[item]}</button>)}
       </div>
 
-      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
+      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:12,marginTop:16,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
         <button type="button" onClick={share} disabled={busy||!assets.qr} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,opacity:(busy||!assets.qr)?.6:1}}>{busy?'Preparing…':'Share card'}</button>
         <div style={{height:44,display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           <button type="button" onClick={save} disabled={busy} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Save image</button>
           <button type="button" onClick={copyLink} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Copy link</button>
         </div>
       </div>
-      {size==='story'&&cardHeight>640&&<div style={{position:'absolute',right:18,bottom:'calc(122px + env(safe-area-inset-bottom))',fontSize:9,color:themeIsDark?'rgba(255,255,255,.55)':'rgba(17,17,17,.55)',pointerEvents:'none'}}>Story content exceeds 640 px; export uses full content up to 1600 px.</div>}
+      
       {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc(124px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:800,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
   </div>,document.body);

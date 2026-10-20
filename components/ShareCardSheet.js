@@ -25,7 +25,7 @@ async function waitForImages(node){await Promise.all([...node.querySelectorAll('
 function computeScale(cardWidth=360,cardHeight=640,actionHeight=116){
   if(typeof window==='undefined')return 1;
   const w=(window.innerWidth-32)/cardWidth;
-  const h=(window.innerHeight-56-42-actionHeight-16)/cardHeight;
+  const h=(window.innerHeight-56-16-20-42-16-actionHeight-24)/cardHeight;
   return Math.max(0.35,Math.min(1.2,w,h));
 }
 function idle(fn){if(typeof window==='undefined')return()=>{};if('requestIdleCallback'in window){const id=window.requestIdleCallback(fn,{timeout:500});return()=>window.cancelIdleCallback?.(id)}const id=window.setTimeout(fn,120);return()=>window.clearTimeout(id)}
@@ -171,11 +171,11 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     <section ref={node=>{cardHostRef.current=node}} role="dialog" aria-modal="true" aria-label="Share your progress" onTouchStart={touchStart} onTouchEnd={touchEnd} style={{position:'absolute',inset:0,width:'100%',height:'100dvh',boxSizing:'border-box',padding:'max(env(safe-area-inset-top),12px) 16px calc(10px + env(safe-area-inset-bottom))',background:(document.documentElement.dataset.theme==='dark'?'#0D0F0E':'#F7F8F6'),color:(document.documentElement.dataset.theme==='dark'?'#FFFFFF':'#111111'),display:'flex',flexDirection:'column',overflow:'hidden',touchAction:'pan-y'}}>
       <div style={{height:56,flex:'0 0 56px',display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
         <div style={{fontSize:18,fontWeight:800}}>{sheetTitle}</div>
-        <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:48,height:48,minWidth:48,border:'1px solid #D7DDD8',borderRadius:24,background:'#FFFFFF',color:'#111111',fontSize:20,display:'grid',placeItems:'center',padding:0}}>×</button>
+        <button type="button" aria-label="Close share sheet" onPointerUp={e=>{e.preventDefault();e.stopPropagation();closeSheet()}} style={{width:44,height:44,minWidth:44,padding:0,border:'1px solid #D7DDD8',borderRadius:'50%',background:'#FFFFFF',color:'#111111',fontSize:20,lineHeight:1,display:'grid',placeItems:'center'}}><span aria-hidden="true" style={{display:'block',lineHeight:1,margin:0}}>×</span></button>
       </div>
       {isMeditation ? (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
-          <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
+          <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 16px'}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
           </div>
           <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:24,marginBottom:16}}>
@@ -193,13 +193,13 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       
       ) : (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
-          <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',paddingBottom:16}}>
+          <div style={{height:cardHeight*scale,flex:'0 0 '+cardHeight*scale+'px',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:0,marginTop:16}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
           </div>
-          <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:16,marginBottom:12}}>
-            {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
+          <div style={{height:42,flex:'0 0 42px',width:'100%',display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,alignItems:'center',marginTop:20,marginBottom:16}}>
+            {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:0,width:'100%',padding:'0 10px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>{labels[look]}</button>)}
           </div>
-          <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
+          <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:12,paddingTop:0}}>
             <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {labels[selected]} card</>}</button>
             <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
               {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
