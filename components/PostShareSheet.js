@@ -118,7 +118,7 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
     <section role="dialog" aria-modal="true" aria-label="Share post" style={{position:'absolute',inset:0,height:'100dvh',padding:'max(env(safe-area-inset-top),10px) 16px calc(8px + env(safe-area-inset-bottom))',boxSizing:'border-box',background:themeIsDark?'#121513':'#F7F8F6',color:themeIsDark?'#fff':'#111',display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{height:52,flex:'0 0 52px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:20}}>
         <div><div style={{fontSize:18,fontWeight:900}}>Share post</div><div style={{fontSize:10,color:themeIsDark?'rgba(255,255,255,.55)':'rgba(17,17,17,.55)'}}>Card height {cardHeight||'—'} px</div></div>
-        <button type="button" onClick={onClose} aria-label="Close share sheet" style={{width:46,height:46,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:23,background:themeIsDark?'#202520':'#111',color:'#fff',fontSize:22,fontWeight:800}}>×</button>
+        <button type="button" onClick={onClose} aria-label="Close share sheet" style={{width:44,height:44,minWidth:44,padding:0,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:'50%',background:themeIsDark?'#202520':'#111',color:'#fff',fontSize:22,fontWeight:800,lineHeight:1,display:'grid',placeItems:'center'}}><span aria-hidden="true" style={{display:'block',lineHeight:1,margin:0}}>×</span></button>
       </div>
 
       <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 8px',position:'relative',zIndex:1}}>
