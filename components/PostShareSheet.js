@@ -64,7 +64,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
     if(!open)return;
     const measure=()=>{
       const node=cardRef.current?.querySelector('[data-protlys-post-card="true"]');
-      if(node)setCardHeight(Math.ceil(node.getBoundingClientRect().height));
+      if(node)setCardHeight(Math.ceil(node.offsetHeight || node.scrollHeight || 0));
     };
     measure();
     const raf=requestAnimationFrame(measure);
