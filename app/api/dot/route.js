@@ -37,9 +37,14 @@ export async function POST(request){
   if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:503});
   const messages=history.filter(m=>['user','assistant','prot'].includes(m?.role)&&typeof m?.text==='string').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text.slice(0,PROT_MAX_INPUT_CHARS)}));
   if(!messages.length||messages.at(-1).content!==message)messages.push({role:'user',content:message});
-  const input=messages.map(m=>({role:m.role,content:[{type:'input_text',text:m.content}]}));
-  const ai=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:PROT_MODEL,instructions:PROT_SYSTEM_PROMPT+'\\n\\nUSER DATA:\\n'+JSON.stringify(userData),input,max_output_tokens:PROT_MAX_OUTPUT_TOKENS})});
-  if(!ai.ok)throw new Error('OpenAI '+ai.status);
+  const input=messages.map(m=>`${m.role}: ${m.content}`).join('\\n\\n');
+  const ai=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:PROT_MODEL,instructions:PROT_SYSTEM_PROMPT+'\\n\\nUSER DATA:\\n'+JSON.stringify(userData),input,max_output_tokens:PROT_MAX_OUTPUT_TOKENS,store:false})});
+  if(!ai.ok){
+    const detail=await ai.text().catch(()=> '');
+    console.error('OpenAI request failed',ai.status,detail.slice(0,1000));
+    if(ai.status===429)return NextResponse.json({error:'PROT is temporarily busy. Please try again in a moment.'},{status:503});
+    throw new Error('OpenAI '+ai.status);
+  }
   const result=await ai.json(),reply=(result.output_text||result?.output?.flatMap(x=>x.content||[]).find(x=>x.type==='output_text')?.text||'').trim();if(!reply)throw new Error('Empty response');
   return NextResponse.json({reply,suggestions:followUps(userData,message).map((item)=>item.href==='#prot-followups'?{...item,href:'#prot-followups'}:item),mode:'openai'});
  }catch(error){console.error('PROT route error:',error);return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:500})}
