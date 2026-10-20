@@ -199,20 +199,20 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <h1 style={{fontSize:"clamp(20px, 5vw, 26px)",marginBottom:4,lineHeight:1.2,overflowWrap:"anywhere"}}>{greetingText}{greetingUsername ? ` ${greetingUsername}` : ""}</h1>
       <p className="subhead">A simple view of your movement and what you have recorded.</p>
 
-      <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'center',gap:13,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
-        <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} aria-label="Change profile photo" style={{width:58,height:58,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flexShrink:0,cursor:'pointer'}}>
+      <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'flex-start',gap:16,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
+        <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} aria-label="Change profile photo" style={{width:76,height:76,minWidth:76,minHeight:76,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flex:'0 0 76px',cursor:'pointer'}}>
           {avatarUrl ? <img src={avatarUrl} alt="Profile" style={{width:'100%',height:'100%',objectFit:'cover'}} /> : <span style={{fontSize:20,fontWeight:800}}>{name[0].toUpperCase()}</span>}
           <span style={{position:'absolute',right:0,bottom:0,width:20,height:20,borderRadius:'50%',background:'var(--ink)',color:'#fff',display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}><Icon name="camera" size={10}/></span>
         </button>
         <input ref={fileRef} type="file" accept="image/*" onChange={handlePhoto} style={{display:'none'}} />
         <div style={{minWidth:0,flex:1}}>
-          <div style={{fontWeight:800,fontSize:16}}>{name}</div>
-          <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{email}</div>
-          <div style={{display:'flex',alignItems:'center',gap:12,marginTop:5,flexWrap:'wrap'}}>
-            <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
-            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} style={{display:'inline-flex',alignItems:'center',gap:4,padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:11.5,fontWeight:800,cursor:'pointer'}}><Icon name="share" size={13}/>Share profile</button>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,minWidth:0}}>
+            <div style={{fontWeight:800,fontSize:16,minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{name}</div>
+            <button type="button" onClick={(event) => { event.stopPropagation(); handleShareProfile(); }} aria-label="Share profile" title="Share profile" style={{width:40,height:40,minWidth:40,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--bg)',color:'var(--green-dark)',cursor:'pointer',display:'grid',placeItems:'center',flex:'0 0 40px'}}><Icon name="share" size={17}/></button>
           </div>
-          {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:3}}>{message}</div>}
+          <div style={{fontSize:12,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap',marginTop:4,maxWidth:'100%'}} title={email}>{email}</div>
+          <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} style={{display:'inline-flex',alignItems:'center',padding:0,border:0,background:'none',color:'var(--green-dark)',fontSize:12,fontWeight:800,lineHeight:'18px',cursor:'pointer',marginTop:8}}>{uploading ? 'Uploading…' : avatarUrl ? 'Change profile photo' : 'Add profile photo'}</button>
+          {message && <div style={{fontSize:10.5,color:message.includes('updated')||message.includes('shared')||message.includes('copied')?'var(--green-dark)':'#B3261E',marginTop:5}}>{message}</div>}
         </div>
       </div>
     </div>
