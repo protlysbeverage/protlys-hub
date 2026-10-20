@@ -75,7 +75,7 @@ export default function PostShareCard({
   theme='dark',
   qrDataUrl='',
   logoDataUrl='/protlys-logo-exact.png',
- }) {
+}) {
   const t=THEMES[theme]||THEMES.dark;
   const tag=post?.post_type && post.post_type!=='general' ? String(post.post_type).replace(/_/g,' ') : 'Post';
   const likeCount=Number(post?.like_count||0);
@@ -95,9 +95,10 @@ export default function PostShareCard({
         <StatBoxes stats={post?.stats} t={t}/>
         {likeCount>0&&<div style={{fontSize:10.5,color:t.muted,fontWeight:800,marginTop:14}}>{likeCount} {likeCount===1?'like':'likes'}</div>}
       </div>
-    <div style={{marginTop:10,padding:'12px 2px 0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
-      <div style={{fontSize:9.5,color:t.muted,lineHeight:1.35}}>View the full post on Protlys</div>
-      <div style={{width:58,height:58,padding:4,background:'#fff',borderRadius:7,boxSizing:'border-box',flex:'0 0 58px'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{width:'100%',height:'100%',display:'block'}}/>}</div>
+      <div style={{marginTop:10,padding:'12px 2px 0',display:'flex',alignItems:'center',justifyContent:'space-between',gap:12}}>
+        <div style={{fontSize:9.5,color:t.muted,lineHeight:1.35}}>View the full post on Protlys</div>
+        <div style={{width:58,height:58,padding:4,background:'#fff',borderRadius:7,boxSizing:'border-box',flex:'0 0 58px'}}>{qrDataUrl&&<img src={qrDataUrl} alt="" style={{width:'100%',height:'100%',display:'block'}}/>}</div>
+      </div>
     </div>
   </div>;
 }
