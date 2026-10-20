@@ -116,11 +116,16 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
     const body = ref.current?.value?.trim();
     if (!body || loading) return;
     setLoading(true); setError('');
-    const result = await addFeedCommentAction({ postId, body, parentCommentId });
-    setLoading(false);
-    if (result?.error) { setError(result.error); return; }
-    ref.current.value = '';
-    await onDone?.();
+    try {
+      const result = await addFeedCommentAction({ postId, body, parentCommentId });
+      if (result?.error) { setError(result.error); return; }
+      if (ref.current) ref.current.value = '';
+      await onDone?.();
+    } catch {
+      setError('Could not post. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
   return <div className="profile-comment-input" style={{ marginTop: compact ? 7 : 14, display: 'flex', gap: compact ? 7 : 10, alignItems: 'center' }}>
     <input ref={ref} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
@@ -158,11 +163,17 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
   const [expanded, setExpanded] = useState(false);
 
   async function loadComments() {
+    if (loading) return;
     setLoading(true); setError('');
-    const result = await getFeedCommentsAction({ postId });
-    setLoading(false);
-    if (result?.error) { setError(result.error); return; }
-    setComments(result.comments || []);
+    try {
+      const result = await getFeedCommentsAction({ postId });
+      if (result?.error) { setError(result.error); return; }
+      setComments(result.comments || []);
+    } catch {
+      setError('Could not load comments. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -175,7 +186,7 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
     if (result?.error) { setError(result.error); await loadComments(); }
   }
 
-  if (comments === null) return <button onClick={loadComments} disabled={loading} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{loading ? 'Loading…' : `${initialCount || 0} ${initialCount === 1 ? 'comment' : 'comments'}`}</button>;
+  if (comments === null) return <div className="profile-comments" style={{ marginTop:10 }}><button type="button" onClick={loadComments} disabled={loading} style={{ border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:12,fontWeight:700,cursor:'pointer' }}>{loading?'Loading…':`${initialCount||0} ${initialCount===1?'comment':'comments'}`}</button>{error&&<div style={{color:'#B3261E',fontSize:12,marginTop:8}}>{error}</div>}<CommentInput postId={postId} onDone={async()=>{await loadComments();onCommented?.();}} /></div>;
 
   const roots = comments.filter(comment => !comment.parent_comment_id);
   const replies = comments.filter(comment => comment.parent_comment_id);
