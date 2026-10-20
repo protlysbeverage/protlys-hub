@@ -158,7 +158,9 @@ export default function RelaxationClient() {
     if (!haptics || typeof navigator === 'undefined' || !('vibrate' in navigator)) return;
     try {
       navigator.vibrate(pattern);
-    } catch {}
+    } catch (error) {
+      console.warn('[Protlys Meditation] haptics unavailable', error);
+    }
   }, [haptics]);
 
   const stopTones = useCallback(() => {
