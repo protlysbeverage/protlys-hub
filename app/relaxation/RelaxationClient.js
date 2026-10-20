@@ -268,8 +268,7 @@ export default function RelaxationClient() {
     if (nextElapsed >= selected.duration) {
       stopVibration();
       void releaseWakeLock();
-      vibrate(HAPTICS.done);
-      if (chime) void playTone(523);
+      stopTones();
       setStatus('complete');
       statusRef.current = 'complete';
       setCompleted(true);
