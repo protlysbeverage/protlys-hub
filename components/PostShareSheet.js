@@ -31,7 +31,6 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   const [theme,setTheme]=useState('dark');
   const layout='post';
   const size='standard';
-  const [showAvatar,setShowAvatar]=useState(false);
   const [assets,setAssets]=useState({});
   const [shareReplies,setShareReplies]=useState(replies||[]);
   const [busy,setBusy]=useState(false);
@@ -40,13 +39,12 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   const previewRef=useRef(null);
   const cardRef=useRef(null);
 
-  const isAuthor=Boolean(currentUserId&&post?.user_id&&String(currentUserId)===String(post.user_id));
 
   useEffect(()=>setMounted(true),[]);
   useEffect(()=>{
     if(!open)return;
     setTheme(document.documentElement.dataset.theme==='dark'?'dark':'light');
-    setShowAvatar(false);setBusy(false);setMessage('');setShareReplies(replies||[]);
+setBusy(false);setMessage('');setShareReplies(replies||[]);
     fetch(`/api/posts/${post.id}/share`).then(r=>r.ok?r.json():Promise.reject(new Error('share data failed'))).then(data=>setShareReplies(data.comments||[])).catch(()=>{});
     (async()=>{
       try{
@@ -124,7 +122,7 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
       <div style={{flex:'0 0 auto',display:'flex',alignItems:'center',justifyContent:'center',padding:'16px 0 0',position:'relative',zIndex:1}}>
         <div style={previewStyle}>
           <div ref={cardRef} style={{position:'absolute',left:0,top:0,width:360,transform:`scale(${scale})`,transformOrigin:'top left'}}>
-            <PostShareCard post={post} replies={shareReplies} theme={theme} layout="post" size="standard" showAvatar={showAvatar} avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'}/>
+            <PostShareCard post={post} replies={shareReplies} theme={theme} layout="post" size="standard" avatarUrl={post?.profiles?.avatar_url||''} qrDataUrl={assets.qr||''} logoDataUrl={assets[theme]||'/protlys-logo-exact.png'}/>
           </div>
         </div>
       </div>
