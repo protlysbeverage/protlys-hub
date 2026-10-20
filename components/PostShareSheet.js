@@ -71,7 +71,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
     const ro=typeof ResizeObserver!=='undefined'&&cardRef.current?new ResizeObserver(measure):null;
     ro?.observe(cardRef.current);
     return()=>{cancelAnimationFrame(raf);ro?.disconnect()};
-  },[open,theme,layout,size,showAvatar,assets,replies]);
+  },[open,theme,layout,size,assets,replies]);
 
   const availableHeight=()=>Math.max(180,(window.innerHeight-56-48-124-24));
   const scale=typeof window==='undefined'?1:Math.max(0.3,Math.min(1,(window.innerWidth-32)/360,availableHeight()/(Math.max(cardHeight,1))));
