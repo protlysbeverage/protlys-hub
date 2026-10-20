@@ -14,38 +14,77 @@ function followUps(data,q){const s=Number(data.steps?.today||0),g=Number(data.st
 
 export async function POST(request){
  try{
-  const body=await request.json(),message=String(body?.message||'').trim(),history=Array.isArray(body?.messages)?body.messages.slice(-10):[];
+  const body=await request.json();
+  const message=String(body?.message||'').trim();
   if(!message||message.length>PROT_MAX_INPUT_CHARS)return NextResponse.json({error:`Keep your message under ${PROT_MAX_INPUT_CHARS} characters.`},{status:400});
-  const supabase=await createClient(),{data:{user}}=await supabase.auth.getUser();
+
+  const supabase=await createClient();
+  const {data:{user}}=await supabase.auth.getUser();
   if(!user)return NextResponse.json({error:'Please sign in to use PROT.'},{status:401});
-  if(limited(user.id))return NextResponse.json({error:'PROT has had a busy hour. Try again a little later.'},{status:429});
-  const days=dates7(),today=days[6],month=today.slice(0,7)+'-01T00:00:00';
-  const [profile,steps,protein,stillness,challenges,rankThis,rankLast]=await Promise.all([
+
+  const days=dates7(),today=days[6];
+  const [profile,steps,protein]=await Promise.all([
    safe(supabase.from('profiles').select('display_name,username,target_g,streak,step_streak,best_streak').eq('id',user.id).maybeSingle(),null),
    safe(supabase.from('daily_steps').select('step_date,steps').eq('user_id',user.id).gte('step_date',days[0]).lte('step_date',today)),
-   safe(supabase.from('protein_logs').select('log_date,grams').eq('user_id',user.id).gte('log_date',days[0]).lte('log_date',today)),
-   safe(supabase.from('meditation_sessions').select('completed_at').eq('user_id',user.id).gte('completed_at',month)),
-   safe(supabase.from('challenge_members').select('challenge_id,challenges(name)').eq('user_id',user.id)),
-   safe(supabase.rpc('get_my_rank',{p_scope:'world',p_group_id:null,p_period:'this_week'}),null),
-   safe(supabase.rpc('get_my_rank',{p_scope:'world',p_group_id:null,p_period:'last_week'}),null)
+   safe(supabase.from('protein_logs').select('log_date,grams').eq('user_id',user.id).gte('log_date',days[0]).lte('log_date',today))
   ]);
-  const sm=Object.fromEntries(steps.map(r=>[r.step_date,Number(r.steps||0)])),pm={};protein.forEach(r=>pm[r.log_date]=(pm[r.log_date]||0)+Number(r.grams||0));
-  const weekSteps=days.reduce((s,d)=>s+(sm[d]||0),0),weekProtein=days.reduce((s,d)=>s+(pm[d]||0),0);
-  const userData={name:(profile?.display_name||profile?.username||'').split(/\s+/)[0]||null,steps:{today:sm[today]??0,this_week:weekSteps,daily_average:Math.round(weekSteps/7),goal:STEP_GOAL,last_7_days:days.map(d=>({date:d,steps:sm[d]??0}))},protein:{target_g:profile?.target_g??null,today_g:pm[today]??0,this_week_g:weekProtein,last_7_days:days.map(d=>({date:d,grams:pm[d]??0}))},streak:{current:Number(profile?.step_streak??profile?.streak??0),best:profile?.best_streak==null?null:Number(profile.best_streak)},stillness_sessions_this_month:stillness.length,leaderboard:{this_week:rankThis??null,last_week:rankLast??null},active_challenges:challenges.map(r=>r.challenges?.name).filter(Boolean)};
-  const wantsStillness=/\\b(relax|relaxed|relaxation|stress|stressed|stillness|meditat|breath|unwind|calm|anxious|overwhelmed)\\b/i.test(message);
-  if(wantsStillness)return NextResponse.json({reply:'Of course. Head to Stillness in Protlys and choose a session that fits how you feel right now.',suggestions:[{label:'Open Stillness',href:'/relaxation'}],mode:'direct'});
-  if(!process.env.OPENAI_API_KEY)return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:503});
-  const messages=history.filter(m=>['user','assistant','prot'].includes(m?.role)&&typeof m?.text==='string').map(m=>({role:m.role==='user'?'user':'assistant',content:m.text.slice(0,PROT_MAX_INPUT_CHARS)}));
-  if(!messages.length||messages.at(-1).content!==message)messages.push({role:'user',content:message});
-  const input=messages.map(m=>`${m.role}: ${m.content}`).join('\\n\\n');
-  const ai=await fetch('https://api.openai.com/v1/responses',{method:'POST',headers:{'content-type':'application/json','authorization':`Bearer ${process.env.OPENAI_API_KEY}`},body:JSON.stringify({model:PROT_MODEL,instructions:PROT_SYSTEM_PROMPT+'\\n\\nUSER DATA:\\n'+JSON.stringify(userData),input,max_output_tokens:PROT_MAX_OUTPUT_TOKENS,store:false})});
-  if(!ai.ok){
-    const detail=await ai.text().catch(()=> '');
-    console.error('OpenAI request failed',ai.status,detail.slice(0,1000));
-    if(ai.status===429)return NextResponse.json({error:'PROT is temporarily busy. Please try again in a moment.'},{status:503});
-    throw new Error('OpenAI '+ai.status);
+
+  const sm=Object.fromEntries(steps.map(r=>[r.step_date,Number(r.steps||0)]));
+  const pm={};
+  protein.forEach(r=>pm[r.log_date]=(pm[r.log_date]||0)+Number(r.grams||0));
+  const weekSteps=days.reduce((s,d)=>s+(sm[d]||0),0);
+  const weekProtein=days.reduce((s,d)=>s+(pm[d]||0),0);
+  const userData={
+   name:(profile?.display_name||profile?.username||'').split(/\s+/)[0]||null,
+   steps:{today:sm[today]??0,this_week:weekSteps,daily_average:Math.round(weekSteps/7),goal:STEP_GOAL,last_7_days:days.map(d=>({date:d,steps:sm[d]??0}))},
+   protein:{target_g:profile?.target_g??null,today_g:pm[today]??0,this_week_g:weekProtein,last_7_days:days.map(d=>({date:d,grams:pm[d]??0}))},
+   streak:{current:Number(profile?.step_streak??profile?.streak??0),best:profile?.best_streak==null?null:Number(profile.best_streak)}
+  };
+
+  const q=message.toLowerCase();
+  if(/relax|relaxed|relaxation|stress|stressed|stillness|meditat|breath|unwind|calm|anxious|overwhelmed|tired/.test(q)){
+   return NextResponse.json({reply:'Take a moment for yourself. Open Stillness and choose a short session that fits how you feel right now.',suggestions:[{label:'Open Stillness',href:'/relaxation'}],mode:'direct'});
   }
-  const result=await ai.json(),reply=(result.output_text||result?.output?.flatMap(x=>x.content||[]).find(x=>x.type==='output_text')?.text||'').trim();if(!reply)throw new Error('Empty response');
-  return NextResponse.json({reply,suggestions:followUps(userData,message).map((item)=>item.href==='#prot-followups'?{...item,href:'#prot-followups'}:item),mode:'openai'});
- }catch(error){console.error('PROT route error:',error);return NextResponse.json({error:'PROT is resting, try again in a moment'},{status:500})}
+
+  const fallback=()=>{
+   const s=userData.steps.today,g=userData.steps.goal,p=userData.protein.today_g,t=userData.protein.target_g;
+   if(/step|walk|movement|move/.test(q))return `You have ${s.toLocaleString()} steps today, with ${Math.max(g-s,0).toLocaleString()} to go to your ${g.toLocaleString()} goal. A short walk is a good next step.`;
+   if(/protein|eat|food|target/.test(q)){
+    if(t==null)return 'Your protein target is not set yet. Open Protein to calculate and save your daily target.';
+    return p>=t?`You're at ${Math.round(p)} g of protein today, so you've reached your ${Math.round(t)} g target.`:`You're at ${Math.round(p)} g of protein today, with about ${Math.round(t-p)} g to go. A protein-rich snack or meal can help close the gap.`;
+   }
+   if(/week|progress|doing/.test(q))return `This week you've logged ${weekSteps.toLocaleString()} steps and ${Math.round(weekProtein)} g of protein. Your daily step average is ${userData.steps.daily_average.toLocaleString()}.`;
+   return 'I can help with your steps, protein, streaks, challenges, Stillness, and how Protlys works. What would you like to check?';
+  };
+
+  if(!process.env.OPENAI_API_KEY){
+   return NextResponse.json({reply:fallback(),suggestions:chips(message),mode:'fallback'});
+  }
+
+  const ai=await fetch('https://api.openai.com/v1/responses',{
+   method:'POST',
+   headers:{'content-type':'application/json','authorization':`Bearer ${process.env.OPENAI_API_KEY}`},
+   body:JSON.stringify({
+    model:PROT_MODEL,
+    instructions:PROT_SYSTEM_PROMPT+'\\n\\nUSER DATA:\\n'+JSON.stringify(userData),
+    input:message,
+    max_output_tokens:PROT_MAX_OUTPUT_TOKENS,
+    store:false
+   })
+  });
+
+  if(!ai.ok){
+   const detail=await ai.text().catch(()=> '');
+   console.error('OpenAI request failed',ai.status,detail.slice(0,1000));
+   return NextResponse.json({reply:fallback(),suggestions:chips(message),mode:'fallback'});
+  }
+
+  const result=await ai.json();
+  const reply=(result.output_text||result?.output?.flatMap(x=>x.content||[]).find(x=>x.type==='output_text')?.text||'').trim();
+  if(!reply)return NextResponse.json({reply:fallback(),suggestions:chips(message),mode:'fallback'});
+  return NextResponse.json({reply,suggestions:followUps(userData,message),mode:'openai'});
+ }catch(error){
+  console.error('PROT route error:',error);
+  return NextResponse.json({reply:'I can still help with your Protlys basics. Ask me about your steps, protein, weekly progress, or Stillness.',suggestions:chips(''),mode:'fallback'});
+ }
 }
