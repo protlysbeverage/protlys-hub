@@ -29,10 +29,11 @@ function timeLabel(value) {
   const normalized=/(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(raw)?raw:raw+'Z';
   const d=new Date(normalized);
   if(Number.isNaN(d.getTime())) return '';
-  const parts=new Intl.DateTimeFormat(undefined,{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).formatToParts(d);
+  const parts=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}).formatToParts(d);
   const get=type=>parts.find(part=>part.type===type)?.value||'';
   const day=get('day'),month=get('month'),hour=get('hour'),minute=get('minute'),period=get('dayPeriod');
-  return [day&&month?day+' '+month:'',hour&&minute?hour+':'+minute+(period?' '+period:''):''].filter(Boolean).join(' · ');
+  const stamp=[day&&month?day+' '+month:'',hour&&minute?hour+':'+minute+(period?' '+period.toUpperCase():''):''].filter(Boolean).join(' · ');
+  return stamp || new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}).format(d);
 }
 function textBlock(value) {
   const result=truncateText(value,700);
@@ -64,7 +65,7 @@ function Author({post,t,showAvatar,avatarUrl}) {
     <Avatar name={name} url={avatarUrl||post?.profiles?.avatar_url} showPhoto={showAvatar} t={t}/>
     <div style={{minWidth:0}}>
       <div style={{fontSize:14,fontWeight:900,overflowWrap:'anywhere'}}>@{name}</div>
-      <div style={{fontSize:10.5,color:t.muted,marginTop:2}}>{timeLabel(post?.created_at)}</div>
+      <div style={{fontSize:10.5,color:t.muted,marginTop:3,fontWeight:700,minHeight:14}}>{timeLabel(post?.created_at)||'Posted on Protlys'}</div>
     </div>
   </div>;
 }
