@@ -7,6 +7,7 @@ import { createClient } from '@/lib/supabase/client';
 const PAGE_SIZE = 50;
 const DAY_LABELS = ['T','F','S','S','M','T','W'];
 const TZ = 'Africa/Nairobi';
+const SHOW_LEADERBOARD_SCOPES = false;
 const CSS = `
 .leaderboard-screen{--lb-bg:var(--paper);--lb-card:var(--white);--lb-text:var(--ink);--lb-muted:var(--ink-45);--lb-border:var(--line);--lb-accent:var(--green);--lb-accent-foreground:#fff;min-height:100dvh;padding:18px 16px 100px;background:var(--lb-bg);color:var(--lb-text);position:relative}
 .lb-glow{position:fixed;inset:0;pointer-events:none;background:radial-gradient(circle at 50% 0%,color-mix(in srgb,var(--lb-accent) 10%,transparent),transparent 38%)}
@@ -179,7 +180,7 @@ export default function LeaderboardClient({ viewerId }) {
             })}
           </section>
 
-          <div className="lb-scope-wrap"><div className="lb-scope-caption">{scope === 'world' ? 'Everyone' : scope === 'city' ? 'People in your city' : 'Members of your group'}</div>
+          {SHOW_LEADERBOARD_SCOPES && <div className="lb-scope-wrap"><div className="lb-scope-caption">{scope === 'world' ? 'Everyone' : scope === 'city' ? 'People in your city' : 'Members of your group'}</div>
             <div className="lb-scope" role="tablist" aria-label="Leaderboard scope">
               {['world','city','group'].map(item => (
                 <button key={item} type="button" className={scope === item ? 'active' : ''} onClick={() => selectScope(item)}>
@@ -187,10 +188,10 @@ export default function LeaderboardClient({ viewerId }) {
                 </button>
               ))}
             </div>
-          </div>
+          </div>}
 
-          {cityMissing && <div className="lb-notice">Add your city to your profile to see your City leaderboard.</div>}
-          {scope === 'group' && !groupId && <div className="lb-notice">Open Leaderboard from a group to see its members.</div>}
+          {SHOW_LEADERBOARD_SCOPES && cityMissing && <div className="lb-notice">Add your city to your profile to see your City leaderboard.</div>}
+          {SHOW_LEADERBOARD_SCOPES && scope === 'group' && !groupId && <div className="lb-notice">Open Leaderboard from a group to see its members.</div>}
 
           <section className="lb-card" ref={listRef} aria-label="Ranked members">
             {rows.length === 0 && !cityMissing && <div className="lb-state">No leaderboard members yet.</div>}
