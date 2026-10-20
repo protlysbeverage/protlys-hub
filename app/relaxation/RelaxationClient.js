@@ -114,6 +114,7 @@ export default function RelaxationClient() {
   const previousPhaseRef = useRef(null);
   const wakeLockRef = useRef(null);
   const audioContextRef = useRef(null);
+  const activeTonesRef = useRef(new Set());
   const savedCompletionRef = useRef(false);
 
   useEffect(() => {
@@ -160,6 +161,14 @@ export default function RelaxationClient() {
     } catch {}
   }, [haptics]);
 
+  const stopTones = useCallback(() => {
+    activeTonesRef.current.forEach((oscillator) => {
+      try { oscillator.stop(); } catch {}
+      try { oscillator.disconnect(); } catch {}
+    });
+    activeTonesRef.current.clear();
+  }, []);
+
   const playTone = useCallback(async (frequency) => {
     if (!chime || !frequency || typeof window === 'undefined' || !window.AudioContext) return;
     try {
@@ -167,21 +176,33 @@ export default function RelaxationClient() {
       const context = audioContextRef.current || new AudioContextClass();
       audioContextRef.current = context;
       if (context.state === 'suspended') await context.resume();
+      if (!chime) return;
 
       const now = context.currentTime;
       const oscillator = context.createOscillator();
       const gain = context.createGain();
+      activeTonesRef.current.add(oscillator);
+      oscillator.addEventListener('ended', () => {
+        activeTonesRef.current.delete(oscillator);
+        try { oscillator.disconnect(); } catch {}
+      }, { once: true });
       oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(frequency, now);
       gain.gain.setValueAtTime(0.0001, now);
-      gain.gain.exponentialRampToValueAtTime(0.12, now + 0.08);
+      gain.gain.exponentialRampToValueAtTime(0.08, now + 0.08);
       gain.gain.exponentialRampToValueAtTime(0.0001, now + 0.95);
       oscillator.connect(gain);
       gain.connect(context.destination);
       oscillator.start(now);
       oscillator.stop(now + 1);
-    } catch {}
+    } catch (error) {
+      console.warn('[Protlys Meditation] soft chime unavailable', error);
+    }
   }, [chime]);
+
+  useEffect(() => {
+    if (!chime) stopTones();
+  }, [chime, stopTones]);
 
   const acquireWakeLock = useCallback(async () => {
     if (!('wakeLock' in navigator)) return;
@@ -276,7 +297,6 @@ export default function RelaxationClient() {
     lastFrameRef.current = null;
     stopVibration();
     void releaseWakeLock();
-    if (!auto) vibrate(HAPTICS.pause);
     setStatus('paused');
     statusRef.current = 'paused';
   }, [releaseWakeLock, stopVibration, vibrate]);
@@ -297,8 +317,9 @@ export default function RelaxationClient() {
     if (rafRef.current) window.cancelAnimationFrame(rafRef.current);
     stopVibration();
     void releaseWakeLock();
+    stopTones();
     try { audioContextRef.current?.close(); } catch {}
-  }, [stopVibration, releaseWakeLock]);
+  }, [stopVibration, releaseWakeLock, stopTones]);
 
   useEffect(() => {
     const handleBeforeUnload = () => stopVibration();
@@ -332,7 +353,6 @@ export default function RelaxationClient() {
 
   const resumeSession = async () => {
     if (!selected) return;
-    vibrate(HAPTICS.pause);
     await acquireWakeLock();
     setStatus('running');
     statusRef.current = 'running';
@@ -537,7 +557,8 @@ export default function RelaxationClient() {
 
         .relax-back{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:6px 4px;border:0;background:none;color:var(--ink-70);font-size:13px;font-weight:800;cursor:pointer;}
         .relax-back span:first-child{font-size:20px;line-height:1;}
-        .relax-back:focus-visible,.relax-session:focus-visible,.relax-setting:focus-within,.relax-primary:focus-visible,.relax-end:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+        .relax-back:focus-visible,.relax-session:focus-visible,.relax-primary:focus-visible,.relax-end:focus-visible{outline:2px solid var(--green);outline-offset:2px;}
+        .relax-setting input:focus-visible + .relax-switch{box-shadow:0 0 0 3px rgba(107,203,69,.28);}
         .relax-heading{font-size:28px;margin-bottom:5px;}
         .relax-subhead{max-width:440px;}
         .relax-session-list{display:grid;gap:10px;margin-top:22px;}
