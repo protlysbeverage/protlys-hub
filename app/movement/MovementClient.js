@@ -6,6 +6,7 @@ import { logStepsAction } from '@/app/movement-actions';
 import MovementActivity from '@/components/MovementActivity';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 import { getShareData } from '@/lib/share-data';
+import AutomaticTrackingCard from './AutomaticTrackingCard';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -85,6 +86,8 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
         </div>
+
+        <AutomaticTrackingCard />
 
         <div className="hub-card" style={{marginTop:10,padding:16}}>
           <div style={{fontWeight:800,fontSize:15}}>Add movement</div>
