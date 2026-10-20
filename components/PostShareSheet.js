@@ -73,7 +73,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
     return()=>{cancelAnimationFrame(raf);ro?.disconnect()};
   },[open,theme,layout,size,assets,replies]);
 
-  const availableHeight=()=>Math.max(180,(window.innerHeight-56-48-124-24));
+  const availableHeight=()=>Math.max(180,window.innerHeight-56-16-20-42-16-116-28);
   const scale=typeof window==='undefined'?1:Math.max(0.3,Math.min(1,(window.innerWidth-32)/360,availableHeight()/(Math.max(cardHeight,1))));
   
   async function exportBlob(){
@@ -111,7 +111,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
   if(!open||!mounted)return null;
   const previewStyle={width:360*scale,height:cardHeight*scale,position:'relative',flex:'0 0 auto'};
   const themeIsDark=document.documentElement.dataset.theme==='dark';
-  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Manrope,sans-serif'}}>
+  return createPortal(<div style={{position:'fixed',inset:0,zIndex:2147483000,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif'}}>
     <div aria-hidden="true" onClick={onClose} style={{position:'absolute',inset:0,background:'rgba(0,0,0,.62)'}}/>
     <section role="dialog" aria-modal="true" aria-label="Share post" style={{position:'absolute',inset:0,height:'100dvh',padding:'max(env(safe-area-inset-top),10px) 16px calc(8px + env(safe-area-inset-bottom))',boxSizing:'border-box',background:themeIsDark?'#121513':'#F7F8F6',color:themeIsDark?'#fff':'#111',display:'flex',flexDirection:'column',overflow:'hidden'}}>
       <div style={{height:52,flex:'0 0 52px',display:'flex',alignItems:'center',justifyContent:'space-between',position:'relative',zIndex:20}}>
@@ -127,18 +127,18 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
         </div>
       </div>
 
-      <div style={{height:56,flex:'0 0 56px',display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:8,alignItems:'center',padding:'8px 0 0',position:'relative',zIndex:20}}>
+      <div style={{height:42,flex:'0 0 42px',display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,alignItems:'center',padding:0,marginTop:20,position:'relative',zIndex:20}}>
         {THEMES.map(item=><button key={item} type="button" aria-pressed={theme===item} onClick={()=>setTheme(item)} style={{height:40,minWidth:0,width:'100%',border:'1px solid #D7DDD8',borderRadius:20,background:theme===item?'#323A33':'#FFFFFF',color:theme===item?'#FFFFFF':'#111111',fontSize:12,fontWeight:900,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{LABELS[item]}</button>)}
       </div>
 
-      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
+      <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,marginTop:16,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
         <button type="button" onClick={share} disabled={busy||!assets.qr} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,opacity:(busy||!assets.qr)?.6:1}}>{busy?'Preparing…':'Share card'}</button>
         <div style={{height:44,display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           <button type="button" onClick={save} disabled={busy} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Save image</button>
           <button type="button" onClick={copyLink} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Copy link</button>
         </div>
       </div>
-      {size==='story'&&cardHeight>640&&<div style={{position:'absolute',right:18,bottom:'calc(122px + env(safe-area-inset-bottom))',fontSize:9,color:themeIsDark?'rgba(255,255,255,.55)':'rgba(17,17,17,.55)',pointerEvents:'none'}}>Story content exceeds 640 px; export uses full content up to 1600 px.</div>}
+      
       {message&&<div role="status" style={{position:'absolute',left:16,right:16,bottom:'calc(124px + env(safe-area-inset-bottom))',textAlign:'center',fontSize:11,fontWeight:800,color:'#4F9F35',pointerEvents:'none'}}>{message}</div>}
     </section>
   </div>,document.body);
