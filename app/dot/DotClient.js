@@ -17,6 +17,7 @@ export default function PROTClient() {
     { role: 'prot', text: 'Hi. I’m PROT. I can help you understand your Protlys progress and decide what to focus on next.' },
   ]);
   const [loading, setLoading] = useState(false);
+  const [suggestions, setSuggestions] = useState([]);
   const inputRef = useRef(null);
   const endRef = useRef(null);
   const mascotRef = useRef(null);
@@ -43,12 +44,14 @@ export default function PROTClient() {
       const response = await fetch('/api/dot', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: clean }),
+        body: JSON.stringify({ message: clean, messages: messages.slice(-10) }),
       });
       const data = await response.json();
-      setMessages((current) => [...current, { role: 'prot', text: data.reply || data.error || 'I couldn’t answer that just now.' }]);
+      setSuggestions(Array.isArray(data.suggestions) ? data.suggestions : []);
+      setMessages((current) => [...current, { role: 'prot', text: data.reply || data.error || 'PROT is resting, try again in a moment' }]);
     } catch {
-      setMessages((current) => [...current, { role: 'prot', text: 'I couldn’t connect right now. Please try again.' }]);
+      setSuggestions([]);
+      setMessages((current) => [...current, { role: 'prot', text: 'PROT is resting, try again in a moment' }]);
     } finally {
       setLoading(false);
     }
@@ -67,7 +70,7 @@ export default function PROTClient() {
         .protlys-prot-body{flex:1;min-height:0;overflow:auto;padding:16px}
         .protlys-prot-msg{max-width:88%;padding:11px 13px;border-radius:16px;margin-bottom:9px;font-size:13px;line-height:1.48;white-space:pre-wrap}
         .protlys-prot-msg.prot{background:var(--green-soft,#e4f3ea);border-bottom-left-radius:5px}.protlys-prot-msg.user{margin-left:auto;background:var(--ink,#0f2a4a);color:#fff;border-bottom-right-radius:5px}
-        .protlys-prot-starters{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.protlys-prot-starters button{border:1px solid var(--line,rgba(15,42,74,.12));background:transparent;color:inherit;border-radius:999px;padding:8px 10px;font-size:11px;cursor:pointer}
+        .protlys-prot-starters,.protlys-prot-suggestions{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}.protlys-prot-starters button,.protlys-prot-suggestions a{border:1px solid var(--line,rgba(15,42,74,.12));background:transparent;color:inherit;border-radius:999px;padding:8px 10px;font-size:11px;cursor:pointer;text-decoration:none}
         .protlys-prot-compose{padding:10px;border-top:1px solid var(--line,rgba(15,42,74,.12));display:flex;gap:8px}.protlys-prot-compose textarea{flex:1;resize:none;min-height:42px;max-height:100px;border:1px solid var(--line,rgba(15,42,74,.12));border-radius:14px;padding:11px 12px;background:transparent;color:inherit;font:inherit;font-size:13px;outline:none}.protlys-prot-compose textarea:focus{border-color:var(--green,#2e9e5b)}.protlys-prot-send{width:44px;border:0;border-radius:14px;background:var(--green,#2e9e5b);color:#fff;font-weight:800;cursor:pointer}.protlys-prot-send:disabled{opacity:.45;cursor:default}
         .protlys-dark .protlys-prot-launch{background:var(--card,#111820);color:var(--green,#4dbb75);border-color:rgba(255,255,255,.1);box-shadow:0 10px 28px rgba(0,0,0,.35)}
         .protlys-dark .protlys-prot-panel{background:var(--card,#111820);color:var(--ink,#f2f5f7);border-color:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.45)}
@@ -88,11 +91,12 @@ export default function PROTClient() {
           <div className="protlys-prot-body">
             {messages.map((message, index) => <div key={index} className={'protlys-prot-message-row '+message.role}>{message.role === 'prot' && <span className="protlys-prot-avatar" aria-hidden="true"><ProtlysLoader /></span>}<div className={'protlys-prot-msg '+message.role}>{message.text}</div></div>)}
             {messages.length === 1 && <div className="protlys-prot-starters">{STARTERS.map((starter) => <button key={starter} type="button" onClick={() => send(starter)}>{starter}</button>)}</div>}
+            {!loading && suggestions.length > 0 && <div className="protlys-prot-suggestions">{suggestions.map((item) => <a key={item.href+item.label} href={item.href}>{item.label}</a>)}</div>}
             {loading && <div className="protlys-prot-message-row prot"><span className="protlys-prot-avatar" aria-hidden="true"><ProtlysLoader ref={mascotRef} /></span><div className="protlys-prot-msg prot">Thinking…</div></div>}
             <div ref={endRef} />
           </div>
           <form className="protlys-prot-compose" onSubmit={(event) => { event.preventDefault(); send(); }}>
-            <textarea ref={inputRef} value={input} onChange={(event) => setInput(event.target.value)} placeholder="Ask PROT…" rows={1} aria-label="Message PROT" disabled={loading} />
+            <textarea ref={inputRef} value={input} maxLength={500} onChange={(event) => setInput(event.target.value)} placeholder="Ask PROT…" rows={1} aria-label="Message PROT" disabled={loading} />
             <button className="protlys-prot-send" type="submit" disabled={!input.trim() || loading} aria-label="Send">↑</button>
           </form>
         </section>
