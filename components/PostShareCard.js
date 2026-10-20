@@ -25,15 +25,12 @@ function truncateText(value, max=700) {
 }
 function timeLabel(value) {
   if (!value) return '';
-  const raw=String(value);
-  const normalized=/(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(raw)?raw:raw+'Z';
-  const d=new Date(normalized);
-  if(Number.isNaN(d.getTime())) return '';
-  const parts=new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}).formatToParts(d);
-  const get=type=>parts.find(part=>part.type===type)?.value||'';
-  const day=get('day'),month=get('month'),hour=get('hour'),minute=get('minute'),period=get('dayPeriod');
-  const stamp=[day&&month?day+' '+month:'',hour&&minute?hour+':'+minute+(period?' '+period.toUpperCase():''):''].filter(Boolean).join(' · ');
-  return stamp || new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',hour:'numeric',minute:'2-digit',hour12:true}).format(d);
+  const raw = String(value).trim();
+  const d = new Date(raw);
+  if (Number.isNaN(d.getTime())) return '';
+  return new Intl.DateTimeFormat('en-KE', {
+    day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit', hour12: true
+  }).format(d).replace(/, /, ' · ');
 }
 function textBlock(value) {
   const result=truncateText(value,700);
@@ -65,7 +62,7 @@ function Author({post,t,showAvatar,avatarUrl}) {
     <Avatar name={name} url={avatarUrl||post?.profiles?.avatar_url} showPhoto={showAvatar} t={t}/>
     <div style={{minWidth:0}}>
       <div style={{fontSize:14,fontWeight:900,overflowWrap:'anywhere'}}>@{name}</div>
-      <div style={{fontSize:10.5,color:t.muted,marginTop:3,fontWeight:700,minHeight:14}}>{timeLabel(post?.created_at)||'Posted on Protlys'}</div>
+      <div style={{fontSize:10.5,color:t.muted,marginTop:3,fontWeight:700,minHeight:14}} />
     </div>
   </div>;
 }
@@ -94,7 +91,7 @@ export default function PostShareCard({
       <div style={{padding:20,...contentStyle}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
           <img src={logoDataUrl} alt="Protlys" style={{width:92,height:24,objectFit:'contain',objectPosition:'left center',display:'block'}}/>
-          <span aria-hidden="true" />
+          {timeLabel(post?.created_at) && <span style={{fontSize:10.5,fontWeight:800,color:t.muted,whiteSpace:'nowrap',textAlign:'right'}}>{timeLabel(post?.created_at)}</span>}
         </div>
         <div style={{marginTop:18}}><Author post={post} t={t} showAvatar={showAvatar} avatarUrl={avatarUrl}/></div>
         <div style={{display:'inline-flex',marginTop:14,padding:'5px 9px',borderRadius:999,background:t.panel,border:`1px solid ${t.line}`,fontSize:9.5,fontWeight:900,textTransform:'capitalize'}}>{tag}</div>
