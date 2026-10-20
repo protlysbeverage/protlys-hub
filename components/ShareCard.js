@@ -169,7 +169,7 @@ function MeditationSessionCard({data,look='mist',username,qrDataUrl,logoDataUrl}
   const week=data.weekDays||[];
   const streak=Number(data.currentStreak||0);
   const minutes=Number(data.minutes||0);
-  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-share-card="true" style={{width:320,height:640,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
     <MeditationSafeArea>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,position:'relative',zIndex:2,flex:'0 0 32px',minHeight:32}}><div style={{display:'flex',alignItems:'center',gap:8,minWidth:0,height:32}}><img src={logoDataUrl} alt="Protlys" style={{width:100,height:30,objectFit:'contain',objectPosition:'left center',display:'block',flex:'0 0 auto'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{meditationDateLabel(data.completedAt)}</span></div>
       <div style={{height:184,flex:'0 0 184px',display:'grid',placeItems:'center',position:'relative',marginTop:4}}>
@@ -190,7 +190,7 @@ function MeditationMonthlyCard({data,look='mist',username,qrDataUrl,logoDataUrl}
   const palette=MEDITATION_PALETTES[look]||MEDITATION_PALETTES.mist;
   const days=data.calendarDays||[];
   const monthDays=Number(data.monthDays||0), totalMinutes=Number(data.totalMinutes||0), totalSessions=Number(data.totalSessions||0), bestStreak=Number(data.bestStreak||0);
-  return <div data-protlys-share-card="true" style={{width:320,height:568,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,fontFamily:'Archivo,system-ui,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-share-card="true" style={{width:320,height:640,boxSizing:'border-box',position:'relative',overflow:'hidden',background:palette.bg,color:palette.ink,fontFamily:'Archivo,system-ui,sans-serif',isolation:'isolate'}}>
     <MeditationSafeArea>
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,flex:'0 0 32px',minHeight:32}}><div style={{display:'flex',alignItems:'center',gap:8,height:32}}><img src={logoDataUrl} alt="Protlys" style={{width:92,height:30,objectFit:'contain',objectPosition:'left center',display:'block'}}/><span style={{fontSize:8,fontWeight:800,letterSpacing:'2px',textTransform:'uppercase',color:palette.muted}}>Stillness</span></div><span style={{fontSize:8.5,fontWeight:700,color:palette.muted,whiteSpace:'nowrap'}}>{data.monthLabel}</span></div>
       <div style={{marginTop:10}}><div style={{fontSize:8,fontWeight:900,letterSpacing:'2px',color:palette.muted}}>YOUR MONTH</div><div style={{display:'flex',alignItems:'baseline',gap:7,marginTop:3}}><span style={{fontFamily:'Space Grotesk,sans-serif',fontSize:54,lineHeight:.9}}>{monthDays}</span><span style={{fontSize:12,fontWeight:800}}>{pluralize(monthDays,'day')}</span></div><div style={{fontFamily:'Manrope,system-ui,sans-serif',fontSize:11.5,fontWeight:700,lineHeight:1.4,marginTop:5}}>{meditationMonthNote(monthDays)}</div></div>
