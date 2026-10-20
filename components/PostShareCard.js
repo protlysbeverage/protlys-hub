@@ -28,8 +28,11 @@ function timeLabel(value) {
   const raw=String(value);
   const normalized=/(?:Z|[+-]\\d{2}:?\\d{2})$/i.test(raw)?raw:raw+'Z';
   const d=new Date(normalized);
-  if(Number.isNaN(d.getTime())) return String(value);
-  return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric',hour:'numeric',minute:'2-digit',hour12:true}).format(d);
+  if(Number.isNaN(d.getTime())) return '';
+  const parts=new Intl.DateTimeFormat(undefined,{day:'numeric',month:'short',hour:'numeric',minute:'2-digit'}).formatToParts(d);
+  const get=type=>parts.find(part=>part.type===type)?.value||'';
+  const day=get('day'),month=get('month'),hour=get('hour'),minute=get('minute'),period=get('dayPeriod');
+  return [day&&month?day+' '+month:'',hour&&minute?hour+':'+minute+(period?' '+period:''):''].filter(Boolean).join(' · ');
 }
 function textBlock(value) {
   const result=truncateText(value,700);
@@ -46,7 +49,7 @@ function StatBoxes({stats,t}) {
   return <div style={{display:'grid',gridTemplateColumns:`repeat(${Math.min(items.length,3)},minmax(0,1fr))`,gap:8,marginTop:14}}>
     {items.map(([label,value])=><div key={label} style={{border:`1px solid ${t.line}`,borderRadius:10,padding:'9px 10px',background:t.surface,minWidth:0}}>
       <div style={{fontSize:8,textTransform:'uppercase',letterSpacing:'.07em',fontWeight:900,color:t.muted}}>{label}</div>
-      <div style={{fontFamily:'Plus Jakarta Sans,system-ui,sans-serif',fontSize:12,fontWeight:700,marginTop:3,overflowWrap:'anywhere'}}>{label==='Distance'?String(value):formatNumber(value)}</div>
+      <div style={{fontFamily:'IBM Plex Mono,monospace',fontSize:12,fontWeight:700,marginTop:3,overflowWrap:'anywhere'}}>{label==='Distance'?String(value):formatNumber(value)}</div>
     </div>)}
   </div>;
 }
@@ -85,12 +88,12 @@ export default function PostShareCard({
   const story=size==='story';
   const contentStyle=story?{minHeight:600,justifyContent:'center'}:{};
   const footerUrl=`/p/${post?.id}?utm_source=share&utm_medium=card&utm_campaign=post`;
-  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,minHeight:story?640:undefined,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Plus Jakarta Sans,system-ui,sans-serif',isolation:'isolate'}}>
+  return <div data-protlys-post-card="true" data-card-layout={layout} style={{width:360,minHeight:story?640:undefined,boxSizing:'border-box',padding:20,background:t.panel,color:t.text,fontFamily:'Manrope,system-ui,sans-serif',isolation:'isolate'}}>
     <div style={{borderRadius:20,background:t.surface,border:`1px solid ${t.line}`,overflow:'hidden'}}>
       <div style={{padding:20,...contentStyle}}>
         <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10}}>
           <img src={logoDataUrl} alt="Protlys" style={{width:92,height:24,objectFit:'contain',objectPosition:'left center',display:'block'}}/>
-          <div style={{fontSize:9.5,color:t.muted,whiteSpace:'nowrap'}}>{timeLabel(post?.created_at)}</div>
+          <span aria-hidden="true" />
         </div>
         <div style={{marginTop:18}}><Author post={post} t={t} showAvatar={showAvatar} avatarUrl={avatarUrl}/></div>
         <div style={{display:'inline-flex',marginTop:14,padding:'5px 9px',borderRadius:999,background:t.panel,border:`1px solid ${t.line}`,fontSize:9.5,fontWeight:900,textTransform:'capitalize'}}>{tag}</div>
