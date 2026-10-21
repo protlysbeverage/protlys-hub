@@ -126,7 +126,9 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
     };
   }, [userId]);
 
-  const totalSteps = Number(profile?.total_steps || 0);
+  const totalSteps = liveMovementDays.length
+    ? liveMovementDays.reduce((sum, row) => sum + Number(row.steps || 0), 0)
+    : Number(profile?.total_steps || 0);
   const currentTodaySteps = liveTodaySteps;
   const today = new Date();
   const todayStr = localDateStr(today);
