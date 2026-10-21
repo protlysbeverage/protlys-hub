@@ -269,7 +269,7 @@ export default function AppShell({ children }) {
         <Link href="/" aria-label="Protlys Hub home"><img className="logo logo-light" src={logoSrc} alt="Protlys" width="2000" height="973" /><img className="logo logo-dark" src="/protlys-logo-dark.png" alt="Protlys" width="2000" height="973" /></Link>
       </div>
       <nav className="sidebar-nav">
-        {NAV_ITEMS.map(item => item.href === '/challenges' ? <a key={item.href} href="/challenges" className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></a> : <Link key={item.href} href={item.href} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
+        {NAV_ITEMS.map(item => <Link key={item.href} href={item.href} prefetch={true} className={`nav-btn${pathname===item.href?' active':''}`}>{item.icon}<span>{item.label}</span></Link>)}
       </nav>
       <div className="sidebar-spacer" />
     </aside>
