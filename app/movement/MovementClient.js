@@ -1,11 +1,12 @@
 'use client';
 
-import { useRef, useState, useTransition } from 'react';
+import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { logStepsAction } from '@/app/movement-actions';
 import MovementActivity from '@/components/MovementActivity';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 import { getShareData } from '@/lib/share-data';
+import { createClient } from '@/lib/supabase/client';
 import AutomaticTrackingCard from './AutomaticTrackingCard';
 
 function localDateStr(date = new Date()) {
@@ -28,19 +29,115 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const [manualTime, setManualTime] = useState(() => new Date().toTimeString().slice(0, 5));
   const [toast, setToast] = useState('');
   const [shareData, setShareData] = useState(null);
+  const [liveTodaySteps, setLiveTodaySteps] = useState(Number(todaySteps || 0));
+  const [liveLastSync, setLiveLastSync] = useState(lastSync || null);
+  const [liveSource, setLiveSource] = useState(source || null);
+  const [liveWeekSteps, setLiveWeekSteps] = useState(weekSteps || []);
+  const [liveMovementDays, setLiveMovementDays] = useState(movementDays || []);
   const addStepsInputRef = useRef(null);
 
+  useEffect(() => {
+    const cacheKey = `protlys_movement_cache_v1_${userId || 'unknown'}`;
+
+    try {
+      const cached = JSON.parse(window.localStorage.getItem(cacheKey) || 'null');
+      if (cached) {
+        if (Number.isFinite(Number(cached.todaySteps))) setLiveTodaySteps(Number(cached.todaySteps));
+        if (cached.lastSync) setLiveLastSync(cached.lastSync);
+        if (cached.source) setLiveSource(cached.source);
+        if (Array.isArray(cached.weekSteps)) setLiveWeekSteps(cached.weekSteps);
+        if (Array.isArray(cached.movementDays)) setLiveMovementDays(cached.movementDays);
+      }
+    } catch {}
+
+    const supabase = createClient();
+
+    const refreshMovement = async () => {
+      if (!userId) return;
+      const now = new Date();
+      const todayStr = localDateStr(now);
+      const weekStartDate = new Date(now);
+      weekStartDate.setDate(weekStartDate.getDate() - 6);
+      const weekStart = localDateStr(weekStartDate);
+
+      const [{ data: recentRows }, { data: allRows }] = await Promise.all([
+        supabase
+          .from('daily_steps')
+          .select('step_date, steps, source, synced_at')
+          .eq('user_id', userId)
+          .gte('step_date', weekStart)
+          .lte('step_date', todayStr)
+          .order('step_date'),
+        supabase
+          .from('daily_steps')
+          .select('step_date, steps, source, synced_at')
+          .eq('user_id', userId)
+          .order('step_date'),
+      ]);
+
+      const recent = recentRows || [];
+      const all = allRows || [];
+      const todayRow = recent.find((row) => row.step_date === todayStr) || null;
+      const nextToday = Number(todayRow?.steps || 0);
+      const nextLastSync = todayRow?.synced_at || null;
+      const nextSource = todayRow?.source || null;
+
+      setLiveTodaySteps(nextToday);
+      setLiveLastSync(nextLastSync);
+      setLiveSource(nextSource);
+      setLiveWeekSteps(recent);
+      setLiveMovementDays(all);
+
+      try {
+        window.localStorage.setItem(cacheKey, JSON.stringify({
+          todaySteps: nextToday,
+          lastSync: nextLastSync,
+          source: nextSource,
+          weekSteps: recent,
+          movementDays: all,
+        }));
+      } catch {}
+    };
+
+    refreshMovement();
+
+    const onVisibility = () => {
+      if (document.visibilityState === 'visible') refreshMovement();
+    };
+    document.addEventListener('visibilitychange', onVisibility);
+
+    const channel = supabase
+      .channel(`movement-steps-${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: '*',
+          schema: 'public',
+          table: 'daily_steps',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => refreshMovement()
+      )
+      .subscribe();
+
+    return () => {
+      document.removeEventListener('visibilitychange', onVisibility);
+      supabase.removeChannel(channel);
+    };
+  }, [userId]);
+
   const totalSteps = Number(profile?.total_steps || 0);
+  const currentTodaySteps = liveTodaySteps;
   const today = new Date();
   const todayStr = localDateStr(today);
-  const shareContext = { rows: movementDays, todaySteps, lifetimeSteps: totalSteps, currentStreak };
+  const shareContext = { rows: liveMovementDays, todaySteps: currentTodaySteps, lifetimeSteps: totalSteps, currentStreak };
   const stepsShareData = getShareData('steps_today', shareContext);
   const activeDaysShareData = getShareData('movement_days', shareContext);
   const recent = stepsShareData.weeklyDays.map(d => ({ dateStr:d.key, steps:d.steps }));
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentActiveDays = activeDaysShareData.value;
-  const todayCalories = caloriesForSteps(todaySteps);
-  const todayDistance = distanceForSteps(todaySteps);
+  const todayCalories = caloriesForSteps(currentTodaySteps);
+  const todayDistance = distanceForSteps(currentTodaySteps);
   const hasMovement = stepsShareData.hasData;
 
   function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2800); }
@@ -75,11 +172,11 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8}}>
-              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {liveLastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{liveSource === 'manual' ? 'Manual' : liveSource === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(liveLastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
               {hasMovement && <ShareIconButton variant="movement" label="Share steps today" onClick={()=>openShare('steps_today')}/>} 
             </div>
           </div>
-          <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:8}}>{todaySteps.toLocaleString()}</div>
+          <div className="mono" style={{fontSize:38,fontWeight:800,marginTop:8}}>{currentTodaySteps.toLocaleString()}</div>
           <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12,marginTop:9}}>
             <div style={{display:'flex',flexDirection:'column',padding:16,minHeight:96,borderRadius:11,background:'var(--green-soft)',boxSizing:'border-box'}}><div style={{position:'relative',minHeight:20}}><div className="t">Distance</div>{hasMovement && <div style={{position:'absolute',right:-8,top:-10}}><ShareIconButton variant="movement" label="Share distance" onClick={()=>openShare('distance')} /></div>}</div><div className="mono" style={{fontSize:18,lineHeight:1.2,fontWeight:800,marginTop:'auto'}}>{todayDistance.toFixed(1)} km</div></div>
             <div style={{display:'flex',flexDirection:'column',padding:16,minHeight:96,borderRadius:11,background:'var(--green-soft)',boxSizing:'border-box'}}><div style={{minHeight:20,display:'flex',alignItems:'flex-start'}}><div className="t">Calories</div></div><div className="mono" style={{fontSize:18,lineHeight:1.2,fontWeight:800,marginTop:'auto'}}>≈ {todayCalories}</div></div>
@@ -123,7 +220,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
         </div>
 
-        <MovementActivity days={movementDays.length ? movementDays : weekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />
+        <MovementActivity days={liveMovementDays.length ? liveMovementDays : liveWeekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />
       </div>
       {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} avatarUrl={profile?.avatar_url || ''} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
     </>
