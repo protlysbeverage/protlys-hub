@@ -173,7 +173,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
         </div>
 
         <MovementActivity days={liveMovementDays.length ? liveMovementDays : liveWeekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} />
-      </div>
+      </div>}
       {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} avatarUrl={profile?.avatar_url || ''} />}
     </>
   );
