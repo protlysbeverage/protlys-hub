@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { createPortal } from 'react-dom';
+import { ShareIcon } from './ShareIcon';
 
 function getThemeVars() {
   const app = document.querySelector('.protlys-app');
@@ -146,7 +147,7 @@ export default function ShareSheet({
             <input type="checkbox" checked={!!showIdentity} onChange={event => onToggleIdentity?.(event.target.checked)} />
             <span className="protlys-share-switch" aria-hidden="true"><span /></span>
           </label>
-          <button type="button" className="protlys-share-primary" onClick={onShare} disabled={busy || previewLoading || !!previewError}>{busy ? 'Creating…' : 'Share card'}</button>
+          <button type="button" className="protlys-share-primary" style={{display:'flex',alignItems:'center',justifyContent:'center',gap:8}} onClick={onShare} disabled={busy || previewLoading || !!previewError}>{busy ? 'Creating…' : <><span style={{width:32,height:32,flex:'0 0 32px',borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center'}}><ShareIcon size={18}/></span><span style={{flex:1,minWidth:0,overflow:'hidden',textOverflow:'ellipsis'}}>Share card</span></>}</button>
           <div className="protlys-share-secondary">
             <button type="button" onClick={onSave} disabled={busy || previewLoading || !!previewError}>Save image</button>
             <button type="button" onClick={onCopy} disabled={busy}>Copy link</button>
