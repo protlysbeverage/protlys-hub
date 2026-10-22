@@ -111,7 +111,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const currentTodaySteps = liveTodaySteps;
   const today = new Date();
   const todayStr = localDateStr(today);
-  const shareContext = { rows: liveMovementDays, todaySteps: currentTodaySteps, lifetimeSteps: totalSteps, currentStreak };
+  const shareContext = { rows: liveMovementDays, todaySteps: currentTodaySteps, currentStreak };
   const stepsShareData = getShareData('steps_today', shareContext);
   const activeDaysShareData = getShareData('movement_days', shareContext);
   const recent = stepsShareData.weeklyDays.map(d => ({ dateStr:d.key, steps:d.steps }));
