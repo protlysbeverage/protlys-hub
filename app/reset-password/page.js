@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getSupabaseAuthError } from '@/lib/supabase/auth-error';
 import '../globals.css';
 
 const EyeIcon = ({ open }) => open ? (
@@ -44,7 +45,7 @@ export default function ResetPasswordPage() {
     const supabase = createClient();
     const { error } = await supabase.auth.updateUser({ password });
     setLoading(false);
-    if (error) { setError(error.message); return; }
+    if (error) { setError(getSupabaseAuthError(error, 'password update')); return; }
     setDone(true);
     setTimeout(() => router.push('/'), 2000);
   }
@@ -58,7 +59,7 @@ export default function ResetPasswordPage() {
         <div className="screen-pad" style={{ paddingTop: 40, paddingBottom: 40 }}>
 
           <div style={{ textAlign: 'center', marginBottom: 28 }}>
-            <img src="/logo.png" alt="Protlys"
+            <img src="/protlys-logo-exact.png?v=20261022" alt="Protlys"
               style={{ width: 110, height: 'auto', objectFit: 'contain' }}
               onError={e => { e.target.style.display = 'none'; }} />
             <div className="wordmark display" style={{ marginTop: 4 }}>PROT<span>LYS</span></div>
