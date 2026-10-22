@@ -6,6 +6,7 @@ import { useRouter } from 'next/navigation';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import PostShareSheet from '@/components/PostShareSheet';
+import { ShareIcon } from '@/components/ShareIcon';
 import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 import {
   createFeedPostAction,
@@ -26,11 +27,11 @@ const POST_TYPES = [
 ];
 
 function Icon({ name, size = 18, strokeWidth = 1.8 }) {
+  if (name === 'share') return <ShareIcon size={size} />;
   const paths = {
     image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M3 16l5-5 4 4 3-3 6 6" /></>,
     chart: <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
-    share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
-    more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
+        more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
     edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></>,
     trash: <><path d="M4 7h16" /><path d="M10 11v6M14 11v6" /><path d="M6 7l1 14h10l1-14M9 7V4h6v3" /></>,
     x: <><path d="M6 6l12 12" /><path d="M18 6 6 18" /></>,
