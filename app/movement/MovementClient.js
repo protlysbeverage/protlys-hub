@@ -144,6 +144,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (!response.ok) return;
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
+      weekStepsRef.current = rows;
       setWeekSteps(rows);
       persist({ weekSteps: rows });
     } catch {}
