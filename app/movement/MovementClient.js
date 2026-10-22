@@ -55,6 +55,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const intervalRef = useRef(null);
   const weekLoadedRef = useRef(false);
   const displayedTodayRef = useRef(0);
+  const weekStepsRef = useRef([]);
+  const lifetimeStepsRef = useRef(0);
 
   const persist = useCallback((patch = {}) => {
     try {
@@ -75,25 +77,31 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     // the number on screen drop.
     const next = data.date === todayKey ? Math.max(current, incoming) : incoming;
     displayedTodayRef.current = next;
+    const nextLifetime = Math.max(Number(lifetimeStepsRef.current || 0), Number(data.totalSteps || 0));
+    const nextWeek = (() => {
+      const currentRows = weekStepsRef.current || [];
+      const withoutToday = currentRows.filter(row => row.step_date !== todayKey);
+      return [...withoutToday, ...(data.date === todayKey ? [{ step_date: todayKey, steps: next, source: data.source || null, synced_at: data.syncedAt || null }] : [])].sort((a, b) => a.step_date.localeCompare(b.step_date));
+    })();
     setTodaySteps(next);
     setLastSync(data.syncedAt || null);
     setSource(data.source || null);
-    setLifetimeSteps(current => Math.max(Number(current || 0), Number(data.totalSteps || 0)));
+    setLifetimeSteps(nextLifetime);
     setCurrentStreak(Number(data.currentStreak || 0));
     setStepGoal(Number(data.stepGoal || currentGoal || 7500));
     setDisplayName(data.displayName || 'protlys');
-    setWeekSteps(rows => {
-      const withoutToday = rows.filter(row => row.step_date !== todayKey);
-      return [...withoutToday, ...(data.date === todayKey ? [{ step_date: todayKey, steps: next, source: data.source || null, synced_at: data.syncedAt || null }] : [])].sort((a, b) => a.step_date.localeCompare(b.step_date));
-    });
+    setWeekSteps(nextWeek);
+    weekStepsRef.current = nextWeek;
+    lifetimeStepsRef.current = nextLifetime;
     persist({
       todaySteps: next,
       lastSync: data.syncedAt || null,
       source: data.source || null,
-      lifetimeSteps: Number(data.totalSteps || 0),
+      lifetimeSteps: nextLifetime,
       currentStreak: Number(data.currentStreak || 0),
       stepGoal: Number(data.stepGoal || currentGoal || 7500),
       displayName: data.displayName || 'protlys',
+      weekSteps: nextWeek,
     });
   }, [currentGoal, persist, todayKey]);
 
@@ -155,8 +163,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         }
         if (cached.lastSync) setLastSync(cached.lastSync);
         if (cached.source) setSource(cached.source);
-        if (Array.isArray(cached.weekSteps)) setWeekSteps(cached.weekSteps);
-        if (Number.isFinite(Number(cached.lifetimeSteps))) setLifetimeSteps(Number(cached.lifetimeSteps));
+        if (Array.isArray(cached.weekSteps)) { weekStepsRef.current = cached.weekSteps; setWeekSteps(cached.weekSteps); }
+        if (Number.isFinite(Number(cached.lifetimeSteps))) { lifetimeStepsRef.current = Number(cached.lifetimeSteps); setLifetimeSteps(Number(cached.lifetimeSteps)); }
         if (Number.isFinite(Number(cached.currentStreak))) setCurrentStreak(Number(cached.currentStreak));
         if (Number.isFinite(Number(cached.stepGoal))) setStepGoal(Number(cached.stepGoal));
         if (cached.displayName) setDisplayName(cached.displayName);
