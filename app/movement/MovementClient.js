@@ -154,13 +154,16 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
         </div>
 
-        <WeeklyGroupLeaderboard userId={userId} mode="overview" onModeChange={setMovementView} />
-
         <div className="hub-grid" style={{marginTop:10}}>
           <div className="hub-card" style={{minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}><div className="t" style={{flex:1,minWidth:0}}>Days with movement</div>{hasMovement && <ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/>}</div>
             <div className="mono" style={{fontSize:23,fontWeight:800}}>{recentActiveDays}</div>
             <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>in the displayed range</div>
+          </div>
+          <div className="hub-card" style={{minWidth:0}}>
+            <div className="t">Lifetime steps</div>
+            <div className="mono" style={{fontSize:23,fontWeight:800}}>{totalSteps.toLocaleString()}</div>
+            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>all recorded steps</div>
           </div>
         </div>
 
