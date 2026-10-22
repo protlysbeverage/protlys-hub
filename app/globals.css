@@ -389,14 +389,21 @@ button,input,textarea,select{font:inherit;font-family:inherit;}
 .protlys-app .protlys-segmented-tab{
   position:relative;
   z-index:2;
+  width:100%;
+  min-height:44px;
+  display:grid;
+  place-items:center;
   border:0;
   border-radius:10px;
-  padding:10px 8px;
+  padding:0 8px;
+  margin:0;
   background:transparent;
   box-shadow:none;
   font:800 13px/1 "Plus Jakarta Sans",sans-serif;
   color:var(--ink-45);
   cursor:pointer;
+  white-space:nowrap;
+  box-sizing:border-box;
   transition:color 260ms var(--motion-smooth);
 }
 .protlys-app .protlys-segmented-tab.is-active{color:var(--ink);}
