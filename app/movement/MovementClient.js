@@ -78,10 +78,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     setTodaySteps(next);
     setLastSync(data.syncedAt || null);
     setSource(data.source || null);
-    setLifetimeSteps(Number(data.totalSteps || 0));
+    setLifetimeSteps(current => Math.max(Number(current || 0), Number(data.totalSteps || 0)));
     setCurrentStreak(Number(data.currentStreak || 0));
     setStepGoal(Number(data.stepGoal || currentGoal || 7500));
     setDisplayName(data.displayName || 'protlys');
+    setWeekSteps(rows => {
+      const withoutToday = rows.filter(row => row.step_date !== todayKey);
+      return [...withoutToday, ...(data.date === todayKey ? [{ step_date: todayKey, steps: next, source: data.source || null, synced_at: data.syncedAt || null }] : [])].sort((a, b) => a.step_date.localeCompare(b.step_date));
+    });
     persist({
       todaySteps: next,
       lastSync: data.syncedAt || null,
@@ -183,22 +187,12 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     document.addEventListener('visibilitychange', onVisibility);
     foreground();
 
-    const channel = typeof window !== 'undefined'
-      ? window.__protlysMovementChannel || (window.__protlysMovementChannel = new BroadcastChannel('protlys-movement'))
-      : null;
-    const onMessage = event => {
-      if (event?.data?.type === 'steps-updated') scheduleRefresh(7000);
-    };
-    channel?.addEventListener('message', onMessage);
-
-    return () => {
+      return () => {
       cancelled = true;
       if (debounceTimer.current) window.clearTimeout(debounceTimer.current);
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       window.removeEventListener('focus', foreground);
       document.removeEventListener('visibilitychange', onVisibility);
-      channel?.removeEventListener('message', onMessage);
-      if (channel && channel !== window.__protlysMovementChannel) channel.close();
     };
   }, [cacheKey, todayKey, userId, scheduleRefresh]);
 
