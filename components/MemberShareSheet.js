@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { toBlob } from 'html-to-image';
 import QRCode from 'qrcode';
 import MemberShareCard from './MemberShareCard';
+import { ShareIcon } from './ShareIcon';
 
 const LOOKS=['dark','light','surface'],LABELS={dark:'Dark',light:'Light',surface:'Surface'};
 async function assetDataUrl(path){const r=await fetch(path,{cache:'force-cache'});if(!r.ok)throw new Error('Unable to load asset');const blob=await r.blob();return await new Promise((resolve,reject)=>{const f=new FileReader();f.onload=()=>resolve(f.result);f.onerror=reject;f.readAsDataURL(blob)})}
