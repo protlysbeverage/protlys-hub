@@ -82,6 +82,24 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
 
     refreshMovement();
 
+    // Keep today's number moving while the native Android sensor syncs.
+    // Visibility/realtime still handle full refreshes for the week data.
+    const refreshToday = async () => {
+      if (!userId || document.visibilityState !== 'visible') return;
+      const todayStr = localDateStr(new Date());
+      const { data: todayRow } = await supabase
+        .from('daily_steps')
+        .select('steps, source, synced_at')
+        .eq('user_id', userId)
+        .eq('step_date', todayStr)
+        .maybeSingle();
+      if (!todayRow) return;
+      setLiveTodaySteps(Number(todayRow.steps || 0));
+      setLiveLastSync(todayRow.synced_at || null);
+      setLiveSource(todayRow.source || null);
+    };
+    const livePoll = window.setInterval(refreshToday, 1000);
+
     const onVisibility = () => {
       if (document.visibilityState === 'visible') refreshMovement();
     };
@@ -103,6 +121,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
 
     return () => {
       document.removeEventListener('visibilitychange', onVisibility);
+      window.clearInterval(livePoll);
       supabase.removeChannel(channel);
     };
   }, [userId]);
