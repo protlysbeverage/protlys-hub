@@ -1,40 +1,25 @@
 'use client';
 
-import { useEffect, useRef, useState, useTransition } from 'react';
-import { useRouter } from 'next/navigation';
-import { logStepsAction } from '@/app/movement-actions';
+import { useEffect, useState } from 'react';
 import MovementActivity from '@/components/MovementActivity';
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
 import { getShareData } from '@/lib/share-data';
 import { createClient } from '@/lib/supabase/client';
-import AutomaticTrackingCard from './AutomaticTrackingCard';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
-}
-
-function formatDateLabel(dateStr) {
-  const [y, m, d] = dateStr.split('-').map(Number);
-  return new Date(y, m - 1, d).toLocaleDateString([], { weekday:'short', day:'numeric', month:'short' });
 }
 
 function caloriesForSteps(steps) { return Math.round(Number(steps || 0) * 0.04); }
 function distanceForSteps(steps) { return Number(steps || 0) * 0.00075; }
 
 export default function MovementClient({ profile, todaySteps = 0, lastSync, source, weekSteps = [], movementDays = [], userId = null, currentStreak = 0, currentGoal = 7500 }) {
-  const router = useRouter();
-  const [isPending, start] = useTransition();
-  const [manualSteps, setManualSteps] = useState('');
-  const [manualDate, setManualDate] = useState(localDateStr());
-  const [manualTime, setManualTime] = useState(() => new Date().toTimeString().slice(0, 5));
-  const [toast, setToast] = useState('');
   const [shareData, setShareData] = useState(null);
   const [liveTodaySteps, setLiveTodaySteps] = useState(Number(todaySteps || 0));
   const [liveLastSync, setLiveLastSync] = useState(lastSync || null);
   const [liveSource, setLiveSource] = useState(source || null);
   const [liveWeekSteps, setLiveWeekSteps] = useState(weekSteps || []);
   const [liveMovementDays, setLiveMovementDays] = useState(movementDays || []);
-  const addStepsInputRef = useRef(null);
 
   useEffect(() => {
     const cacheKey = `protlys_movement_cache_v1_${userId || 'unknown'}`;
@@ -60,23 +45,15 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       weekStartDate.setDate(weekStartDate.getDate() - 6);
       const weekStart = localDateStr(weekStartDate);
 
-      const [{ data: recentRows }, { data: allRows }] = await Promise.all([
-        supabase
-          .from('daily_steps')
-          .select('step_date, steps, source, synced_at')
-          .eq('user_id', userId)
-          .gte('step_date', weekStart)
-          .lte('step_date', todayStr)
-          .order('step_date'),
-        supabase
-          .from('daily_steps')
-          .select('step_date, steps, source, synced_at')
-          .eq('user_id', userId)
-          .order('step_date'),
-      ]);
+      const { data: recentRows } = await supabase
+        .from('daily_steps')
+        .select('step_date, steps, source, synced_at')
+        .eq('user_id', userId)
+        .gte('step_date', weekStart)
+        .lte('step_date', todayStr)
+        .order('step_date');
 
       const recent = recentRows || [];
-      const all = allRows || [];
       const todayRow = recent.find((row) => row.step_date === todayStr) || null;
       const nextToday = Number(todayRow?.steps || 0);
       const nextLastSync = todayRow?.synced_at || null;
@@ -86,7 +63,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       setLiveLastSync(nextLastSync);
       setLiveSource(nextSource);
       setLiveWeekSteps(recent);
-      setLiveMovementDays(all);
+      setLiveMovementDays(recent);
 
       try {
         window.localStorage.setItem(cacheKey, JSON.stringify({
@@ -94,7 +71,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           lastSync: nextLastSync,
           source: nextSource,
           weekSteps: recent,
-          movementDays: all,
+          movementDays: recent,
         }));
       } catch {}
     };
@@ -126,9 +103,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
     };
   }, [userId]);
 
-  const totalSteps = liveMovementDays.length
-    ? liveMovementDays.reduce((sum, row) => sum + Number(row.steps || 0), 0)
-    : Number(profile?.total_steps || 0);
+  const totalSteps = Number(profile?.total_steps || 0);
   const currentTodaySteps = liveTodaySteps;
   const today = new Date();
   const todayStr = localDateStr(today);
@@ -142,27 +117,10 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const todayDistance = distanceForSteps(currentTodaySteps);
   const hasMovement = stepsShareData.hasData;
 
-  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2800); }
   function openShare(metric) { setShareData(getShareData(metric, shareContext)); }
-
-  function handleLogSteps() {
-    const steps = parseInt(manualSteps, 10);
-    if (!steps || steps < 1 || steps > 99999) { showToast('Enter a number between 1 and 99,999'); return; }
-    if (!manualDate || manualDate > todayStr) { showToast('Choose today or an earlier date'); return; }
-    if (!/^\d{2}:\d{2}$/.test(manualTime)) { showToast('Choose a valid time'); return; }
-    start(async () => {
-      const result = await logStepsAction({ steps, source:'manual', stepDate:manualDate, stepTime:manualTime });
-      if (result?.error) { showToast(result.error); return; }
-      const loggedDate = manualDate;
-      setManualSteps(''); setManualDate(todayStr); setManualTime(new Date().toTimeString().slice(0,5));
-      showToast(`+${steps.toLocaleString()} steps logged for ${formatDateLabel(loggedDate)}`);
-      router.refresh();
-    });
-  }
 
   return (
     <>
-      {toast && <div style={{position:'fixed',bottom:80,left:'50%',transform:'translateX(-50%)',background:'var(--ink)',color:'#fff',borderRadius:999,padding:'10px 18px',fontSize:13,fontWeight:600,zIndex:999,whiteSpace:'nowrap',pointerEvents:'none'}}>{toast}</div>}
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
         <h1 style={{fontSize:22}}>Your movement</h1>
@@ -184,19 +142,6 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
             <div style={{display:'flex',flexDirection:'column',padding:16,minHeight:96,borderRadius:11,background:'var(--green-soft)',boxSizing:'border-box'}}><div style={{minHeight:20,display:'flex',alignItems:'flex-start'}}><div className="t">Calories</div></div><div className="mono" style={{fontSize:18,lineHeight:1.2,fontWeight:800,marginTop:'auto'}}>≈ {todayCalories}</div></div>
           </div>
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7}}>Distance and calories are estimates from recorded steps.</div>
-        </div>
-
-        <AutomaticTrackingCard />
-
-        <div className="hub-card" style={{marginTop:10,padding:16}}>
-          <div style={{fontWeight:800,fontSize:15}}>Add movement</div>
-          <div style={{fontSize:12,color:'var(--ink-45)',marginTop:3}}>Enter the steps you want to record. You can add more later.</div>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginTop:13}}>
-            <label style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)'}}>Steps<input inputMode="numeric" type="number" min="1" max="99999" value={manualSteps} ref={addStepsInputRef} onChange={e => setManualSteps(e.target.value)} placeholder="e.g. 4500" style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'11px 10px',fontSize:14,fontFamily:'inherit',outline:'none'}} /></label>
-            <label style={{fontSize:10.5,fontWeight:800,color:'var(--ink-70)'}}>Date<input type="date" value={manualDate} max={todayStr} onChange={e => setManualDate(e.target.value)} style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'10px 8px',fontSize:12,fontFamily:'inherit',outline:'none'}} /></label>
-          </div>
-          <label style={{display:'block',fontSize:10.5,fontWeight:800,color:'var(--ink-70)',marginTop:9}}>Time<input type="time" value={manualTime} onChange={e => setManualTime(e.target.value)} style={{width:'100%',boxSizing:'border-box',marginTop:5,border:'1px solid var(--line)',borderRadius:11,padding:'10px',fontSize:12,fontFamily:'inherit',outline:'none'}} /></label>
-          <button type="button" className="btn-primary" disabled={isPending} onClick={handleLogSteps} style={{width:'100%',marginTop:12}}>{isPending ? 'Saving…' : 'Add steps'}</button>
         </div>
 
         <div className="hub-grid" style={{marginTop:10}}>
@@ -222,9 +167,9 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           </div>
         </div>
 
-        <MovementActivity days={liveMovementDays.length ? liveMovementDays : liveWeekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />
+        <MovementActivity days={liveMovementDays.length ? liveMovementDays : liveWeekSteps} title="Recent activity" userId={userId} stepGoal={currentGoal} currentStreak={currentStreak} profile={profile} />
       </div>
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} avatarUrl={profile?.avatar_url || ''} onAddSteps={()=>{const node=addStepsInputRef.current;node?.scrollIntoView({behavior:'smooth',block:'center'});node?.focus();}} />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={profile?.display_name || 'protlys'} avatarUrl={profile?.avatar_url || ''} />}
     </>
   );
 }
