@@ -3,7 +3,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
+import ShareCardSheet from '@/components/ShareCardSheet';
+import { ShareIconButton } from '@/components/ShareIcon';
 import { chooseMessage, currentStreak, messageForSession, monthlyCardData, rememberSessionMessage, sessionCardData, suggestions as meditationSuggestions } from '@/lib/meditation-share';
 
 const STORAGE = {
