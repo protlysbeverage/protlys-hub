@@ -3,7 +3,8 @@
 import { useEffect, useMemo, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { completeOnboardingAction, confirmCalculatorTargetAction, logProteinAction, saveTargetAction } from './actions';
-import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
+import ShareCardSheet from '@/components/ShareCardSheet';
+import { ShareIconButton } from '@/components/ShareIcon';
 
 const QUICK = [15,20,25,30];
 
