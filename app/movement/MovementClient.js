@@ -14,7 +14,6 @@ function caloriesForSteps(steps) { return Math.round(Number(steps || 0) * 0.04);
 function distanceForSteps(steps) { return Number(steps || 0) * 0.00075; }
 
 export default function MovementClient({ profile, todaySteps = 0, lastSync, source, weekSteps = [], movementDays = [], userId = null, currentStreak = 0, currentGoal = 7500 }) {
-  const [toast, setToast] = useState('');
   const [shareData, setShareData] = useState(null);
   const [liveTodaySteps, setLiveTodaySteps] = useState(Number(todaySteps || 0));
   const [liveLastSync, setLiveLastSync] = useState(lastSync || null);
@@ -104,9 +103,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
     };
   }, [userId]);
 
-  const totalSteps = liveMovementDays.length
-    ? liveMovementDays.reduce((sum, row) => sum + Number(row.steps || 0), 0)
-    : Number(profile?.total_steps || 0);
+  const totalSteps = Number(profile?.total_steps || 0);
   const currentTodaySteps = liveTodaySteps;
   const today = new Date();
   const todayStr = localDateStr(today);
@@ -120,12 +117,10 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
   const todayDistance = distanceForSteps(currentTodaySteps);
   const hasMovement = stepsShareData.hasData;
 
-  function showToast(msg) { setToast(msg); setTimeout(() => setToast(''), 2800); }
   function openShare(metric) { setShareData(getShareData(metric, shareContext)); }
 
   return (
     <>
-      {toast && <div style={{position:'fixed',bottom:80,left:'50%',transform:'translateX(-50%)',background:'var(--ink)',color:'#fff',borderRadius:999,padding:'10px 18px',fontSize:13,fontWeight:600,zIndex:999,whiteSpace:'nowrap',pointerEvents:'none'}}>{toast}</div>}
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
         <h1 style={{fontSize:22}}>Your movement</h1>
