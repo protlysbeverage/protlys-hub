@@ -5,6 +5,7 @@ import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import MemberShareSheet from '@/components/MemberShareSheet';
 import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
+import WeeklyGroupLeaderboard from '@/components/WeeklyGroupLeaderboard';
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -284,6 +285,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           </div></div>
         </div>
       </section>
+
+      <WeeklyGroupLeaderboard userId={profile?.id} compact />
 
       <a href="/relaxation" className="dashboard-relaxation-card" aria-label="Open Relaxation">
         <div className="dashboard-relaxation-copy">
