@@ -206,7 +206,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   }, [cacheKey, todayKey, userId, scheduleRefresh]);
 
   useEffect(() => {
-    if (!userId || !ready || weekLoadedRef.current || weekSteps.length) return;
+    if (!userId || !ready || weekLoadedRef.current) return;
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
