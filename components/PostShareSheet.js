@@ -5,6 +5,7 @@ import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import PostShareCard from './PostShareCard';
+import { ShareIcon } from './ShareIcon';
 
 const THEMES=['dark','light','surface'];
 const LABELS={dark:'Dark',light:'Light',surface:'Surface'};
@@ -132,7 +133,7 @@ setBusy(false);setMessage('');setShareReplies(replies||[]);
       </div>
 
       <div style={{height:116,flex:'0 0 116px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:12,marginTop:16,position:'relative',zIndex:20,background:themeIsDark?'#121513':'#F7F8F6'}}>
-        <button type="button" onClick={share} disabled={busy||!assets.qr} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,opacity:(busy||!assets.qr)?.6:1}}>{busy?'Preparing…':'Share card'}</button>
+        <button type="button" onClick={share} disabled={busy||!assets.qr} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,opacity:(busy||!assets.qr)?.6:1}} style={{height:56,border:0,borderRadius:28,background:'#6BCB45',color:'#111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:8,opacity:(busy||!assets.qr)?.6:1}}>{busy?'Preparing…':<><span style={{width:32,height:32,flex:'0 0 32px',borderRadius:'50%',display:'inline-flex',alignItems:'center',justifyContent:'center'}}><ShareIcon size={18}/></span><span style={{minWidth:0,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>Share card</span></>}</button>
         <div style={{height:44,display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
           <button type="button" onClick={save} disabled={busy} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Save image</button>
           <button type="button" onClick={copyLink} style={{height:44,border:'1px solid '+(themeIsDark?'#465047':'#AEB7B0'),borderRadius:22,background:themeIsDark?'#202520':'#fff',color:themeIsDark?'#fff':'#111',fontSize:12,fontWeight:900}}>Copy link</button>
