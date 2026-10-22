@@ -46,23 +46,15 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       weekStartDate.setDate(weekStartDate.getDate() - 6);
       const weekStart = localDateStr(weekStartDate);
 
-      const [{ data: recentRows }, { data: allRows }] = await Promise.all([
-        supabase
-          .from('daily_steps')
-          .select('step_date, steps, source, synced_at')
-          .eq('user_id', userId)
-          .gte('step_date', weekStart)
-          .lte('step_date', todayStr)
-          .order('step_date'),
-        supabase
-          .from('daily_steps')
-          .select('step_date, steps, source, synced_at')
-          .eq('user_id', userId)
-          .order('step_date'),
-      ]);
+      const { data: recentRows } = await supabase
+        .from('daily_steps')
+        .select('step_date, steps, source, synced_at')
+        .eq('user_id', userId)
+        .gte('step_date', weekStart)
+        .lte('step_date', todayStr)
+        .order('step_date');
 
       const recent = recentRows || [];
-      const all = allRows || [];
       const todayRow = recent.find((row) => row.step_date === todayStr) || null;
       const nextToday = Number(todayRow?.steps || 0);
       const nextLastSync = todayRow?.synced_at || null;
@@ -72,7 +64,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
       setLiveLastSync(nextLastSync);
       setLiveSource(nextSource);
       setLiveWeekSteps(recent);
-      setLiveMovementDays(all);
+      setLiveMovementDays(recent);
 
       try {
         window.localStorage.setItem(cacheKey, JSON.stringify({
@@ -80,7 +72,7 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           lastSync: nextLastSync,
           source: nextSource,
           weekSteps: recent,
-          movementDays: all,
+          movementDays: recent,
         }));
       } catch {}
     };
