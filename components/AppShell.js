@@ -1,11 +1,10 @@
 'use client';
 
 import Link from 'next/link';
-import { usePathname, useRouter } from 'next/navigation';
+import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import ThemeToggle from '@/components/ThemeToggle';
 import DotClient from '@/app/dot/DotClient';
-import { createClient } from '@/lib/supabase/client';
 
 const NAV_ITEMS = [
   { href: '/', label: 'Feed', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 6h16M4 12h16M4 18h10"/></svg> },
@@ -23,7 +22,6 @@ function CartIcon({ size = 19 }) {
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const router = useRouter();
   const shopUrl = getShopUrl();
   const handleNavClick = (item, event) => {
     if (item.href === '/' && pathname === '/') {
@@ -40,21 +38,10 @@ export default function AppShell({ children }) {
     sync();
     const observer = new MutationObserver(sync);
 
-    const redirectTwaColdStart = async () => {
-      if (pathname !== '/') return;
-      const referrer = document.referrer || '';
-      if (!referrer.startsWith('android-app://com.protlys.hub')) return;
-
-      const supabase = createClient();
-      const { data } = await supabase.auth.getSession();
-      if (data?.session) router.replace('/movement');
-    };
-
     observer.observe(root, { attributes:true, attributeFilter:['class'] });
-    redirectTwaColdStart();
 
     return () => observer.disconnect();
-  }, [pathname, router]);
+  }, []);
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
