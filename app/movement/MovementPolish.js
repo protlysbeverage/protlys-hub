@@ -19,7 +19,7 @@ export default function MovementPolish(props) {
             </div>
             <div style={{minWidth:0,flex:1}}>
               <div style={{fontSize:15,fontWeight:500,lineHeight:1.2,color:'var(--ink)'}}>Apple Health</div>
-              <div style={{fontSize:13,color:'var(--ink-45)',lineHeight:1.3,marginTop:3}}>Automatic step syncing</div>
+              <div style={{fontSize:13,color:'var(--ink-45)',lineHeight:1.3,marginTop:3,whiteSpace:'nowrap'}}>Step syncing</div>
             </div>
             <span style={{fontSize:12,fontWeight:700,color:'var(--green-dark)',background:'var(--green-soft)',borderRadius:999,padding:'5px 9px',lineHeight:1,flex:'0 0 auto',whiteSpace:'nowrap'}}>Coming soon</span>
           </div>
