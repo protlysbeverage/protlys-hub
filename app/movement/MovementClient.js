@@ -48,10 +48,12 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const [lifetimeSteps, setLifetimeSteps] = useState(0);
   const [currentStreak, setCurrentStreak] = useState(0);
   const [stepGoal, setStepGoal] = useState(Number(currentGoal || 7500));
+  const [displayName, setDisplayName] = useState('protlys');
   const [shareData, setShareData] = useState(null);
   const refreshInFlight = useRef(null);
   const debounceTimer = useRef(null);
   const intervalRef = useRef(null);
+  const weekLoadedRef = useRef(false);
   const displayedTodayRef = useRef(0);
 
   const persist = useCallback((patch = {}) => {
@@ -79,6 +81,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     setLifetimeSteps(Number(data.totalSteps || 0));
     setCurrentStreak(Number(data.currentStreak || 0));
     setStepGoal(Number(data.stepGoal || currentGoal || 7500));
+    setDisplayName(data.displayName || 'protlys');
     persist({
       todaySteps: next,
       lastSync: data.syncedAt || null,
@@ -86,6 +89,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       lifetimeSteps: Number(data.totalSteps || 0),
       currentStreak: Number(data.currentStreak || 0),
       stepGoal: Number(data.stepGoal || currentGoal || 7500),
+      displayName: data.displayName || 'protlys',
     });
   }, [currentGoal, persist, todayKey]);
 
@@ -117,6 +121,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   }, [refreshToday]);
 
   const loadWeekOnce = useCallback(async () => {
+    if (weekLoadedRef.current) return;
+    weekLoadedRef.current = true;
     try {
       const response = await fetch('/api/movement/week', {
         credentials: 'include',
@@ -149,6 +155,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         if (Number.isFinite(Number(cached.lifetimeSteps))) setLifetimeSteps(Number(cached.lifetimeSteps));
         if (Number.isFinite(Number(cached.currentStreak))) setCurrentStreak(Number(cached.currentStreak));
         if (Number.isFinite(Number(cached.stepGoal))) setStepGoal(Number(cached.stepGoal));
+        if (cached.displayName) setDisplayName(cached.displayName);
         setReady(true);
       }
     } catch {}
@@ -196,7 +203,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   }, [cacheKey, todayKey, userId, scheduleRefresh]);
 
   useEffect(() => {
-    if (!userId || weekSteps.length || !ready) return;
+    if (!userId || !ready || weekLoadedRef.current || weekSteps.length) return;
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
@@ -269,7 +276,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
         <MovementActivity days={weekSteps} title="Recent activity" userId={userId} stepGoal={stepGoal} currentStreak={currentStreak} profile={{ total_steps: lifetimeSteps }} />
       </div>
-      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username="protlys" />}
+      {shareData && <ShareCardSheet open={!!shareData} onClose={()=>setShareData(null)} data={shareData} username={displayName} />}
     </>
   );
 }
