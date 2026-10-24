@@ -1,11 +1,11 @@
 export async function GET() {
   const manifest = {
-    id: "/",
+    id: "https://hub.protlys.com/",
     name: "Protlys Hub",
     short_name: "Protlys",
     description: "Move more, fuel better and stay consistent. Track movement, keep up with your protein goals, take on challenges and connect with the Protlys community.",
-    start_url: "/",
-    scope: "/",
+    start_url: "https://hub.protlys.com/",
+    scope: "https://hub.protlys.com/",
     display: "standalone",
     display_override: ["window-controls-overlay", "standalone"],
     background_color: "#F7F8F6",
@@ -21,7 +21,7 @@ export async function GET() {
         src: "/icon-512.png",
         sizes: "512x512",
         type: "image/png",
-        purpose: "any maskable"
+        purpose: "any"
       }
     ]
   };
