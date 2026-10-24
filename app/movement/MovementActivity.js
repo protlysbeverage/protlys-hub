@@ -122,6 +122,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
+  const [monthError, setMonthError] = useState('');
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareData, setShareData] = useState(null);
@@ -196,6 +197,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
     let cancelled = false;
     async function loadMonth() {
       setMonthLoading(true);
+      setMonthError('');
       const { start, end } = monthRange(calendarMonth);
       const supabase = createClient();
       const { data, error } = await supabase
@@ -214,12 +216,20 @@ export default function MovementActivity({ days = [], compact = false, title = '
           incoming.forEach(row => merged.set(row.step_date, row));
           return { ...prev, [currentMonthKey]: [...merged.values()].sort((x,y) => String(x.step_date).localeCompare(String(y.step_date))) };
         });
+      } else {
+        setMonthError('Could not load this month. Tap to retry.');
       }
       setMonthLoading(false);
     }
     loadMonth();
     return () => { cancelled = true; };
   }, [expanded, currentMonthKey, calendarMonth, userId]);
+
+  function changeCalendarMonth(offset) {
+    const next = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + offset, 1);
+    setSelectedKey(null);
+    setCalendarMonthKey(monthKey(next));
+  }
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -410,16 +420,16 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex - 2, 1))) aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
+            <button type="button" onClick={() => changeCalendarMonth(-1) aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
             </div>
             <div style={{display:'flex',alignItems:'center',gap:6}}>
-              <button type="button" onClick={() => setCalendarMonthKey(monthKey(new Date(calendarYear, calendarMonthIndex, 1)))} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
+              <button type="button" onClick={() => changeCalendarMonth(1)} disabled={!canGoToNextMonth} aria-label="Next month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToNextMonth?1:.35,cursor:canGoToNextMonth?'pointer':'default'}}>›</button>
             </div>
           </div>
-          <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : 'Green = movement logged'}</div>
+          <div style={{fontSize:10.5,color:'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{monthLoading ? 'Loading movement…' : monthError || 'Green = movement logged'}</div>
           <div className="movement-calendar-grid">
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{textAlign:'center',fontSize:9,color:'var(--ink-45)',fontWeight:800,paddingBottom:2,minHeight:16}}>{d}</div>)}
             {calendar.map((d, i) => {
