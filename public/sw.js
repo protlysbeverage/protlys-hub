@@ -1,10 +1,14 @@
-const CACHE_NAME = 'protlys-hub-shell-v1';
+const CACHE_NAME = 'protlys-hub-shell-v2';
 const OFFLINE_URL = '/login';
+const OFFLINE_ASSETS = [
+  OFFLINE_URL,
+  '/protlys-logo-exact.png'
+];
 
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.add(OFFLINE_URL))
+      .then((cache) => cache.addAll(OFFLINE_ASSETS))
       .then(() => self.skipWaiting())
   );
 });
@@ -27,12 +31,17 @@ self.addEventListener('fetch', (event) => {
   const url = new URL(event.request.url);
   if (url.origin !== self.location.origin) return;
 
-  // Do not interfere with authenticated/app requests. Static assets can be
-  // served from the browser cache when already available, while navigation
-  // falls back to the public login page if the network is unavailable.
   if (event.request.mode === 'navigate') {
     event.respondWith(
       fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+    );
+    return;
+  }
+
+  // Keep the exact Protlys logo available when the login page is opened offline.
+  if (url.pathname === '/protlys-logo-exact.png') {
+    event.respondWith(
+      caches.match('/protlys-logo-exact.png').then((cached) => cached || fetch(event.request))
     );
   }
 });
