@@ -1,4 +1,4 @@
-const CACHE_NAME = 'protlys-hub-shell-v2';
+const CACHE_NAME = 'protlys-hub-shell-v3';
 const OFFLINE_URL = '/login';
 const OFFLINE_ASSETS = [
   OFFLINE_URL,
