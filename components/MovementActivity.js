@@ -131,6 +131,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
+  const [monthError, setMonthError] = useState('');
   const [monthRetry, setMonthRetry] = useState(0);
   const [firstLoggedMonthKey, setFirstLoggedMonthKey] = useState(null);
   const [historyReady, setHistoryReady] = useState(false);
@@ -528,7 +529,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
           </div>
           
           {(historyError || monthError || monthLoading) && <div style={{fontSize:10.5,color:historyError||monthError?'var(--ink-70)':'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{historyError || monthError || 'Loading movement…'}{(historyError || monthError) && <button type="button" onClick={() => { if (historyError) { setHistoryReady(false); setHistoryError(''); } else { setMonthRetry(v => v + 1); } }} style={{marginLeft:6,minHeight:32,padding:'0 10px',border:'1px solid var(--line)',borderRadius:999,background:'var(--surface)',color:'var(--ink)',fontSize:10,fontWeight:800}}>Retry</button>}</div>}
-          <div className="movement-calendar-grid">
+          {monthLoading && <div aria-label="Loading month" style={{display:'grid',gridTemplateColumns:'repeat(7,minmax(0,1fr))',gap:5,marginBottom:8}}>
+            {Array.from({length:14},(_,i)=><span key={i} style={{height:12,borderRadius:6,background:'var(--line)',opacity:i%2?.45:.7,animation:'activepulse 1.2s ease-in-out infinite'}} />)}
+          </div>}
+          <div className="movement-calendar-grid" style={{opacity:monthLoading?.45:1,transition:'opacity 120ms ease'}}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{textAlign:'center',fontSize:9,color:'var(--ink-45)',fontWeight:800,paddingBottom:2,minHeight:16}}>{d}</div>)}
             {calendar.map((d, i) => {
               if (!d) return <div className="movement-calendar-day empty" key={`blank-${i}`} />;
