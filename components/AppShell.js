@@ -32,6 +32,8 @@ export default function AppShell({ children }) {
   };
   const logoSrc = '/protlys-logo-exact.png';
   const [darkTheme, setDarkTheme] = useState(false);
+  const [chatMode,setChatMode]=useState(false);
+  useEffect(()=>{const sync=()=>setChatMode(pathname==='/challenges'&&window.location.hash.startsWith('#group='));sync();window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);const timer=window.setInterval(sync,250);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync);window.clearInterval(timer)}},[pathname]);
   useEffect(() => {
     const root = document.documentElement;
     const sync = () => setDarkTheme(root.classList.contains('protlys-dark'));
@@ -217,6 +219,7 @@ export default function AppShell({ children }) {
         -webkit-overflow-scrolling:touch!important;
       }
     }
+    .protlys-app .app-shell.chat-mode{display:block!important;width:100%!important;max-width:none!important;height:100dvh!important;min-height:100dvh!important;border-radius:0!important;background:var(--white)!important;padding:0!important}.protlys-app .app-shell.chat-mode .screen{height:100dvh!important;min-height:0!important;max-height:100dvh!important;padding:0!important;overflow:hidden!important;background:var(--white)!important}
     @media (prefers-reduced-motion:reduce) {
       .protlys-app .bottom-nav .nav-btn {
         transition:none!important;
@@ -264,7 +267,7 @@ export default function AppShell({ children }) {
     }
   `}</style>
 
-  <div className="app-shell">
+  <div className={`app-shell${chatMode?' chat-mode':''}`}>
     <aside className="desktop-sidebar" aria-label="Protlys Hub navigation">
       <div className="sidebar-brand">
         <Link href="/" aria-label="Protlys Hub home"><img className="logo logo-light" src={logoSrc} alt="Protlys" width="2000" height="973" /><img className="logo logo-dark" src="/protlys-logo-dark.png" alt="Protlys" width="2000" height="973" /></Link>
@@ -275,17 +278,17 @@ export default function AppShell({ children }) {
       <div className="sidebar-spacer" />
     </aside>
 
-    <div className="app-header">
+    {!chatMode&&<div className="app-header">
       <ThemeToggle />
       <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
       <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
-    </div>
+    </div>}
 
     <section className="screen active">{children}</section>
 
-    <DotClient />
+    {!chatMode&&<DotClient />}
 
-    <nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
+    {!chatMode&&<nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
       {NAV_ITEMS.map(item=>{
         const isActive=pathname===item.href;
         const commonProps={key:item.href,className:`nav-btn${isActive?' active':''}`, 'aria-current':isActive?'page':undefined};
@@ -294,7 +297,7 @@ export default function AppShell({ children }) {
           ? <a {...commonProps} href="/challenges" onClick={e=>{e.stopPropagation();}}>{content}</a>
           : <Link {...commonProps} href={item.href} onClick={e=>handleNavClick(item,e)}>{content}</Link>;
       })}
-    </nav>
+    </nav>}
   </div>
 </div>;
 }
