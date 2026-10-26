@@ -13,3 +13,8 @@
 # misc
 .DS_Store
 *.log
+
+# Playwright auth and test artifacts
+/playwright/.auth/
+/test-results/
+/playwright-report/
