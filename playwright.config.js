@@ -8,7 +8,7 @@ export default defineConfig({
   workers: 1,
   reporter: [['list'], ['html', { outputFolder: 'playwright-report', open: 'never' }]],
   projects: [
-    { name: 'setup', testMatch: /auth\\.setup\\.js/ },
+    { name: 'setup', testMatch: /auth\.setup\.js/ },
     {
       name: 'chromium-mobile-360',
       dependencies: ['setup'],
