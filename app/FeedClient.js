@@ -268,7 +268,7 @@ function RelaxationContextCard() {
   </Link>;
 }
 
-export default function FeedClient({ posts, likedIds, userId, profile }) {
+export default function FeedClient({ posts, likedIds, userId, profile, cheerNotifications=[] }) {
   const router = useRouter();
   const [liked, setLiked] = useState(new Set(likedIds));
   const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
@@ -288,6 +288,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
     <ComposePost profile={profile} onPosted={() => { showToast('Posted'); router.refresh(); }} />
+    {cheerNotifications.length>0&&<div style={{display:'grid',gap:7,margin:'12px 0'}}>{cheerNotifications.map(n=><div key={n.id} style={{minHeight:44,display:'flex',alignItems:'center',gap:9,padding:'10px 12px',border:'1px solid var(--line)',borderRadius:14,background:n.is_read?'var(--white)':'var(--green-soft)',fontSize:12,fontWeight:n.is_read?650:800}}><span aria-hidden="true">👏</span><span style={{flex:1}}>{n.body}</span>{!n.is_read&&<span aria-label="Unread" style={{width:8,height:8,borderRadius:'50%',background:'var(--green)',flex:'0 0 8px'}}/>}</div>)}</div>}
 
     <RelaxationContextCard />
 
