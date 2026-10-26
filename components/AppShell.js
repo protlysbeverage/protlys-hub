@@ -33,6 +33,8 @@ export default function AppShell({ children }) {
   const logoSrc = '/protlys-logo-exact.png';
   const [darkTheme, setDarkTheme] = useState(false);
   const [chatMode,setChatMode]=useState(false);
+  const [overlayOpen,setOverlayOpen]=useState(false);
+  useEffect(()=>{const onOverlay=e=>setOverlayOpen(Boolean(e.detail?.open));window.addEventListener('protlys:overlay',onOverlay);return()=>window.removeEventListener('protlys:overlay',onOverlay)},[]);
   useEffect(()=>{const sync=()=>setChatMode(pathname==='/challenges'&&window.location.hash.startsWith('#group='));sync();window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);const timer=window.setInterval(sync,250);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync);window.clearInterval(timer)}},[pathname]);
   useEffect(() => {
     const root = document.documentElement;
@@ -286,9 +288,9 @@ export default function AppShell({ children }) {
 
     <section className="screen active">{children}</section>
 
-    {!chatMode&&<DotClient />}
+    {!chatMode&&!overlayOpen&&<DotClient />}
 
-    {!chatMode&&<nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
+    {!chatMode&&!overlayOpen&&<nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
       {NAV_ITEMS.map(item=>{
         const isActive=pathname===item.href;
         const commonProps={key:item.href,className:`nav-btn${isActive?' active':''}`, 'aria-current':isActive?'page':undefined};
