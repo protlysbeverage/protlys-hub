@@ -16,9 +16,6 @@ const formatSteps = (value) => {
   return (n / 1000).toFixed(1) + 'k';
 };
 
-const dayFmt=(date,locale)=>new Intl.DateTimeFormat(locale||undefined,{weekday:'short',day:'numeric',month:'short'}).format(new Date(date+'T12:00:00'));
-const weekdayFmt=(date,locale)=>new Intl.DateTimeFormat(locale||undefined,{weekday:'short'}).format(new Date(date+'T12:00:00'));
-
 function GraphSkeleton(){
   return <div className="profile-chart profile-chart-skeleton" aria-hidden="true">
     <div className="profile-chart-head"><span>Last 7 days</span></div>
