@@ -122,6 +122,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
+  const [firstLoggedMonthKey, setFirstLoggedMonthKey] = useState(null);
   const [monthError, setMonthError] = useState('');
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -161,6 +162,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const calendarMonth = useMemo(() => new Date(calendarYear, calendarMonthIndex - 1, 1), [calendarYear, calendarMonthIndex]);
   const calendarMonthIndexNumber = calendarYear * 12 + (calendarMonthIndex - 1);
   const todayMonthIndexNumber = today.getFullYear() * 12 + today.getMonth();
+  const firstLoggedMonthIndexNumber = firstLoggedMonthKey ? (() => { const [y,m] = firstLoggedMonthKey.split('-').map(Number); return y * 12 + (m - 1); })() : null;
+  const canGoToPreviousMonth = firstLoggedMonthIndexNumber == null || calendarMonthIndexNumber > firstLoggedMonthIndexNumber;
   const canGoToNextMonth = calendarMonthIndexNumber < todayMonthIndexNumber;
 
   const calendar = useMemo(() => {
@@ -182,37 +185,28 @@ export default function MovementActivity({ days = [], compact = false, title = '
     if (!selectedKey || !selectedSteps) return 0;
     let n = 1;
     let cursor = parseKey(selectedKey);
-    for (let i = 0; i < 366; i += 1) {
-      cursor.setDate(cursor.getDate() - 1);
-      const key = localDateKey(cursor);
-      const row = monthByDate.get(key);
-      if (!row || Number(row.steps || 0) <= 0) break;
-      n += 1;
-    }
-    return n;
-  }, [selectedKey, selectedSteps, monthRows]);
-
-  useEffect(() => {
-    if (!expanded || !userId) return;
-    let cancelled = false;
-    async function loadMonth() {
+    for (let i = 0; i    async function loadMonth() {
       setMonthLoading(true);
       setMonthError('');
-      const { start, end } = monthRange(calendarMonth);
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
         .select('step_date, steps, source, synced_at')
         .eq('user_id', userId)
-        .gte('step_date', start)
-        .lte('step_date', end)
+        .lte('step_date', todayKey)
         .order('step_date', { ascending: true });
       if (cancelled) return;
       if (!error) {
         const incoming = data || [];
-        setMonthCache(prev => {
-          const existing = prev[currentMonthKey] || [];
-          const merged = new Map(existing.map(row => [row.step_date, row]));
+        setMonthCache(buildMonthCache(incoming));
+        const first = incoming.find(row => row?.step_date)?.step_date;
+        setFirstLoggedMonthKey(first ? String(first).slice(0, 7) : null);
+      } else {
+        setMonthError('Could not load movement history. Tap to retry.');
+      }
+      setMonthLoading(false);
+    }
+ep_date, row]));
           incoming.forEach(row => merged.set(row.step_date, row));
           return { ...prev, [currentMonthKey]: [...merged.values()].sort((x,y) => String(x.step_date).localeCompare(String(y.step_date))) };
         });
@@ -420,7 +414,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => changeCalendarMonth(-1) aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
+            <button type="button" onClick={() => changeCalendarMonth(-1)} disabled={!canGoToPreviousMonth} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToPreviousMonth?1:.35,cursor:canGoToPreviousMonth?'pointer':'default'}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
