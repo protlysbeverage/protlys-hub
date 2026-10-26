@@ -7,6 +7,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import ActiveToday from './ActiveToday';
 
 function dayLabel(ts){const d=new Date(ts),now=new Date(),y=new Date();y.setDate(now.getDate()-1);const key=x=>x.toLocaleDateString('en-CA',{timeZone:'Africa/Nairobi'});if(key(d)===key(now))return 'Today';if(key(d)===key(y))return 'Yesterday';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:d.getFullYear()===now.getFullYear()?undefined:'numeric'}).format(d)}
 function messageTime(ts){if(!ts)return '';const d=new Date(ts);if(Number.isNaN(d.getTime()))return '';return new Intl.DateTimeFormat('en-KE',{timeZone:'Africa/Nairobi',hour:'numeric',minute:'2-digit',hour12:true}).format(d);}
@@ -133,20 +134,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
       <>
         {groupView==='list' && (
           <div style={{marginTop:18}}>
-            <div style={{fontSize:11,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)',marginBottom:8}}>Active today</div>
-            <div style={{display:'flex',gap:9,overflowX:'auto',paddingBottom:4}}>
-              {activeToday.length > 0 ? (
-                activeToday.map(m => (
-                  <div key={m.id} style={{minWidth:52,textAlign:'center'}}>
-                    <Avatar member={m} size={38}/>
-                    <div style={{fontSize:9.5,fontWeight:800,marginTop:3,whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{m.name}</div>
-                    <div style={{fontSize:9,color:'var(--green-dark)',fontWeight:900}}>{m.streak}-day streak</div>
-                  </div>
-                ))
-              ) : (
-                <div style={{fontSize:12,color:'var(--ink-45)',padding:'10px 0'}}>Join a group to see your group members here.</div>
-              )}
-            </div>
+            <ActiveToday userId={userId} enabled={tab==='groups'} />
             <div style={{display:'flex',gap:8,marginTop:16}}>
               <button className="btn-primary" onClick={()=>setGroupModal('create')} style={{margin:0,flex:1}}>Create group</button>
               <button className="btn-secondary" onClick={()=>setGroupModal('join')} style={{width:'auto',margin:0}}>Join with code</button>
