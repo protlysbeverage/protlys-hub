@@ -9,9 +9,10 @@ const fmt=n=>Number(n||0).toLocaleString('en-US');
 function Face({member,size=46,ring=false}){const name=member?.name||member?.display_name||'Member',src=member?.avatar||member?.avatar_url;return src?<img src={src} alt="" style={{width:size,height:size,borderRadius:'50%',objectFit:'cover',border:ring?'3px solid var(--green)':'2px solid var(--white)',boxSizing:'border-box'}}/>:<span style={{width:size,height:size,borderRadius:'50%',display:'grid',placeItems:'center',background:'var(--green-soft)',color:'var(--green-dark)',fontWeight:850,fontSize:size*.32,border:ring?'3px solid var(--green)':'2px solid var(--white)',boxSizing:'border-box'}}>{name.trim().charAt(0).toUpperCase()}</span>}
 const dayFmt=(date,locale)=>new Intl.DateTimeFormat(locale||undefined,{weekday:'short',day:'numeric',month:'short'}).format(new Date(date+'T12:00:00'));
 const weekdayFmt=(date,locale)=>new Intl.DateTimeFormat(locale||undefined,{weekday:'short'}).format(new Date(date+'T12:00:00'));
-const formatSteps = (value) => {
+const formatSteps = (value, { compact = true } = {}) => {
   const n = Number(value) || 0;
   if (n === 0) return '0';
+  if (!compact) return Math.round(n).toLocaleString('en-US');
   if (n < 1000) return String(Math.round(n));
   return (n / 1000).toFixed(1) + 'k';
 };
@@ -67,7 +68,7 @@ function StepsGraph({profile}){
   return <div className="profile-chart">
     <div className="profile-chart-head"><span>Last 7 days</span>{best>0&&<span>Best day: {formatSteps(best)}</span>}</div>
     <div className="profile-summary">
-      {[['Total steps',total.toLocaleString('en-US')],['Daily average',formatSteps(avg)],['vs previous 7 days',typeof change==='string'?change:(change>=0?'+'+Math.round(change)+'%':Math.round(change)+'%')]].map(([label,value],i)=>
+      {[['Total steps',formatSteps(total,{compact:false})],['Daily average',formatSteps(avg)],['vs previous 7 days',typeof change==='string'?change:(change>=0?'+'+Math.round(change)+'%':Math.round(change)+'%')]].map(([label,value],i)=>
         <div className="profile-summary-tile" key={label}>
           <strong className={i===2&&typeof change==='number'&&change>0?'positive-change':''}>{value}</strong>
           <span>{label}</span>
@@ -103,7 +104,7 @@ function StepsGraph({profile}){
     </div>
     <div className="profile-detail" aria-live="polite">
       {selected&&<div>
-        <strong>{dayFmt(selected.date,locale)+' · '+selectedSteps.toLocaleString('en-US')+' steps'}</strong>
+        <strong>{dayFmt(selected.date,locale)+' · '+formatSteps(selectedSteps,{compact:false})+' steps'}</strong>
         <span>{avg>0?(selectedSteps===0?'No steps recorded':Math.round(selectedSteps/avg*100)+'% of your daily average'):''}</span>
       </div>}
       {selected&&<span className="profile-detail-tag">{isBest?'★ Best day':selected.date===today?'Today':''}</span>}
