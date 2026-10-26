@@ -56,7 +56,7 @@ export default async function ChallengesPage({ searchParams }) {
   const groupRows = groups || [];
   const groupIds = groupRows.map(g=>g.id);
   const [{data:groupMemberRows},{data:groupMemberProfiles}] = await Promise.all([
-    groupIds.length ? supabase.from('group_members').select('group_id,user_id,role,joined_at').in('group_id',groupIds).order('joined_at',{ascending:true}) : Promise.resolve({data:[]}),
+    groupIds.length ? supabase.from('group_members').select('group_id,user_id,role,joined_at,last_read_at').in('group_id',groupIds).order('joined_at',{ascending:true}) : Promise.resolve({data:[]}),
     groupIds.length ? supabase.from('group_members').select('group_id,user_id').in('group_id',groupIds) : Promise.resolve({data:[]})
   ]);
   const groupUserIds=[...new Set((groupMemberProfiles||[]).map(r=>r.user_id))];
@@ -64,12 +64,17 @@ export default async function ChallengesPage({ searchParams }) {
   const groupProfileMap=Object.fromEntries((groupProfiles||[]).map(p=>[p.id,p]));
   const groupMembersById=Object.fromEntries(groupIds.map(id=>[id,(groupMemberRows||[]).filter(r=>r.group_id===id).map(r=>({
     id:r.user_id,name:groupProfileMap[r.user_id]?.display_name||'Protlys member',avatar:groupProfileMap[r.user_id]?.avatar_url||null,
-    streak:Number(groupProfileMap[r.user_id]?.streak||0),role:r.role
+    streak:Number(groupProfileMap[r.user_id]?.streak||0),role:r.role,joined_at:r.joined_at,last_read_at:r.last_read_at
   }))]));
+  const {data:messageRows}=groupIds.length ? await supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at').in('group_id',groupIds).order('created_at',{ascending:false}).limit(500) : {data:[]};
+  const latestByGroup={}; const unreadCounts={};
+  for(const m of (messageRows||[])){ if(!latestByGroup[m.group_id]) latestByGroup[m.group_id]=m; }
+  for(const gid of groupIds){ const mine=(groupMemberRows||[]).find(r=>r.group_id===gid&&r.user_id===user.id); unreadCounts[gid]=mine?(messageRows||[]).filter(m=>m.group_id===gid&&m.sender_id!==user.id&&new Date(m.created_at)>new Date(mine.last_read_at||0)).length:0; }
+  const groupLastMessages=Object.fromEntries(groupIds.map(gid=>{const m=latestByGroup[gid];const p=m?groupProfileMap[m.sender_id]:null;return [gid,m?{...m,sender_name:p?.display_name||'Member'}:null]}));
   const activeToday=[...groupUserIds].map(id=>groupProfileMap[id]).filter(Boolean).sort((a,b)=>Number(b.streak||0)-Number(a.streak||0)).slice(0,10).map(p=>({id:p.id,name:p.display_name||'Protlys member',avatar:p.avatar_url||null,streak:Number(p.streak||0)}));
 
   return <AppShell><ChallengesClient
     challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} memberPreviews={memberPreviews}
-    userId={user.id} groups={groupRows} groupMembers={groupMembersById} activeToday={activeToday} foundingCount={foundingCount}
+    userId={user.id} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} activeToday={activeToday} foundingCount={foundingCount}
   /></AppShell>;
 }
