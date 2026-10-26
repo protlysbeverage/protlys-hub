@@ -7,7 +7,14 @@ const securityHeaders = [
   { key: 'Strict-Transport-Security', value: 'max-age=31536000; includeSubDomains; preload' },
 ];
 
+const buildSha = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_SHA || 'local';
+const buildDate = process.env.VERCEL_GIT_COMMIT_SHA ? new Date().toISOString() : 'local';
+
 const nextConfig = {
+  env: {
+    NEXT_PUBLIC_BUILD_SHA: buildSha,
+    NEXT_PUBLIC_BUILD_DATE: buildDate,
+  },
   experimental: {
     serverActions: {
       bodySizeLimit: '6mb',
