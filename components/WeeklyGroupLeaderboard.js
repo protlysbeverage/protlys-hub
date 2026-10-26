@@ -18,6 +18,8 @@ export default function WeeklyGroupLeaderboard({userId,mode='overview',onModeCha
  const [period,setPeriod]=useState('this_week'),[view,setView]=useState('leaderboard'),[rows,setRows]=useState([]),[hall,setHall]=useState([]),[loading,setLoading]=useState(true),[hallLoading,setHallLoading]=useState(false),[selected,setSelected]=useState(null),[ending,setEnding]=useState(countdownText()),[error,setError]=useState('');
  const periodRefs=useRef({});
 
+ useEffect(()=>{if(period==='most_improved')setPeriod('this_week')},[period]);
+
  useEffect(()=>{const t=setInterval(()=>setEnding(countdownText()),60000);return()=>clearInterval(t)},[]);
  useEffect(()=>{let dead=false;setLoading(true);setError('');createClient().rpc('get_leaderboard',{p_scope:'world',p_group_id:null,p_period:period,p_limit:250,p_offset:0}).then(({data,error:e})=>{if(dead)return;if(e)setError(e.message||'Could not load leaderboard.');setRows(data||[]);setLoading(false)});return()=>{dead=true}},[period]);
  useEffect(()=>{if(view!=='hall')return;let dead=false;setHallLoading(true);setError('');createClient().rpc('get_hall_of_fame',{p_scope:'world',p_group_id:null,p_limit:12}).then(({data,error:e})=>{if(dead)return;if(e)setError(e.message||'Could not load Hall of Fame.');setHall(data||[]);setHallLoading(false)});return()=>{dead=true}},[view]);
