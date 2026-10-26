@@ -14,9 +14,10 @@ export default async function FeedPage({ searchParams }) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const [{ data: profile }, { data: followingRows }] = await Promise.all([
+  const [{ data: profile }, { data: followingRows }, { data: cheerNotifications }] = await Promise.all([
     supabase.from('profiles').select('display_name, avatar_url, points, step_streak').eq('id', user.id).single(),
     supabase.from('follows').select('following_id').eq('follower_id', user.id),
+    supabase.from('notifications').select('id,body,created_at,is_read').eq('user_id',user.id).eq('type','cheer').order('created_at',{ascending:false}).limit(5),
   ]);
 
   const followingIds = (followingRows || []).map(row => row.following_id).filter(Boolean);
@@ -40,5 +41,5 @@ export default async function FeedPage({ searchParams }) {
     normalizedPosts = (posts || []).map(post => ({ ...post, like_count: post.feed_likes?.[0]?.count || 0, comment_count: post.feed_comments?.[0]?.count || 0, profiles: post.profiles || { id: post.user_id, display_name:null, avatar_url:null } }));
   }
 
-  return <AppShell><FeedVisualPatch/><div className="feed-mode-shell"><FeedModeTabs/></div>{mode === 'following' ? <div className="screen-pad feed-following-content"><FollowingFeed posts={normalizedPosts} followingCount={followingIds.length}/></div> : <FeedClient posts={normalizedPosts} likedIds={likedIds} userId={user.id} profile={profile || {}} />}{mode === 'for-you' && <FeedInteractionEnhancer posts={normalizedPosts}/>}</AppShell>;
+  return <AppShell><FeedVisualPatch/><div className="feed-mode-shell"><FeedModeTabs/></div>{mode === 'following' ? <div className="screen-pad feed-following-content"><FollowingFeed posts={normalizedPosts} followingCount={followingIds.length}/></div> : <FeedClient posts={normalizedPosts} likedIds={likedIds} userId={user.id} profile={profile || {}} cheerNotifications={cheerNotifications||[]} />}{mode === 'for-you' && <FeedInteractionEnhancer posts={normalizedPosts}/>}</AppShell>;
 }
