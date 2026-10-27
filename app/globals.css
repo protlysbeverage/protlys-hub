@@ -453,7 +453,8 @@ button,input,textarea,select{font:inherit;font-family:inherit;}
 
 
 /* Simplified first-run protein onboarding */
-.protlys-app:has(.protlys-onboarding) .app-header,.protlys-app:has(.protlys-onboarding) .desktop-sidebar,.protlys-app:has(.protlys-onboarding) .bottom-nav{display:none!important;}\n.protlys-app:has(.protlys-onboarding) .screen{grid-column:1 / -1!important;grid-row:1 / -1!important;}
+.protlys-app:has(.protlys-onboarding) .app-header,.protlys-app:has(.protlys-onboarding) .desktop-sidebar,.protlys-app:has(.protlys-onboarding) .bottom-nav{display:none!important;}
+.protlys-app:has(.protlys-onboarding) .screen{grid-column:1 / -1!important;grid-row:1 / -1!important;}
 .protlys-app:has(.protlys-onboarding) .screen{padding-bottom:0!important;}
 .protlys-onboarding{
   --onboard-bg:#F7F8F6;
@@ -553,7 +554,8 @@ html.protlys-dark .protlys-onboarding{
 html:not(.protlys-dark) .protlys-onboarding-pill.is-selected{
   background:#4F9F35;border-color:#4F9F35;color:#FFFFFF;
 }
- .protlys-onboarding .btn-primary{background:#4F9F35;color:#111111;}\n.protlys-onboarding-primary{min-height:48px;margin-top:8px;}
+ .protlys-onboarding .btn-primary{background:#4F9F35;color:#111111;}
+.protlys-onboarding-primary{min-height:48px;margin-top:8px;}
 .protlys-onboarding-primary:disabled{
   opacity:.58;cursor:not-allowed;filter:none;
 }
@@ -662,7 +664,9 @@ html.protlys-dark .member-sheet-portal{--ms-bg:#151815;--ms-card:#1B211C;--ms-te
   --fs-green:#2E9E5B;
   --fs-green-dark:#1F7A45;
   --fs-green-soft:#E4F3EA;
-  --fs-shadow:0 4px 16px rgba(15,42,74,.07);\n  --fs-on-green:#FFFFFF;\n  --fs-preview:#0D0F0E;
+  --fs-shadow:0 4px 16px rgba(15,42,74,.07);
+  --fs-on-green:#FFFFFF;
+  --fs-preview:#0D0F0E;
   --fs-danger:#A33;
   width:100%;
   max-width:100%;
@@ -686,7 +690,9 @@ html.protlys-dark .protlys-fullscreen{
   --fs-green:#6BCB45;
   --fs-green-dark:#8DDE70;
   --fs-green-soft:rgba(107,203,69,.13);
-  --fs-shadow:0 4px 16px rgba(0,0,0,.22);\n  --fs-on-green:#FFFFFF;\n  --fs-preview:#0D0F0E;
+  --fs-shadow:0 4px 16px rgba(0,0,0,.22);
+  --fs-on-green:#FFFFFF;
+  --fs-preview:#0D0F0E;
   --fs-danger:#F08A8A;
 }
 .protlys-fullscreen *{box-sizing:border-box;min-width:0;}
@@ -905,6 +911,16 @@ html.protlys-dark .protlys-fullscreen .challenge-preview{background:var(--fs-pre
 .protlys-fullscreen .picker-photo-button input{display:none;}
 .protlys-fullscreen .picker-label{margin-top:15px;font-size:12px;font-weight:800;color:var(--fs-muted);}
 .protlys-fullscreen .picker-emojis{display:flex;flex-wrap:wrap;gap:8px;margin-top:8px;}
+
+/* Fullscreen routes are outside AppShell by design. Keep their geometry and controls
+   route-independent so newly added creation/join components inherit the same contract. */
+.protlys-fullscreen,
+.protlys-fullscreen *{box-sizing:border-box;}
+.protlys-fullscreen input[type="date"]{min-width:0;max-width:100%;}
+.protlys-fullscreen .fullscreen-form{min-width:0;width:100%;}
+.protlys-fullscreen .fullscreen-body{width:100%;max-width:100%;}
+.protlys-fullscreen .fullscreen-footer-button{overflow:visible;}
+.protlys-fullscreen button:focus-visible{outline:2px solid var(--fs-green)!important;outline-offset:2px;}
 @media(max-width:340px){
   .protlys-fullscreen .fullscreen-body{padding-left:12px!important;padding-right:12px!important;}
   .protlys-fullscreen .fullscreen-topbar{padding-left:12px!important;padding-right:12px!important;gap:8px;}
