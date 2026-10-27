@@ -12,7 +12,7 @@ const TYPES=[
 ];
 const today=()=>new Date().toISOString().slice(0,10);
 const plus7=()=>{const d=new Date();d.setDate(d.getDate()+7);return d.toISOString().slice(0,10)};
-const dayCount=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000)+1;
+const dayCount=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
 
 export default function NewChallengeClient({groupId}){
  const router=useRouter();
