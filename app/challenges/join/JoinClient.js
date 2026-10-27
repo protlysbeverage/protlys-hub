@@ -7,10 +7,10 @@ import {normalizeInviteCode} from '@/lib/group-invites';
 export default function JoinClient({initialCode=''}) {
  const router=useRouter(),input=useRef(null);
  const [code,setCode]=useState(''),[busy,setBusy]=useState(false),[result,setResult]=useState(null),[vh,setVh]=useState('100dvh'),[dirty,setDirty]=useState(false),dirtyRef=useRef(false);
+ const leave=()=>{if(dirtyRef.current&&!window.confirm('Discard this?')){history.pushState({},'',location.href);return}router.replace('/challenges')};
  useEffect(()=>{
   const initial=normalizeInviteCode(initialCode||sessionStorage.getItem('protlys-join-code')||'');setCode(initial);sessionStorage.setItem('protlys-join-code',initial);
   const vv=window.visualViewport,s=()=>setVh((vv?.height||window.innerHeight)+'px');s();vv?.addEventListener('resize',s);vv?.addEventListener('scroll',s);input.current?.focus();
-  const leave=()=>{if(dirtyRef.current&&!window.confirm('Discard this?')){history.pushState({},'',location.href);return}router.replace('/challenges')};
   const pop=()=>leave();history.pushState({},'',location.href);addEventListener('popstate',pop);
   return()=>{vv?.removeEventListener('resize',s);vv?.removeEventListener('scroll',s);removeEventListener('popstate',pop)};
  },[initialCode,router]);
