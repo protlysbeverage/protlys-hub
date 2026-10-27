@@ -4,6 +4,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeekStart, summarizeMemberWeek, weekContextLabel } from '@/lib/leaderboard-week';
+import { hallUrl, hallViewFromHash, leaderboardUrl } from '@/lib/hall-navigation';
 
 const PAGE_SIZE = 50;
 const DAY_LABELS = ['T','F','S','S','M','T','W'];
@@ -67,17 +68,17 @@ export default function LeaderboardClient({ viewerId }) {
 
   useEffect(() => {
     const query = new URLSearchParams(window.location.search);
-    const id=query.get('group') || null; setGroupId(id); const initialPeriod=query.get('period'); if(['this_week','last_week','most_improved'].includes(initialPeriod))setPeriod(initialPeriod); if(window.location.hash==='#hall-of-fame')setView('hall');
+    const id=query.get('group') || null; setGroupId(id); const initialPeriod=query.get('period'); if(['this_week','last_week','most_improved'].includes(initialPeriod))setPeriod(initialPeriod); setView(hallViewFromHash(window.location.hash));
     if(id){createClient().from('groups').select('name').eq('id',id).maybeSingle().then(({data})=>{if(data?.name)setGroupName(data.name)})}
   }, []);
 
   useEffect(() => {
-    const syncView=()=>setView(window.location.hash==='#hall-of-fame'?'hall':'leaderboard');
+    const syncView=()=>setView(hallViewFromHash(window.location.hash));
     window.addEventListener('popstate',syncView); window.addEventListener('hashchange',syncView);
     return()=>{window.removeEventListener('popstate',syncView);window.removeEventListener('hashchange',syncView)};
   },[]);
-  function showHall(){if(window.location.hash!=='#hall-of-fame')window.history.pushState({protlysView:'hall'},'',window.location.pathname+window.location.search+'#hall-of-fame');setView('hall');}
-  function showLeaderboard({back=false}={}){if(back&&window.location.hash==='#hall-of-fame'){window.history.back();return;}if(window.location.hash==='#hall-of-fame')window.history.replaceState({},'',window.location.pathname+window.location.search);setView('leaderboard');}
+  function showHall(){if(window.location.hash!=='#hall-of-fame')window.history.pushState({protlysView:'hall'},'',hallUrl(window.location.pathname,window.location.search));setView('hall');}
+  function showLeaderboard({back=false}={}){if(back&&window.location.hash==='#hall-of-fame'){window.history.back();return;}if(window.location.hash==='#hall-of-fame')window.history.replaceState({},'',leaderboardUrl(window.location.pathname,window.location.search));setView('leaderboard');}
   function choosePeriod(value){setPeriod(value);showLeaderboard();const q=new URLSearchParams(window.location.search);q.set('period',value);window.history.replaceState({},'',window.location.pathname+'?'+q.toString());}
 
   useEffect(() => {
