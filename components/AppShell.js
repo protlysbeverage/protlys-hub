@@ -47,6 +47,9 @@ export default function AppShell({ children }) {
     return () => observer.disconnect();
   }, []);
 
+  const fullscreenRoute = pathname.startsWith('/challenges/new-group') || pathname.startsWith('/challenges/new') || pathname.startsWith('/challenges/join') || pathname.startsWith('/join/');
+  if (fullscreenRoute) return <>{children}</>;
+
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
     .protlys-app .shop-header-link { display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-size:11.5px;font-weight:800;text-decoration:none;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
