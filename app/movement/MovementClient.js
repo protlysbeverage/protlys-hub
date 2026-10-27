@@ -5,7 +5,6 @@ import MovementActivity from '@/components/MovementActivity';
 import ShareCardSheet from '@/components/ShareCardSheet';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
-import AndroidStepTrackingCard from '@/components/AndroidStepTrackingCard';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -239,7 +238,6 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
-        <AndroidStepTrackingCard />
         <div className="hub-card" style={{padding:16,minHeight:196}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
