@@ -26,7 +26,7 @@ export default async function ChallengesPage({ searchParams }) {
 
   let challengeQuery = supabase
     .from('challenges')
-    .select('id,creator_id,name,description,step_target,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id');
+    .select('id,creator_id,name,description,step_target,challenge_type,target,scoring_mode,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id');
 
   const { data:challengeRows } = await challengeQuery.order('created_at',{ascending:false});
 
