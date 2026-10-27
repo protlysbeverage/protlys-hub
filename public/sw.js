@@ -1,4 +1,4 @@
-const CACHE_NAME = 'protlys-hub-shell-v2';
+const CACHE_NAME = 'protlys-hub-shell-v3';
 const OFFLINE_URL = '/login';
 const OFFLINE_ASSETS = [
   OFFLINE_URL,
@@ -33,7 +33,7 @@ self.addEventListener('fetch', (event) => {
 
   if (event.request.mode === 'navigate') {
     event.respondWith(
-      fetch(event.request).catch(() => caches.match(OFFLINE_URL))
+      fetch(new Request(event.request, { cache: 'no-store' })).catch(() => caches.match(OFFLINE_URL))
     );
     return;
   }
