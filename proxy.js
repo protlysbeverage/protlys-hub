@@ -14,7 +14,8 @@ export async function proxy(request) {
   if (
     request.nextUrl.pathname === '/manifest' ||
     request.nextUrl.pathname === '/manifest.json' ||
-    request.nextUrl.pathname === '/sw.js'
+    request.nextUrl.pathname === '/sw.js' ||
+    request.nextUrl.pathname === '/version.json'
   ) {
     return NextResponse.next();
   }
