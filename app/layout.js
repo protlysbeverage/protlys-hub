@@ -65,7 +65,7 @@ export default function RootLayout({ children }) {
         <link rel="manifest" href="/manifest" />
         <meta name="color-scheme" content="light dark" />
         <meta name="theme-color" content="#F7F8F6" />
-        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js',{scope:'/'}).catch(()=>{});}}catch(e){}})()" }} />
+        <script dangerouslySetInnerHTML={{ __html: "(()=>{try{const root=document.documentElement;const saved=localStorage.getItem('protlys-theme');const dark=saved==='dark'||(!saved&&window.matchMedia('(prefers-color-scheme: dark)').matches);root.dataset.theme=dark?'dark':'light';root.style.colorScheme=dark?'dark':'light';root.classList.toggle('protlys-dark',dark);const buildId='"+BUILD_ID+"';window.__PROTLYS_BUILD_ID__=buildId;console.info('[Protlys Hub] build',buildId);if('serviceWorker' in navigator){navigator.serviceWorker.register('/sw.js',{scope:'/'}).then(reg=>{reg.update();navigator.serviceWorker.addEventListener('controllerchange',()=>{if(!window.__PROTLYS_SW_RELOADED__){window.__PROTLYS_SW_RELOADED__=true;window.location.reload();}});}).catch(()=>{});}}catch(e){}})()" }} />
       </head>
       <body data-build-id={BUILD_ID}>{children}</body>
     </html>
