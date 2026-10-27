@@ -122,7 +122,6 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
-  const [firstLoggedMonthKey, setFirstLoggedMonthKey] = useState(null);
   const [monthError, setMonthError] = useState('');
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -156,14 +155,14 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const max = Math.max(...recent.map(d => d.steps), 1);
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentCalories = caloriesForSteps(recentTotal);
+  const todaySteps = byDate.get(todayKey) || 0;
+  const todayGoalPct = Math.min(100, Math.round((todaySteps / Math.max(Number(stepGoal || 7500), 1)) * 100));
 
   const todayMonthKey = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
   const [calendarYear, calendarMonthIndex] = calendarMonthKey.split('-').map(Number);
   const calendarMonth = useMemo(() => new Date(calendarYear, calendarMonthIndex - 1, 1), [calendarYear, calendarMonthIndex]);
   const calendarMonthIndexNumber = calendarYear * 12 + (calendarMonthIndex - 1);
   const todayMonthIndexNumber = today.getFullYear() * 12 + today.getMonth();
-  const firstLoggedMonthIndexNumber = firstLoggedMonthKey ? (() => { const [y,m] = firstLoggedMonthKey.split('-').map(Number); return y * 12 + (m - 1); })() : null;
-  const canGoToPreviousMonth = firstLoggedMonthIndexNumber == null || calendarMonthIndexNumber > firstLoggedMonthIndexNumber;
   const canGoToNextMonth = calendarMonthIndexNumber < todayMonthIndexNumber;
 
   const calendar = useMemo(() => {
@@ -185,28 +184,37 @@ export default function MovementActivity({ days = [], compact = false, title = '
     if (!selectedKey || !selectedSteps) return 0;
     let n = 1;
     let cursor = parseKey(selectedKey);
-    for (let i = 0; i    async function loadMonth() {
+    for (let i = 0; i < 366; i += 1) {
+      cursor.setDate(cursor.getDate() - 1);
+      const key = localDateKey(cursor);
+      const row = monthByDate.get(key);
+      if (!row || Number(row.steps || 0) <= 0) break;
+      n += 1;
+    }
+    return n;
+  }, [selectedKey, selectedSteps, monthRows]);
+
+  useEffect(() => {
+    if (!expanded || !userId) return;
+    let cancelled = false;
+    async function loadMonth() {
       setMonthLoading(true);
       setMonthError('');
+      const { start, end } = monthRange(calendarMonth);
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
         .select('step_date, steps, source, synced_at')
         .eq('user_id', userId)
-        .lte('step_date', todayKey)
+        .gte('step_date', start)
+        .lte('step_date', end)
         .order('step_date', { ascending: true });
       if (cancelled) return;
       if (!error) {
         const incoming = data || [];
-        setMonthCache(buildMonthCache(incoming));
-        const first = incoming.find(row => row?.step_date)?.step_date;
-        setFirstLoggedMonthKey(first ? String(first).slice(0, 7) : null);
-      } else {
-        setMonthError('Could not load movement history. Tap to retry.');
-      }
-      setMonthLoading(false);
-    }
-ep_date, row]));
+        setMonthCache(prev => {
+          const existing = prev[currentMonthKey] || [];
+          const merged = new Map(existing.map(row => [row.step_date, row]));
           incoming.forEach(row => merged.set(row.step_date, row));
           return { ...prev, [currentMonthKey]: [...merged.values()].sort((x,y) => String(x.step_date).localeCompare(String(y.step_date))) };
         });
@@ -333,6 +341,16 @@ ep_date, row]));
     <div className="hub-card movement-activity-card" style={{ marginTop: 10 }}>
       <style>{`
         .movement-activity-card{position:relative;overflow:hidden;box-sizing:border-box;}
+        .movement-health-summary{display:grid;grid-template-columns:112px minmax(0,1fr);gap:14px;align-items:center;margin-top:14px;padding:14px;border:1px solid var(--line);border-radius:18px;background:var(--surface);}
+        .movement-health-score{position:relative;width:104px;height:104px;display:grid;place-items:center;}
+        .movement-health-score svg{position:absolute;inset:0;transform:rotate(-90deg);}
+        .movement-health-score-copy{position:relative;text-align:center;line-height:1;}
+        .movement-health-score-value{font-size:24px;font-weight:900;letter-spacing:-.04em;color:var(--ink);font-variant-numeric:tabular-nums;}
+        .movement-health-score-label{font-size:9px;font-weight:800;color:var(--ink-45);margin-top:5px;text-transform:uppercase;letter-spacing:.06em;}
+        .movement-health-copy strong{display:block;font-size:22px;line-height:1.05;letter-spacing:-.035em;color:var(--ink);font-variant-numeric:tabular-nums;}
+        .movement-health-copy span{display:block;font-size:11px;color:var(--ink-45);margin-top:6px;line-height:1.45;}
+        .movement-week-bars{display:flex;align-items:flex-end;gap:7px;height:96px;margin-top:14px;padding:0 2px;}
+        @media(max-width:360px){.movement-health-summary{grid-template-columns:96px minmax(0,1fr);gap:10px;padding:12px}.movement-health-score{width:92px;height:92px}.movement-health-score svg{width:92px;height:92px}.movement-health-copy strong{font-size:20px}}
         .movement-streak-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin-top:12px;}
         .movement-streak-tile{position:relative;min-width:0;min-height:92px;padding:14px 12px;border-radius:16px;background:var(--white);border:1px solid var(--line);display:flex;flex-direction:column;justify-content:space-between;overflow:hidden;}
         .movement-streak-label{font-family:'IBM Plex Mono',monospace;font-size:9.5px;line-height:1.2;font-weight:800;letter-spacing:.8px;color:var(--ink-45);white-space:nowrap;padding-right:38px;}
@@ -395,9 +413,22 @@ ep_date, row]));
 
       {!expanded ? (
         <>
-          <div style={{ display:'flex', alignItems:'flex-end', gap:7, height:105, marginTop:12 }}>
+          <div className="movement-health-summary">
+            <div className="movement-health-score" aria-label={`${todayGoalPct}% of today's step goal`}>
+              <svg viewBox="0 0 104 104" width="104" height="104" aria-hidden="true">
+                <circle cx="52" cy="52" r="43" fill="none" stroke="var(--line)" strokeWidth="8" />
+                <circle cx="52" cy="52" r="43" fill="none" stroke="var(--green)" strokeWidth="8" strokeLinecap="round" pathLength="100" strokeDasharray="100" strokeDashoffset={100 - todayGoalPct} />
+              </svg>
+              <div className="movement-health-score-copy"><div className="movement-health-score-value">{todayGoalPct}%</div><div className="movement-health-score-label">Today</div></div>
+            </div>
+            <div className="movement-health-copy">
+              <strong>{Number(todaySteps).toLocaleString()} steps</strong>
+              <span>{Number(stepGoal || 7500).toLocaleString()} daily goal · {todaySteps >= Number(stepGoal || 7500) ? 'Goal met' : `${Math.max(Number(stepGoal || 7500) - todaySteps, 0).toLocaleString()} to go`}</span>
+            </div>
+          </div>
+          <div className="movement-week-bars">
             {recent.map(d => {
-              const h = d.steps > 0 ? Math.max(8, Math.round((d.steps / max) * 70)) : 5;
+              const h = d.steps > 0 ? Math.max(8, Math.round((d.steps / max) * 64)) : 5;
               return <div key={d.key} style={{ flex:1, minWidth:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end', gap:5 }}>
                 <span className="mono" style={{ fontSize:8, color:'var(--ink-45)', minHeight:10 }}>{d.steps ? (d.steps >= 1000 ? `${Math.round(d.steps / 100) / 10}K` : d.steps) : ''}</span>
                 <div style={{ width:'100%', height:h, background:d.steps ? (d.isToday ? 'var(--green)' : 'var(--green-soft)') : 'var(--line)', borderRadius:6 }} />
@@ -414,7 +445,7 @@ ep_date, row]));
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar">
-            <button type="button" onClick={() => changeCalendarMonth(-1)} disabled={!canGoToPreviousMonth} aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoToPreviousMonth?1:.35,cursor:canGoToPreviousMonth?'pointer':'default'}}>‹</button>
+            <button type="button" onClick={() => changeCalendarMonth(-1) aria-label="Previous month" style={{width:42,height:42,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}>
               <strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong>
               <div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>Movement history</div>
