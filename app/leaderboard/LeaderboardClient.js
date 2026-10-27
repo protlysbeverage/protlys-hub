@@ -3,7 +3,10 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import { isoWeekStart, summarizeMemberWeek, weekContextLabel } from '@/lib/leaderboard-week';
+import { isoWeekStart } from '@/lib/leaderboard-week';
+import { strictRank } from '@/lib/leaderboard-ranking';
+import MemberAvatar from '@/components/MemberAvatar';
+import MemberProfileSheet from '@/components/MemberProfileSheet';
 import { hallUrl, hallViewFromHash, leaderboardUrl } from '@/lib/hall-navigation';
 
 const PAGE_SIZE = 50;
@@ -39,12 +42,7 @@ function initials(name) {
 }
 function fmt(value) { return Number(value || 0).toLocaleString('en-US'); }
 
-function Avatar({ user, large=false }) {
-  const size = large ? 76 : 42;
-  return user?.avatar_url
-    ? <img className={large ? 'lb-avatar lb-avatar-large' : 'lb-avatar'} src={user.avatar_url} alt="" width={size} height={size} />
-    : <div className={large ? 'lb-avatar lb-avatar-large lb-initial' : 'lb-avatar lb-initial'} aria-hidden="true">{initials(user?.username)}</div>;
-}
+function Avatar({ user, large=false }) { return <MemberAvatar user={user} size={large?64:40} className={large?'lb-avatar lb-avatar-large':'lb-avatar'} />; }
 
 export default function LeaderboardClient({ viewerId }) {
   const router = useRouter();
@@ -116,7 +114,7 @@ export default function LeaderboardClient({ viewerId }) {
 
   useEffect(() => { if(view!=='hall') return; let cancelled=false; (async()=>{ setHallLoading(true); const {data,error:e}=await createClient().rpc('get_hall_of_fame',{p_scope:scope,p_group_id:groupId,p_limit:12}); if(cancelled)return; if(e)setError(e.message||'Could not load Hall of Fame.'); else setHall(data||[]); setHallLoading(false); })(); return()=>{cancelled=true}; }, [scope,groupId,view]);
 
-  const rankedRows = useMemo(() => rows.map((row,index)=>({...row,rank:index+1})), [rows]);
+  const rankedRows = useMemo(() => strictRank(rows), [rows]);
   const top = rankedRows.slice(0, 3);
   const outsidePage = Number(myRank || 0) > PAGE_SIZE && !viewer;
 
@@ -214,7 +212,7 @@ export default function LeaderboardClient({ viewerId }) {
       ))}
 
       {myRank && <button type="button" className="lb-you-pill" onClick={scrollToMe}><span>You</span><em>#{myRank}</em><span>↓</span></button>}
-      {selected && <MemberSheet selected={selected} onClose={() => setSelected(null)} onRetry={()=>retryMember(selected)} />}
+      {selected && <MemberProfileSheet open row={selected.row} weekStart={selected.weekStart} groupId={groupId} viewerId={viewerId} onClose={() => setSelected(null)} />}
     </div>
   );
 }
@@ -224,10 +222,7 @@ function OutsideViewer({viewerId,scope,groupId,period,myRank,onOpen}) {
   useEffect(()=>{let cancelled=false;createClient().rpc('get_group_leaderboard',{p_group_id:groupId,p_period:period,p_limit:1,p_offset:Math.max(Number(myRank||1)-1,0)}).then(({data})=>{if(!cancelled)setRow(data?.[0]||null)});return()=>{cancelled=true}},[viewerId,scope,groupId,period,myRank]);
   if(!row)return <div className="lb-row me"><span className="lb-rank">{myRank}</span><div className="lb-avatar lb-initial">Y</div><span className="lb-name">You</span><strong className="lb-score">—</strong></div>;
   return <button type="button" id="leaderboard-me" className="lb-row me" onClick={()=>onOpen(row)}><span className="lb-rank">{row.rank}</span><Avatar user={row}/><span className="lb-name">{row.user_id===viewerId?'You':row.username}</span><strong className="lb-score">{period==='most_improved'?(row.improvement??0)+'%':fmt(row.steps)}<small>{period==='most_improved'?'gain':'steps'}</small></strong>{row.user_id===viewerId&&row.steps_to_pass&&row.rival_username?<span className="lb-rival">{fmt(row.steps_to_pass)} steps to pass {row.rival_username}</span>:null}</button>;
-}function localTodayKey(){const p=new Intl.DateTimeFormat('en-CA',{timeZone:TZ,year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date());const g=t=>p.find(x=>x.type===t)?.value;return `${g('year')}-${g('month')}-${g('day')}`;}
-function MemberSheet({selected,onClose,onRetry}){const {row,stats,loading,error,weekStart}=selected;const visible=stats?.steps_visible!==false;const currentWeek=isoWeekStart(new Date(),TZ);const summary=visible&&stats?.days?summarizeMemberWeek(stats.days,weekStart,localTodayKey()):null;const bestWeekday=summary?.bestDay?new Intl.DateTimeFormat('en-GB',{weekday:'short',timeZone:'UTC'}).format(new Date(summary.bestDay.date+'T12:00:00Z')):'';return <div className="lb-sheet-layer" onClick={onClose}><section className="lb-sheet" role="dialog" aria-modal="true" aria-label={row.username} onClick={e=>e.stopPropagation()}><div className="lb-sheet-handle"/><div className="lb-sheet-head"><div className="lb-sheet-user"><Avatar user={row}/><div><strong>{row.username}</strong><span>{weekContextLabel(weekStart,currentWeek)}</span></div></div><button type="button" className="lb-close" onClick={onClose} aria-label="Close">×</button></div><div className="lb-sheet-label">{weekContextLabel(weekStart,currentWeek)}</div>{loading?<><div className="lb-days">{DAY_LABELS.map((d,i)=><div key={i}>{d}</div>)}</div><div className="lb-tiles">{Array.from({length:4},(_,i)=><div className="lb-tile-skeleton" key={i}/>)}</div></>:error?<div className="lb-sheet-loading"><div>Could not load this week&apos;s activity.</div><button className="lb-retry" type="button" onClick={onRetry}>Retry</button></div>:!visible?<div className="lb-sheet-loading">This member keeps their movement private.</div>:<><div className="lb-days">{summary.days.map((d,i)=><div key={d.date} className={d.steps>0?'on':''}>{DAY_LABELS[i]}</div>)}</div><div className="lb-tiles"><div><small>Weekly steps</small><strong>{fmt(summary.weeklySteps)}</strong></div>{summary.isCurrentWeek?<div><small>Steps today</small><strong>{fmt(summary.stepsToday)}</strong></div>:<div><small>Best day</small><strong>{fmt(summary.bestDay?.steps)}<i>{bestWeekday}</i></strong></div>}<div><small>Estimated distance</small><strong>{summary.distanceKm.toFixed(1)}<i>km</i></strong></div><div><small>Movement days</small><strong>{summary.movementDays}/7</strong></div></div></>}</section></div>;}
-
-function HallOfFame({rows,loading,error,onOpen,onBack}) {
+}function HallOfFame({rows,loading,error,onOpen,onBack}) {
   if(loading)return <div className="lb-state">Loading Hall of Fame…</div>; if(error)return <div className="lb-state lb-error">{error}</div>;
   const weeks=[]; rows.forEach(row=>{let w=weeks.find(x=>x.week_start===row.week_start);if(!w){w={week_start:row.week_start,rows:[]};weeks.push(w)}w.rows.push(row)});
   return <section className="lb-hall" aria-label="Hall of Fame"><div className="lb-hall-header"><button type="button" className="lb-hall-back" aria-label="Back to leaderboard" onClick={onBack}>‹</button><div><strong>Hall of Fame</strong><span>Past weekly winners and top 3</span></div></div>
