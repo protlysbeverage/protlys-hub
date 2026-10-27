@@ -36,7 +36,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const selectedGroupMembers=groupDetails?(groupMembers[groupDetails]||[]):[];
   const currentGroupAdmin=selectedGroupMembers.some(m=>m.id===userId&&m.role==='admin') || selectedGroup?.created_by===userId;
 
-  useEffect(()=>{const saved=window.localStorage.getItem('protlys-challenges-tab');if(saved==='groups'||saved==='challenges')setTab(saved)},[]);
+  useEffect(()=>{const saved=window.localStorage.getItem('protlys-challenges-tab');if(saved==='groups'||saved==='challenges')setTab(saved);const toast=sessionStorage.getItem('protlys-toast');if(toast){setCopyToast(toast);sessionStorage.removeItem('protlys-toast')}},[]);
   function chooseTab(next){setTab(next);window.localStorage.setItem('protlys-challenges-tab',next)}
   function resetForm(){setForm({name:'',description:'',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});}
   function openCreate(groupId=null){router.push(groupId?'/challenges/new?group='+encodeURIComponent(groupId):'/challenges/new')}
