@@ -132,9 +132,12 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
   const [monthError, setMonthError] = useState('');
-  const [loadedMonths, setLoadedMonths] = useState(() => new Set());
-  const [earliestLogKey, setEarliestLogKey] = useState(null);
-  const [allActivity, setAllActivity] = useState([]);
+  const [monthRetry, setMonthRetry] = useState(0);
+  const [firstLoggedMonthKey, setFirstLoggedMonthKey] = useState(null);
+  const [historyReady, setHistoryReady] = useState(false);
+  const [historyError, setHistoryError] = useState('');
+  const [allTimeStreaks, setAllTimeStreaks] = useState({ current: Number(currentStreak || 0), best: Number(currentStreak || 0) });
+  const fetchedMonthsRef = useRef(new Set());
   const [selectedKey, setSelectedKey] = useState(null);
   const [sheetOpen, setSheetOpen] = useState(false);
   const [shareData, setShareData] = useState(null);
@@ -148,10 +151,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const sheetTouchStart = useRef(null);
 
   const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
-  const movementKeys = useMemo(() => allActivity.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [allActivity]);
+  const movementKeys = useMemo(() => days.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [days]);
   const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
-  const current = movementKeys.length ? recentStreaks.current : Number(currentStreak || 0);
-  const best = recentStreaks.best || Number(currentStreak || 0);
+  const current = Number(allTimeStreaks.current || currentStreak || 0);
+  const best = Math.max(Number(allTimeStreaks.best || 0), Number(currentStreak || 0));
 
   const today = useMemo(() => parseKey(todayKey), [todayKey]);
   const recent = Array.from({ length: 7 }, (_, i) => {
@@ -169,12 +172,10 @@ export default function MovementActivity({ days = [], compact = false, title = '
     [days, todayKey, current, best]
   );
 
-  const firstLogKey = earliestLogKey || todayKey;
-  const firstLogDate = parseKey(firstLogKey);
   const currentDate = parseKey(todayKey);
-  const viewIndex = monthIndex(calendarMonth);
-  const canGoPrev = canGoPrevious(calendarMonth, firstLogDate);
-  const canGoNext = canGoNextMonth(calendarMonth, currentDate);
+  const firstLogDate = firstLoggedMonthKey ? parseKey(firstLoggedMonthKey + '-01') : currentDate;
+  const canGoPrev = historyReady && firstLoggedMonthKey ? canGoPrevious(calendarMonth, firstLogDate) : false;
+  const canGoNext = historyReady && canGoNextMonth(calendarMonth, currentDate);
 
   useEffect(() => {
     const refreshToday = () => setTodayKey(dateKey(new Date()));
@@ -234,25 +235,61 @@ export default function MovementActivity({ days = [], compact = false, title = '
   }, [days]);
 
   useEffect(() => {
-    if (!userId) return;
+    if (!expanded || !userId || historyReady) return;
     let cancelled = false;
-    const supabase = createClient();
-    async function loadHistory() {
-      const [{ data: earliest }, { data: allRows }] = await Promise.all([
-        supabase.from('daily_steps').select('step_date').eq('user_id', userId).gt('steps', 0).order('step_date', { ascending: true }).limit(1),
-        supabase.from('daily_steps').select('step_date, steps').eq('user_id', userId).order('step_date', { ascending: true }),
+
+    async function loadHistoryBounds() {
+      setHistoryError('');
+      const supabase = createClient();
+      const [{ data: earliest, error: earliestError }, { data: allRows, error: allRowsError }] = await Promise.all([
+        supabase
+          .from('daily_steps')
+          .select('step_date')
+          .eq('user_id', userId)
+          .gt('steps', 0)
+          .order('step_date', { ascending: true })
+          .limit(1)
+          .maybeSingle(),
+        supabase
+          .from('daily_steps')
+          .select('step_date, steps')
+          .eq('user_id', userId)
+          .gt('steps', 0)
+          .order('step_date', { ascending: true }),
       ]);
+
       if (cancelled) return;
-      setEarliestLogKey(earliest?.[0]?.step_date || null);
-      setAllActivity(allRows || []);
+
+      if (earliestError || allRowsError) {
+        setHistoryError('Could not load movement history.');
+        setHistoryReady(true);
+        return;
+      }
+
+      const earliestKey = earliest?.step_date ? String(earliest.step_date) : '';
+      setFirstLoggedMonthKey(earliestKey ? earliestKey.slice(0, 7) : null);
+
+      const allKeys = (allRows || []).map(row => String(row?.step_date || '')).filter(Boolean);
+      const calculated = streaks(allKeys);
+      setAllTimeStreaks({
+        current: Math.max(Number(currentStreak || 0), calculated.current),
+        best: Math.max(Number(currentStreak || 0), calculated.best),
+      });
+      setHistoryReady(true);
     }
-    loadHistory();
+
+    loadHistoryBounds();
     return () => { cancelled = true; };
-  }, [userId]);
+  }, [expanded, userId, historyReady, currentStreak]);
 
   useEffect(() => {
-    if (!expanded || !userId) return;
-    if (loadedMonths.has(currentMonthKey)) return;
+    if (!expanded || !userId || !historyReady) return;
+    if (fetchedMonthsRef.current.has(currentMonthKey)) {
+      setMonthLoading(false);
+      setMonthError('');
+      return;
+    }
+
     let cancelled = false;
     async function loadMonth() {
       setMonthLoading(true);
@@ -266,23 +303,22 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .gte('step_date', start)
         .lte('step_date', end)
         .order('step_date', { ascending: true });
+
       if (cancelled) return;
-      if (error) {
-        setMonthError('Could not load this month.');
-      } else {
+
+      if (!error) {
         const incoming = data || [];
         setMonthCache(prev => ({ ...prev, [currentMonthKey]: incoming }));
-        setLoadedMonths(prev => {
-          const next = new Set(prev);
-          next.add(currentMonthKey);
-          return next;
-        });
+        fetchedMonthsRef.current.add(currentMonthKey);
+      } else {
+        setMonthError('Could not load this month. Tap Retry.');
       }
       setMonthLoading(false);
     }
+
     loadMonth();
     return () => { cancelled = true; };
-  }, [expanded, currentMonthKey, calendarMonth, userId, loadedMonths]);
+  }, [expanded, historyReady, currentMonthKey, calendarMonth, userId, monthRetry]);
 
   useEffect(() => {
     if (!sheetOpen) return;
@@ -416,7 +452,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
                 .movement-streak-value{display:flex;align-items:baseline;gap:6px;white-space:nowrap;line-height:1;margin-top:10px;}
         .movement-streak-value span{font-family:'Space Grotesk',sans-serif;font-size:40px;font-weight:800;letter-spacing:-.045em;color:var(--ink);font-variant-numeric:tabular-nums;white-space:nowrap;}
         .movement-streak-value small{font-size:12px;font-weight:700;color:var(--ink-45);white-space:nowrap;}
-        .movement-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px}.movement-calendar-skeleton{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;margin-bottom:8px}.movement-calendar-skeleton span{height:34px;border-radius:10px;background:var(--line);animation:activepulse 1.2s ease-in-out infinite}.movement-calendar-error{display:flex;align-items:center;justify-content:center;gap:10px;padding:8px;font-size:10px;color:var(--ink-45)}.movement-calendar-error button{min-height:36px;padding:0 12px;border:1px solid var(--line);border-radius:999px;background:var(--surface);color:var(--ink);font-weight:700}
+        .movement-calendar-grid{display:grid;grid-template-columns:repeat(7,minmax(0,1fr));gap:5px;}
         .movement-calendar-day{min-width:0;min-height:0;width:100%;aspect-ratio:1/1;border-radius:10px;display:flex;align-items:center;justify-content:center;box-sizing:border-box;position:relative;}
         .movement-calendar-day.empty{min-width:0;min-height:0;aspect-ratio:auto;}
         .movement-calendar-day:not(:disabled){cursor:pointer;}
@@ -487,13 +523,15 @@ export default function MovementActivity({ days = [], compact = false, title = '
       ) : (
         <div style={{ marginTop:12 }}>
           <div className="movement-calendar-toolbar" style={{marginBottom:10}}>
-            <button type="button" onClick={() => canGoPrev && setCalendarMonth(shiftMonth(calendarMonth, -1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
+            <button type="button" onClick={() => canGoPrev && setCalendarMonth(shiftMonth(calendarMonth, -1))} disabled={!canGoPrev} aria-label="Previous month" style={{width:44,height:44,minWidth:44,minHeight:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoPrev?1:.35,cursor:canGoPrev?'pointer':'default'}}>‹</button>
             <div style={{textAlign:'center',minWidth:0}}><strong style={{fontSize:13}}>{calendarMonth.toLocaleDateString([], { month:'long', year:'numeric' })}</strong><div style={{fontSize:9.5,color:'var(--ink-45)',marginTop:2}}>{monthRows.filter(row => Number(row.steps || 0) > 0).length} logged days</div></div>
-            <button type="button" onClick={() => canGoNext && setCalendarMonth(shiftMonth(calendarMonth, 1))} disabled={!canGoNext} aria-label="Next month" style={{width:44,height:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoNext?1:.35,cursor:canGoNext?'pointer':'default'}}>›</button>
+            <button type="button" onClick={() => canGoNext && setCalendarMonth(shiftMonth(calendarMonth, 1))} disabled={!canGoNext} aria-label="Next month" style={{width:44,height:44,minWidth:44,minHeight:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-70)',opacity:canGoNext?1:.35,cursor:canGoNext?'pointer':'default'}}>›</button>
           </div>
           
-          {monthLoading && <div className="movement-calendar-skeleton" aria-label="Loading month">{Array.from({length:14},(_,i)=><span key={i}/>)}</div>}
-          {monthError && <div className="movement-calendar-error"><span>{monthError}</span><button type="button" onClick={()=>setLoadedMonths(prev=>{const next=new Set(prev);next.delete(currentMonthKey);return next;})}>Retry</button></div>}
+          {(historyError || monthError || monthLoading) && <div style={{fontSize:10.5,color:historyError||monthError?'var(--ink-70)':'var(--ink-45)',marginBottom:8,textAlign:'center'}}>{historyError || monthError || 'Loading movement…'}{(historyError || monthError) && <button type="button" onClick={() => { if (historyError) { setHistoryReady(false); setHistoryError(''); } else { setMonthRetry(v => v + 1); } }} style={{marginLeft:6,minHeight:32,padding:'0 10px',border:'1px solid var(--line)',borderRadius:999,background:'var(--surface)',color:'var(--ink)',fontSize:10,fontWeight:800}}>Retry</button>}</div>}
+          {monthLoading && <div aria-label="Loading month" style={{display:'grid',gridTemplateColumns:'repeat(7,minmax(0,1fr))',gap:5,marginBottom:8}}>
+            {Array.from({length:14},(_,i)=><span key={i} style={{height:12,borderRadius:6,background:'var(--line)',opacity:i%2?.45:.7,animation:'activepulse 1.2s ease-in-out infinite'}} />)}
+          </div>}
           <div className="movement-calendar-grid" style={{opacity:monthLoading?.45:1,transition:'opacity 120ms ease'}}>
             {['S','M','T','W','T','F','S'].map((d, i) => <div key={`${d}-${i}`} style={{textAlign:'center',fontSize:9,color:'var(--ink-45)',fontWeight:800,paddingBottom:2,minHeight:16}}>{d}</div>)}
             {calendar.map((d, i) => {

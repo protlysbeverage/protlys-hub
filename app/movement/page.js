@@ -3,50 +3,14 @@ import { createClient } from '@/lib/supabase/server';
 import AppShell from '@/components/AppShell';
 import MovementPolish from './MovementPolish';
 
-function localDateStr(date = new Date()) {
-  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
-}
-
 export default async function MovementPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
 
-  const todayDate = new Date();
-  const today = localDateStr(todayDate);
-  const weekAgoDate = new Date(today + 'T12:00:00+03:00');
-  weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
-  const weekAgoStr = localDateStr(weekAgoDate);
-
-  const [
-    { data: profile },
-    { data: todaySteps },
-    { data: weekSteps },
-    { data: achievements },
-    { data: currentGoal },
-  ] = await Promise.all([
-    supabase.from('profiles').select('display_name, avatar_url, step_goal, step_streak, total_steps, last_step_date, activity_level').eq('id', user.id).single(),
-    supabase.from('daily_steps').select('steps, source, synced_at').eq('user_id', user.id).eq('step_date', today).single(),
-    supabase.from('daily_steps').select('step_date, steps, source, synced_at').eq('user_id', user.id).gte('step_date', weekAgoStr).lte('step_date', today).order('step_date'),
-    supabase.from('user_achievements').select('earned_at, achievements(slug, name, icon, description)').eq('user_id', user.id).order('earned_at', { ascending: false }).limit(5),
-    supabase.from('goals').select('step_target, started_at').eq('user_id', user.id).eq('is_current', true).single(),
-  ]);
-
   return (
     <AppShell>
-      <MovementPolish
-        profile={profile || {}}
-        todaySteps={todaySteps?.steps || 0}
-        lastSync={todaySteps?.synced_at || null}
-        source={todaySteps?.source || null}
-        weekSteps={weekSteps || []}
-        movementDays={weekSteps || []}
-        currentStreak={profile?.step_streak || 0}
-        userId={user.id}
-        recentAchievements={(achievements || []).map(a => ({ ...a.achievements, earned_at: a.earned_at }))}
-        currentGoal={currentGoal?.step_target || profile?.step_goal || 7500}
-        activityLevel={profile?.activity_level || null}
-      />
+      <MovementPolish userId={user.id} />
     </AppShell>
   );
 }
