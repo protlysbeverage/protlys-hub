@@ -40,6 +40,9 @@ export default async function ChallengesPage({ searchParams }) {
   }
 
   const ids = challenges.map(c => c.id);
+  const progressResults = ids.length ? await Promise.all(ids.map(async id => { const {data} = await supabase.rpc('challenge_progress',{p_challenge_id:id}); return [Number(id),data||[]]; })) : [];
+  const progressByChallenge = Object.fromEntries(progressResults);
+
   const [{ data:members }, { data:counts }, { data:previewRows }] = await Promise.all([
     ids.length ? supabase.from('challenge_members').select('challenge_id').eq('user_id', user.id).in('challenge_id', ids) : Promise.resolve({data:[]}),
     ids.length ? supabase.rpc('challenge_member_counts', { p_challenge_ids: ids }) : Promise.resolve({data:[]}),
@@ -78,6 +81,6 @@ export default async function ChallengesPage({ searchParams }) {
   const groupLastMessages=Object.fromEntries(groupIds.map(gid=>{const m=latestByGroup[gid];const p=m?groupProfileMap[m.sender_id]:null;return [gid,m?{...m,sender_name:p?.display_name||'Member'}:null]}));
   return <AppShell><ChallengesClient
     challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} memberPreviews={memberPreviews}
-    userId={user.id} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
+    userId={user.id} progressByChallenge={progressByChallenge} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
   /></AppShell>;
 }
