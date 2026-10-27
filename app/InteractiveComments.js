@@ -22,7 +22,7 @@ function timeAgo(value) {
 
 function CommentRow({ comment, onLike, onReply }) {
   const [replyOpen,setReplyOpen]=useState(false); const [reply,setReply]=useState(''); const [posting,setPosting]=useState(false);
-  async function submitReply(){ const clean=reply.trim(); if(!clean||posting)return; setPosting(true); const ok=await onReply(comment.id,clean); setPosting(false); if(ok){setReply('');setReplyOpen(false);} }
+  async function submitReply(){ const clean=reply.trim(); if(!clean||posting)return; setPosting(true); try{const ok=await onReply(comment.id,clean);if(ok){setReply('');setReplyOpen(false);}}finally{setPosting(false);} }
   return <div style={{ display:'flex',gap:8,alignItems:'flex-start' }}>
     <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} userId={comment.user_id}/>
     <div style={{ minWidth:0,flex:1 }}>
@@ -36,11 +36,11 @@ function CommentRow({ comment, onLike, onReply }) {
 
 export default function InteractiveComments({ postId, initialCount=0 }) {
   const inputRef=useRef(null); const [comments,setComments]=useState(null); const [expanded,setExpanded]=useState(false); const [loading,setLoading]=useState(false); const [posting,setPosting]=useState(false); const [error,setError]=useState(''); const [body,setBody]=useState('');
-  async function load(){ if(loading)return; setLoading(true);setError('');const result=await getFeedCommentsAction({postId});setLoading(false);if(result?.error){setError(result.error);return;}setComments(result.comments||[]); }
+  async function load(){ if(loading)return; setLoading(true);setError('');try{const result=await getFeedCommentsAction({postId});if(result?.error){setError(result.error);return;}setComments(result.comments||[]);}catch{setError('Could not load comments. Check your connection and try again.');}finally{setLoading(false);} }
   async function focusComments(){if(comments===null)await load();requestAnimationFrame(()=>inputRef.current?.focus());}
   async function toggleCommentLike(commentId){setComments(current=>(current||[]).map(comment=>comment.id===commentId?{...comment,liked:!comment.liked,like_count:Math.max(0,(comment.like_count||0)+(comment.liked?-1:1))}:comment));const result=await toggleFeedCommentLikeAction({commentId});if(result?.error){setError(result.error);await load();}}
   async function replyTo(commentId,replyBody){const result=await addFeedCommentAction({postId,body:replyBody,parentCommentId:commentId});if(result?.error){setError(result.error);return false;}await load();setExpanded(true);return true;}
-  async function submit(){const clean=body.trim();if(!clean||posting)return;setPosting(true);setError('');const result=await addFeedCommentAction({postId,body:clean});if(result?.error){setError(result.error);setPosting(false);return;}setBody('');await load();setPosting(false);setExpanded(true);}
+  async function submit(){const clean=body.trim();if(!clean||posting)return;setPosting(true);setError('');try{const result=await addFeedCommentAction({postId,body:clean});if(result?.error){setError(result.error);return;}setBody('');await load();setExpanded(true);}catch{setError('Could not post. Check your connection and try again.');}finally{setPosting(false);}}
   const list=comments||[];const roots=list.filter(comment=>!comment.parent_comment_id);const replies=list.filter(comment=>comment.parent_comment_id);const visibleRoots=expanded?roots:roots.slice(0,3);const hiddenCount=Math.max(0,roots.length-3);
   return <div className="interactive-comments" style={{ marginTop:10 }}>
     {error&&<div style={{ color:'#B3261E',fontSize:12,marginTop:8 }}>{error}</div>}

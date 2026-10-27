@@ -6,7 +6,6 @@ import { useRouter } from 'next/navigation';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import PostShareSheet from '@/components/PostShareSheet';
-import { ShareIcon } from '@/components/ShareIcon';
 import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
 import {
   createFeedPostAction,
@@ -27,11 +26,11 @@ const POST_TYPES = [
 ];
 
 function Icon({ name, size = 18, strokeWidth = 1.8 }) {
-  if (name === 'share') return <ShareIcon size={size} />;
   const paths = {
     image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M3 16l5-5 4 4 3-3 6 6" /></>,
     chart: <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
-        more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
+    share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
+    more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
     edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></>,
     trash: <><path d="M4 7h16" /><path d="M10 11v6M14 11v6" /><path d="M6 7l1 14h10l1-14M9 7V4h6v3" /></>,
     x: <><path d="M6 6l12 12" /><path d="M18 6 6 18" /></>,
@@ -117,11 +116,16 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
     const body = ref.current?.value?.trim();
     if (!body || loading) return;
     setLoading(true); setError('');
-    const result = await addFeedCommentAction({ postId, body, parentCommentId });
-    setLoading(false);
-    if (result?.error) { setError(result.error); return; }
-    ref.current.value = '';
-    await onDone?.();
+    try {
+      const result = await addFeedCommentAction({ postId, body, parentCommentId });
+      if (result?.error) { setError(result.error); return; }
+      if (ref.current) ref.current.value = '';
+      await onDone?.();
+    } catch {
+      setError('Could not post. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
   return <div className="profile-comment-input" style={{ marginTop: compact ? 7 : 14, display: 'flex', gap: compact ? 7 : 10, alignItems: 'center' }}>
     <input ref={ref} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
@@ -159,11 +163,17 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
   const [expanded, setExpanded] = useState(false);
 
   async function loadComments() {
+    if (loading) return;
     setLoading(true); setError('');
-    const result = await getFeedCommentsAction({ postId });
-    setLoading(false);
-    if (result?.error) { setError(result.error); return; }
-    setComments(result.comments || []);
+    try {
+      const result = await getFeedCommentsAction({ postId });
+      if (result?.error) { setError(result.error); return; }
+      setComments(result.comments || []);
+    } catch {
+      setError('Could not load comments. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
 
   useEffect(() => {
@@ -176,7 +186,7 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
     if (result?.error) { setError(result.error); await loadComments(); }
   }
 
-  if (comments === null) return <button onClick={loadComments} disabled={loading} style={{ border: 0, background: 'transparent', padding: 0, color: 'var(--ink-45)', fontSize: 12, fontWeight: 700, cursor: 'pointer' }}>{loading ? 'Loading…' : `${initialCount || 0} ${initialCount === 1 ? 'comment' : 'comments'}`}</button>;
+  if (comments === null) return <div className="profile-comments" style={{ marginTop:10 }}><button type="button" onClick={loadComments} disabled={loading} style={{ border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:12,fontWeight:700,cursor:'pointer' }}>{loading?'Loading…':`${initialCount||0} ${initialCount===1?'comment':'comments'}`}</button>{error&&<div style={{color:'#B3261E',fontSize:12,marginTop:8}}>{error}</div>}<CommentInput postId={postId} onDone={async()=>{await loadComments();onCommented?.();}} /></div>;
 
   const roots = comments.filter(comment => !comment.parent_comment_id);
   const replies = comments.filter(comment => comment.parent_comment_id);
@@ -268,7 +278,7 @@ function RelaxationContextCard() {
   </Link>;
 }
 
-export default function FeedClient({ posts, likedIds, userId, profile, cheerNotifications=[] }) {
+export default function FeedClient({ posts, likedIds, userId, profile }) {
   const router = useRouter();
   const [liked, setLiked] = useState(new Set(likedIds));
   const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
@@ -288,7 +298,6 @@ export default function FeedClient({ posts, likedIds, userId, profile, cheerNoti
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
     <ComposePost profile={profile} onPosted={() => { showToast('Posted'); router.refresh(); }} />
-    {cheerNotifications.length>0&&<div style={{display:'grid',gap:7,margin:'12px 0'}}>{cheerNotifications.map(n=><div key={n.id} style={{minHeight:44,display:'flex',alignItems:'center',gap:9,padding:'10px 12px',border:'1px solid var(--line)',borderRadius:14,background:n.is_read?'var(--white)':'var(--green-soft)',fontSize:12,fontWeight:n.is_read?650:800}}><span aria-hidden="true">👏</span><span style={{flex:1}}>{n.body}</span>{!n.is_read&&<span aria-label="Unread" style={{width:8,height:8,borderRadius:'50%',background:'var(--green)',flex:'0 0 8px'}}/>}</div>)}</div>}
 
     <RelaxationContextCard />
 

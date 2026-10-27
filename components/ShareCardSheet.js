@@ -5,7 +5,6 @@ import { createPortal } from 'react-dom';
 import { toPng } from 'html-to-image';
 import QRCode from 'qrcode';
 import ShareCard from './ShareCard';
-import { ShareIcon } from './ShareIcon';
 
 const LOOKS=['dark','light','surface'];
 const LABELS={dark:'Dark',light:'Light',surface:'Surface'};
@@ -18,6 +17,7 @@ function publicShareUrl(metric,data){
   const path=paths[metric]||'/movement';
   return 'https://hub.protlys.com'+path+'?utm_source=share&utm_medium=card&utm_campaign='+encodeURIComponent(metric||'movement');
 }
+function ShareGlyph(){return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="18" cy="5" r="2.2"/><circle cx="6" cy="12" r="2.2"/><circle cx="18" cy="19" r="2.2"/><path d="m8 11 7.8-4.6M8 13l7.8 4.6"/></svg>}
 function SaveGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M5 4h14v16H5z"/><path d="M8 4v5h8V4M8 20v-6h8v6"/></svg>}
 function LinkGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15"/><path d="M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15"/></svg>}
 function assetDataUrl(path){return fetch(path,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Unable to load '+path);return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const f=new FileReader();f.onload=()=>resolve(f.result);f.onerror=reject;f.readAsDataURL(blob)}))}
@@ -25,7 +25,7 @@ async function waitForImages(node){await Promise.all([...node.querySelectorAll('
 function computeScale(cardWidth=360,cardHeight=640,actionHeight=116){
   if(typeof window==='undefined')return 1;
   const w=(window.innerWidth-32)/cardWidth;
-  const h=(window.innerHeight-56-16-20-42-16-actionHeight-24)/cardHeight;
+  const h=(window.innerHeight-56-42-actionHeight-72)/cardHeight;
   return Math.max(0.35,Math.min(1.2,w,h));
 }
 function idle(fn){if(typeof window==='undefined')return()=>{};if('requestIdleCallback'in window){const id=window.requestIdleCallback(fn,{timeout:500});return()=>window.cancelIdleCallback?.(id)}const id=window.setTimeout(fn,120);return()=>window.clearTimeout(id)}
@@ -182,7 +182,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
             {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
           </div>
           <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
-            <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareIcon />Share {labels[selected]} card</>}</button>
+            <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {labels[selected]} card</>}</button>
             <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
               {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
               {showCopy&&<button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>}
@@ -193,14 +193,14 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       
       ) : (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
-          <div style={{height:cardHeight*scale,flex:'0 0 '+cardHeight*scale+'px',display:'flex',alignItems:'center',justifyContent:'center',overflow:'hidden',padding:0,marginTop:16}}>
+          <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 16px'}}>
             {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
           </div>
-          <div style={{height:42,flex:'0 0 42px',width:'100%',display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:12,alignItems:'center',marginTop:20,marginBottom:16}}>
-            {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:0,width:'100%',padding:'0 10px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800,whiteSpace:'nowrap'}}>{labels[look]}</button>)}
+          <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:16,marginBottom:12}}>
+            {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
           </div>
-          <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:12,paddingTop:0}}>
-            <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareIcon />Share {labels[selected]} card</>}</button>
+          <div style={{height:actionHeight,flex:'0 0 '+actionHeight+'px',display:'flex',flexDirection:'column',justifyContent:'flex-end',gap:8,paddingTop:8}}>
+            <button type="button" onClick={share} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:56,flex:'0 0 56px',border:0,borderRadius:28,background:'#6BCB45',color:'#111111',fontSize:14,fontWeight:900,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:9,opacity:(busy||!assets[selected]||!assets.qr||!shareData.hasData)?.55:1}}>{busy?'Preparing…':<><ShareGlyph/>Share {labels[selected]} card</>}</button>
             <div style={{height:44,display:'grid',gridTemplateColumns:(showSave&&showCopy?'1fr 1fr':'1fr'),gap:8}}>
               {showSave&&<button type="button" onClick={save} disabled={busy||!assets[selected]||!assets.qr||!shareData.hasData} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><SaveGlyph/>Save image</button>}
               {showCopy&&<button type="button" onClick={copyLink} disabled={busy} style={{height:44,border:'1px solid #AEB7B0',borderRadius:22,background:'#FFFFFF',color:'#111111',fontSize:12,fontWeight:800,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><LinkGlyph/>Copy link</button>}
@@ -216,3 +216,10 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
 }
 
 export default function ShareCardSheet(props){return <ShareCardSheetInner {...props}/>}
+export function ShareIconButton({onClick,label='Share',disabled=false,variant='default'}){
+  const compact=variant==='movement' || variant==='inline';
+  return <button type="button" aria-label={label} title={label} disabled={disabled} onClick={e=>{e.stopPropagation();onClick?.()}} style={compact
+    ? {width:40,height:40,minWidth:40,border:0,borderRadius:0,background:'transparent',color:'var(--ink-45)',display:'inline-flex',alignItems:'center',justifyContent:'center',cursor:disabled?'not-allowed':'pointer',padding:0,opacity:disabled?.45:1}
+    : {width:44,height:44,minWidth:44,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--surface)',color:'var(--ink-45)',display:'grid',placeItems:'center',cursor:disabled?'not-allowed':'pointer',padding:0,opacity:disabled?.45:1}
+  }><span style={{width:18,height:18,display:'grid',placeItems:'center'}}><ShareGlyph/></span></button>
+}
