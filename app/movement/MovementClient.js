@@ -7,6 +7,7 @@ import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
 import { createClient } from '@/lib/supabase/client';
 import WeeklyGroupLeaderboard from '@/components/WeeklyGroupLeaderboard';
+import AndroidStepTrackingCard from '@/components/AndroidStepTrackingCard';
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -156,7 +157,8 @@ export default function MovementClient({ profile, todaySteps = 0, lastSync, sour
           <span className="protlys-segmented-indicator" aria-hidden="true" style={{transform:movementView === 'leaderboard' ? 'translateX(100%)' : 'translateX(0)'}} />
         </div>
       </div>
-      {movementView === 'leaderboard' ? <div className="screen-pad" style={{paddingTop:0,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}><WeeklyGroupLeaderboard userId={userId} mode="leaderboard" onModeChange={setMovementView}/></div> : <div className="screen-pad" style={{paddingTop:6}}> 
+      {movementView === 'leaderboard' ? <div className="screen-pad" style={{paddingTop:0,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}><WeeklyGroupLeaderboard userId={userId} mode="leaderboard" onModeChange={setMovementView}/></div> : <div className="screen-pad" style={{paddingTop:6}}>
+        <AndroidStepTrackingCard />
         <div className="hub-card" style={{padding:16}}>
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
