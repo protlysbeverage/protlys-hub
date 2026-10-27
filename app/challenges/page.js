@@ -6,8 +6,13 @@ export default async function ChallengesPage({ searchParams }) {
   const params = await searchParams;
   const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
   const challengeId = typeof params?.challenge === 'string' ? params.challenge : '';
+  const joinCode = typeof params?.join === 'string' ? params.join : '';
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
+  if (!user && joinCode) {
+    const { redirect } = await import('next/navigation');
+    redirect(`/login?next=${encodeURIComponent(`/challenges?join=${joinCode}`)}`);
+  }
   if (!user && challengeId) {
     const next = `/hub/challenges?challenge=${encodeURIComponent(challengeId)}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ''}`;
     const { redirect } = await import('next/navigation');
