@@ -1,0 +1,3 @@
+'use client';
+export function memberInitial(name){return String(name||'Member').trim().slice(0,1).toUpperCase();}
+export default function MemberAvatar({user,size=40,className=''}){const name=user?.username||user?.display_name||'Member';return user?.avatar_url?<img className={className} src={user.avatar_url} alt="" width={size} height={size} style={{width:size,height:size,borderRadius:'50%',objectFit:'cover',border:'1px solid var(--line)',flex:`0 0 ${size}px`}}/>:<span className={className} aria-hidden="true" style={{width:size,height:size,borderRadius:'50%',display:'grid',placeItems:'center',background:'var(--green-soft)',color:'var(--green-dark)',border:'1px solid var(--line)',fontWeight:800,flex:`0 0 ${size}px`}}>{memberInitial(name)}</span>}
