@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import ShareCardSheet from '@/components/ShareCardSheet';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { chooseMessage, currentStreak, messageForSession, monthlyCardData, rememberSessionMessage, sessionCardData, suggestions as meditationSuggestions } from '@/lib/meditation-share';
+import { formatMinutes, groupSessionsByLocalDay, localDateKey, monthTotals, recentSessionDays } from '@/lib/stillness-history';
 
 const STORAGE = {
   haptics: 'protlys-relaxation-haptics',
@@ -106,6 +107,7 @@ export default function RelaxationClient() {
   const [shareOpen, setShareOpen] = useState(false);
   const [shareData, setShareData] = useState(null);
   const [shareSuggestions, setShareSuggestions] = useState([]);
+  const [showEarlierMonths,setShowEarlierMonths]=useState(false);
 
   const elapsedRef = useRef(0);
   const phaseRef = useRef(phase);
@@ -430,6 +432,12 @@ export default function RelaxationClient() {
   const cycles = selected ? cycleCount(selected.pattern, elapsed) : 0;
   const minutesCompleted = Math.max(1, Math.round(elapsed / 60));
   const isSessionScreen = status !== 'list';
+  const localTimeZone=typeof Intl!=='undefined'?(Intl.DateTimeFormat().resolvedOptions().timeZone||'Africa/Nairobi'):'Africa/Nairobi';
+  const todayKey=localDateKey(new Date(),localTimeZone); const monthKey=todayKey.slice(0,7);
+  const historyDays=recentSessionDays(meditationRows,localTimeZone,5); const currentMonth=monthTotals(meditationRows,monthKey,localTimeZone);
+  const allDays=groupSessionsByLocalDay(meditationRows,localTimeZone); const byDate=new Map(allDays.map(d=>[d.date,d]));
+  const stripDays=Array.from({length:14},(_,i)=>{const d=new Date(todayKey+'T12:00:00Z');d.setUTCDate(d.getUTCDate()-(13-i));return d.toISOString().slice(0,10);});
+  const olderMonthKeys=[...new Set(allDays.map(d=>d.date.slice(0,7)).filter(k=>k!==monthKey))].sort().reverse();
 
   const stageStyle = useMemo(() => ({
     '--relax-progress': `${progress * 100}%`,
@@ -474,7 +482,10 @@ export default function RelaxationClient() {
 
           <section className="relax-history" aria-label="Meditation history">
             <div className="relax-history-head"><div><span className="eyebrow">Stillness</span><h2>Past sessions</h2></div><button type="button" className="relax-monthly-link" onClick={()=>{setShareData(monthlyCardData(meditationRows));setShareSuggestions([]);setShareOpen(true);}}>Monthly recap <span aria-hidden="true">→</span></button></div>
-            {meditationRows.length ? <div className="relax-history-list">{meditationRows.slice(0,6).map(row=><div className="relax-history-row" key={row.id}><div><strong>{row.minutes} {row.minutes===1?'minute':'minutes'}</strong><small>{new Date(row.completed_at).toLocaleDateString(undefined,{weekday:'short',month:'short',day:'numeric'})}</small></div><ShareIconButton variant="movement" label="Share meditation session" onClick={()=>{setShareData(sessionCardData(meditationRows,row.minutes,new Date(row.completed_at),messageForSession(row.id)));setShareSuggestions(meditationSuggestions(row.minutes,currentStreak(meditationRows),meditationRows,new Date(row.completed_at)));setShareOpen(true);}}/></div>)}</div> : <div className="relax-history-empty">Complete a session to start your stillness history.</div>}
+            {meditationRows.length ? <><div className="relax-month-summary"><div className="relax-summary-grid"><div><strong>{currentMonth.sessions}</strong><span>Sessions</span></div><div><strong>{formatMinutes(currentMonth.minutes)}</strong><span>Total time</span></div><div><strong>{currentMonth.activeDays}</strong><span>Active days</span></div></div><div className="relax-strip" aria-label="Last 14 days">{stripDays.map(key=>{const day=byDate.get(key);const count=day?.sessions.length||0;const label=new Intl.DateTimeFormat(undefined,{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(key+'T12:00:00Z'));return <span key={key} className={(count?'active ':'')+(key===todayKey?'today':'')} aria-label={`${label}: ${count} ${count===1?'session':'sessions'}`}/>} )}</div></div>
+            <div className="relax-history-list">{historyDays.map(day=>{const dateText=new Intl.DateTimeFormat(undefined,{weekday:'short',day:'numeric',month:'short',timeZone:'UTC'}).format(new Date(day.date+'T12:00:00Z'));return <details className="relax-history-day" key={day.date}><summary><span><strong>{dateText}</strong>{day.date===todayKey&&<em>Today</em>}</span><span>{day.sessions.length} {day.sessions.length===1?'session':'sessions'} · {day.minutes} min</span></summary><div className="relax-day-sessions">{day.sessions.map((row,i)=><div key={row.id}><span>Session {i+1}</span><span>{row.minutes} min · {new Intl.DateTimeFormat(undefined,{hour:'numeric',minute:'2-digit',timeZone:localTimeZone}).format(new Date(row.completed_at))}</span></div>)}<ShareIconButton variant="movement" label={`Share ${dateText} meditation`} onClick={()=>{const row=day.sessions[0];setShareData(sessionCardData(meditationRows,day.minutes,new Date(row.completed_at),messageForSession(row.id)));setShareSuggestions([]);setShareOpen(true);}}/></div></details>})}</div>
+            <button type="button" className="relax-earlier" onClick={()=>setShowEarlierMonths(v=>!v)} aria-expanded={showEarlierMonths}>See earlier months <span aria-hidden="true">{showEarlierMonths?'↑':'↓'}</span></button>
+            {showEarlierMonths&&<div className="relax-older-months">{olderMonthKeys.length?olderMonthKeys.map(key=>{const totals=monthTotals(meditationRows,key,localTimeZone);const label=new Intl.DateTimeFormat(undefined,{month:'long',year:'numeric',timeZone:'UTC'}).format(new Date(key+'-01T12:00:00Z'));return <div key={key}><strong>{label}</strong><span>{totals.sessions} sessions · {formatMinutes(totals.minutes)} · {totals.activeDays} active days</span></div>}):<div>No earlier months yet.</div>}</div>}</> : <div className="relax-history-empty">No sessions yet. Your first one will show up here.</div>}
           </section>
 
           <section className="relax-note">
@@ -548,13 +559,13 @@ export default function RelaxationClient() {
         .relax-history-head{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;margin-bottom:10px;}
         .relax-history-head h2{font-size:18px;margin:4px 0 0;}
         .relax-monthly-link{border:0;background:none;color:var(--green-dark);font-size:11px;font-weight:800;padding:6px 0;cursor:pointer;white-space:nowrap;}
-        .relax-history-list{display:grid;gap:1px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--line);}
-        .relax-history-row{min-height:58px;padding:9px 10px 9px 13px;background:var(--white);display:flex;align-items:center;justify-content:space-between;gap:10px;}
+        .relax-month-summary{border:1px solid var(--line);border-radius:16px;padding:13px;background:var(--white);margin-bottom:10px}.relax-summary-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}.relax-summary-grid>div{min-width:0}.relax-summary-grid strong,.relax-summary-grid span{display:block}.relax-summary-grid strong{font-size:16px}.relax-summary-grid span{font-size:9.5px;color:var(--ink-45);margin-top:3px}.relax-strip{display:grid;grid-template-columns:repeat(14,1fr);gap:4px;margin-top:13px}.relax-strip span{aspect-ratio:1;border-radius:3px;background:var(--line);border:1px solid transparent}.relax-strip span.active{background:var(--green)}.relax-strip span.today{outline:1px solid var(--green-dark);outline-offset:2px}.relax-history-list{display:grid;gap:1px;border:1px solid var(--line);border-radius:16px;overflow:hidden;background:var(--line);}
+        .relax-history-day{background:var(--white)}.relax-history-day summary{min-height:48px;padding:9px 12px;display:flex;align-items:center;justify-content:space-between;gap:10px;cursor:pointer;list-style:none}.relax-history-day summary::-webkit-details-marker{display:none}.relax-history-day summary>span{font-size:11px}.relax-history-day summary>span:first-child{display:flex;align-items:center;gap:7px}.relax-history-day summary em{font-style:normal;font-size:9px;border:1px solid var(--line);border-radius:999px;padding:2px 6px;color:var(--green-dark)}.relax-day-sessions{padding:0 12px 10px;border-top:1px solid var(--line)}.relax-day-sessions>div{min-height:36px;display:flex;align-items:center;justify-content:space-between;font-size:10.5px;color:var(--ink-45)}.relax-earlier{width:100%;min-height:48px;margin-top:8px;border:1px solid var(--line);border-radius:14px;background:var(--white);color:inherit;display:flex;align-items:center;justify-content:space-between;padding:0 13px;font-weight:750}.relax-older-months{border:1px solid var(--line);border-radius:14px;overflow:hidden;margin-top:8px}.relax-older-months>div{min-height:48px;padding:9px 12px;background:var(--white);display:flex;flex-direction:column;justify-content:center;border-bottom:1px solid var(--line)}.relax-older-months>div:last-child{border-bottom:0}.relax-older-months strong{font-size:11.5px}.relax-older-months span{font-size:9.5px;color:var(--ink-45);margin-top:2px}
         .relax-history-row>div{display:flex;align-items:baseline;gap:8px;min-width:0;}
         .relax-history-row strong{font-size:13px;white-space:nowrap;}
         .relax-history-row small{font-size:10.5px;color:var(--ink-45);white-space:nowrap;}
         .relax-history-empty{padding:14px;border:1px dashed var(--line);border-radius:14px;color:var(--ink-45);font-size:11px;}
-        html.protlys-dark .relax-history-row{background:#151815;}
+        html.protlys-dark .relax-history-day,html.protlys-dark .relax-month-summary,html.protlys-dark .relax-earlier,html.protlys-dark .relax-older-months>div{background:#151815;}
 
 
         .relax-back{display:inline-flex;align-items:center;justify-content:center;gap:7px;min-height:48px;padding:6px 4px;border:0;background:none;color:var(--ink-70);font-size:13px;font-weight:800;cursor:pointer;}
