@@ -134,7 +134,7 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
   </div>;
 }
 
-function CommentRow({ comment, onLike, onReply, postId, depth = 0 }) {
+function CommentRow({ comment, onLike, onReply, postId, depth = 0, currentUserId, onModerate }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const likeCount = Number(comment.like_count || 0);
   return <Message className="protlys-feed-comment">
@@ -144,7 +144,7 @@ function CommentRow({ comment, onLike, onReply, postId, depth = 0 }) {
     <MessageContent>
       <MessageHeader>
         <Link href={`/member/${comment.user_id}`} style={{fontWeight:800,color:'var(--ink)',textDecoration:'none'}}>{comment.profiles?.display_name || 'Member'}</Link>
-        <span>{timeAgo(comment.created_at)}</span>
+        <span style={{display:'inline-flex',alignItems:'center',gap:6}}>{timeAgo(comment.created_at)}{String(comment.user_id)!==String(currentUserId)&&<button type="button" aria-label="Comment options" onClick={()=>onModerate?.(comment)} style={{border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:18,lineHeight:1}}>⋮</button>}</span>
       </MessageHeader>
       <Bubble><BubbleContent>{comment.body}</BubbleContent></Bubble>
       <MessageFooter>
@@ -156,7 +156,7 @@ function CommentRow({ comment, onLike, onReply, postId, depth = 0 }) {
   </Message>;
 }
 
-function CommentsPanel({ postId, initialCount, onCommented }) {
+function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onModerate }) {
   const [comments, setComments] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
@@ -197,8 +197,8 @@ function CommentsPanel({ postId, initialCount, onCommented }) {
     {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
     {!error && comments.length > 0 && <div style={{ display: 'grid', gap: 12 }}>
       {visibleRoots.map(comment => <div key={comment.id}>
-        <CommentRow comment={comment} onLike={toggleCommentLike} postId={postId} onReply={loadComments} />
-        {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 44, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} postId={postId} onReply={loadComments} depth={1} /></div>)}
+        <CommentRow comment={comment} onLike={toggleCommentLike} postId={postId} onReply={loadComments} currentUserId={currentUserId} onModerate={onModerate} />
+        {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 44, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} postId={postId} onReply={loadComments} depth={1} currentUserId={currentUserId} onModerate={onModerate} /></div>)}
       </div>)}
       {hiddenCount > 0 && <button onClick={() => setExpanded(value => !value)} style={{ border: 0, background: 'transparent', padding: 0, textAlign: 'left', color: 'var(--ink-60)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>{expanded ? 'Show fewer comments' : `View ${hiddenCount} more comment${hiddenCount === 1 ? '' : 's'}`}</button>}
     </div>}
@@ -282,6 +282,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
   const router = useRouter();
   const [liked, setLiked] = useState(new Set(likedIds));
   const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
+  const [moderationMenu, setModerationMenu] = useState(null); const [moderationSheet, setModerationSheet] = useState(null);
   function showToast(message) { setToast(message); window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => setToast(''), 2200); }
   async function handleLike(postId) {
     const wasLiked = liked.has(postId);
@@ -292,6 +293,9 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
   }
   async function handleDelete(post) { setMenu(null); if (!window.confirm('Delete this post? This will also remove its photo and comments.')) return; const result = await deleteFeedPostAction({ postId: post.id }); if (result?.error) { showToast(result.error); return; } showToast('Post deleted'); router.refresh(); }
   function handleShare(post) { setSharePost(post); }
+  function moderate(target) { setModerationMenu(target); }
+  function openReport(target) { setModerationMenu(null); setModerationSheet({ ...target, mode:'report' }); }
+  function openBlock(target) { setModerationMenu(null); setModerationSheet({ ...target, mode:'block' }); }
 
   return <div className="screen-pad feed-home">
     <span className="eyebrow">Community</span>
@@ -316,7 +320,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
           </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 7 }}>
             <span className="profile-post-type">{postTypeLabel(post.post_type)}</span>
-            {post.user_id === userId && <div style={{ position: 'relative' }}><button onClick={() => setMenu(menu === post.id ? null : post.id)} aria-label="Post options" className="post-more-btn"><Icon name="more" size={18} /></button>{menu === post.id && <div className="post-menu"><button onClick={() => { setEditing(post.id); setMenu(null); }}><Icon name="edit" size={15} /> Edit post</button><button onClick={() => handleDelete(post)} className="danger"><Icon name="trash" size={15} /> Delete post</button></div>}</div>}
+            {post.user_id === userId ? <div style={{ position: 'relative' }}><button onClick={() => setMenu(menu === post.id ? null : post.id)} aria-label="Post options" className="post-more-btn"><Icon name="more" size={18} /></button>{menu === post.id && <div className="post-menu"><button onClick={() => { setEditing(post.id); setMenu(null); }}><Icon name="edit" size={15} /> Edit post</button><button onClick={() => handleDelete(post)} className="danger"><Icon name="trash" size={15} /> Delete post</button></div>}</div> : <div style={{position:'relative'}}><button onClick={() => moderate({userId:post.user_id,username:post.profiles?.display_name||'Member',contentType:'post',contentId:post.id,snapshot:{body:post.body,post_type:post.post_type,created_at:post.created_at}})} aria-label="Post options" className="post-more-btn"><Icon name="more" size={18}/></button>{moderationMenu?.contentId===post.id && <div className="post-menu"><button onClick={() => openReport(moderationMenu)}>Report</button><button onClick={() => openBlock(moderationMenu)} className="danger">Block</button></div>}</div>}
           </div>
         </div>
 
@@ -334,7 +338,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
               <button onClick={() => handleShare(post)} className="profile-action share-action"><Icon name="share" size={19} /><span>Share</span></button>
             </div>
             <div className="profile-like-summary">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</div>
-            <div id={`comments-${post.id}`}><CommentsPanel postId={post.id} initialCount={commentCount} onCommented={() => router.refresh()} /></div>
+            <div id={`comments-${post.id}`}><CommentsPanel postId={post.id} initialCount={commentCount} onCommented={() => router.refresh()} currentUserId={userId} onModerate={comment => moderate({userId:comment.user_id,username:comment.profiles?.display_name||'Member',contentType:'comment',contentId:comment.id,snapshot:{body:comment.body,created_at:comment.created_at,post_id:post.id}})} /></div>
           </div>
         </>}
       </article>;
@@ -342,5 +346,6 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
     <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
+    {moderationSheet && <ModerationSheet open={true} onClose={() => setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={() => { setModerationSheet(null); router.refresh(); }} />}
   </div>;
 }
