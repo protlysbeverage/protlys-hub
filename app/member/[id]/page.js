@@ -12,6 +12,7 @@ import ShareProfileButton from '@/components/ShareProfileButton';
 import ProfilePhotoLightbox from '@/components/ProfilePhotoLightbox';
 import ProfilePhotoUploader from '@/components/ProfilePhotoUploader';
 import ProfileLiveRefresh from '@/components/ProfileLiveRefresh';
+import ProfileModerationButton from '@/components/ProfileModerationButton';
 
 function Avatar({ name, url, size = 72 }) { if(url)return <ProfilePhotoLightbox name={name} url={url} size={size}/>; const style={width:size,height:size,minWidth:size,minHeight:size,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block',flexShrink:0}; return <div style={{...style,background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:size*.34,fontWeight:800,color:'var(--green-dark)'}}>{(name||'?')[0].toUpperCase()}</div>; }
 function Icon({name,size=17}) { const paths={arrow:<path d="M19 12H5m6-6-6 6 6 6"/>}; return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">{paths[name]}</svg>; }
@@ -72,6 +73,7 @@ export default async function MemberProfilePage({params}){
       </div>
       <div style={{display:'flex',gap:8,marginTop:12}}>
         <ShareProfileButton profileId={id} displayName={displayName} avatarUrl={profile.avatar_url||''} joinedAt={formatJoinedDate(profile.created_at)} founding={true} activeDays={publicMovementDays.slice(-14).map(row=>({key:row.step_date,steps:row.steps,logged:true}))} totalSteps={displayTotalSteps} currentStreak={displayStepStreak} bestStreak={Math.max(displayStepStreak,Number(profile.streak||0))}/>
+        {!isOwnProfile&&<ProfileModerationButton userId={id} displayName={displayName}/>} 
         {!isOwnProfile&&<FollowButton profileId={id} initialFollowing={Boolean(followRow)} initialFollowers={followerCount||0} compact/>}
       </div>
       <div style={{marginTop:13,borderTop:'1px solid var(--line)',borderBottom:'1px solid var(--line)',padding:'10px 0'}}>
