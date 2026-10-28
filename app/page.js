@@ -6,6 +6,7 @@ import FollowingFeed from './FollowingFeed';
 import FeedModeTabs from '@/components/FeedModeTabs';
 import FeedVisualPatch from '@/components/FeedVisualPatch';
 import FeedInteractionEnhancer from './FeedInteractionEnhancer';
+import { getBlockedUserIds } from '@/lib/blocks';
 
 export default async function FeedPage({ searchParams }) {
   const params = await searchParams;
@@ -20,7 +21,9 @@ export default async function FeedPage({ searchParams }) {
     supabase.from('notifications').select('id,body,created_at,is_read').eq('user_id',user.id).eq('type','cheer').order('created_at',{ascending:false}).limit(5),
   ]);
 
-  const followingIds = (followingRows || []).map(row => row.following_id).filter(Boolean);
+  const blockedIds = await getBlockedUserIds(supabase, user.id);
+  const blockedSet = new Set(blockedIds.map(String));
+  const followingIds = (followingRows || []).map(row => row.following_id).filter(id => id && !blockedSet.has(String(id)));
   let normalizedPosts = [];
   let likedIds = [];
 
@@ -31,7 +34,7 @@ export default async function FeedPage({ searchParams }) {
       .in('user_id', followingIds)
       .order('created_at', { ascending:false })
       .limit(30) : { data: [] };
-    normalizedPosts = (posts || []).map(post => ({ ...post, like_count: post.feed_likes?.[0]?.count || 0, comment_count: post.feed_comments?.[0]?.count || 0, profiles: post.profiles || { id: post.user_id, display_name:null, avatar_url:null } }));
+    normalizedPosts = (posts || []).filter(post => !blockedSet.has(String(post.user_id))).map(post => ({ ...post, like_count: post.feed_likes?.[0]?.count || 0, comment_count: post.feed_comments?.[0]?.count || 0, profiles: post.profiles || { id: post.user_id, display_name:null, avatar_url:null } }));
   } else {
     const [{ data: posts }, { data: myLikes }] = await Promise.all([
       supabase.from('feed_posts').select(`id, user_id, body, image_url, post_type, stats, created_at, profiles(id, display_name, avatar_url), feed_likes(count), feed_comments(count)`).order('created_at', { ascending:false }).limit(20),
