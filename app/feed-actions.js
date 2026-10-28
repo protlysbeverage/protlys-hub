@@ -149,16 +149,20 @@ export async function getFeedCommentsAction({ postId }) {
 
   const comments = data || [];
   if (!comments.length) return { comments: [] };
+  const { data: blockedRows } = await supabase.from('blocks').select('blocked_id').eq('blocker_id', user.id);
+  const blockedIds = new Set((blockedRows || []).map(row => String(row.blocked_id)));
+  const visibleComments = comments.filter(comment => !blockedIds.has(String(comment.user_id)));
+  if (!visibleComments.length) return { comments: [] };
 
   // Batch comment likes instead of making two database requests per comment.
-  const commentIds = comments.map(comment => String(comment.id));
+  const commentIds = visibleComments.map(comment => String(comment.id));
   const { data: likeRows, error: likesError } = await supabase
     .from('feed_comment_likes')
     .select('id, comment_id, user_id')
     .in('comment_id', commentIds);
 
   // Keep comments readable even if the optional comment-like table has not been migrated yet.
-  if (likesError) return { comments: comments.map(comment => ({ ...comment, like_count: 0, liked: false })) };
+  if (likesError) return { comments: visibleComments.map(comment => ({ ...comment, like_count: 0, liked: false })) };
 
   const counts = new Map();
   const likedIds = new Set();
