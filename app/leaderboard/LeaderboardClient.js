@@ -8,6 +8,7 @@ import { strictRank } from '@/lib/leaderboard-ranking';
 import MemberAvatar from '@/components/MemberAvatar';
 import MemberProfileSheet from '@/components/MemberProfileSheet';
 import { hallUrl, hallViewFromHash, leaderboardUrl } from '@/lib/hall-navigation';
+import { getBlockedUserIds } from '@/lib/blocks';
 
 const PAGE_SIZE = 50;
 const DAY_LABELS = ['T','F','S','S','M','T','W'];
@@ -62,6 +63,7 @@ export default function LeaderboardClient({ viewerId }) {
   const [hall, setHall] = useState([]);
   const [hallLoading, setHallLoading] = useState(false);
   const [ending, setEnding] = useState(() => countdownText());
+  const [blockedIds, setBlockedIds] = useState([]);
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -78,6 +80,12 @@ export default function LeaderboardClient({ viewerId }) {
   function showHall(){if(window.location.hash!=='#hall-of-fame')window.history.pushState({protlysView:'hall'},'',hallUrl(window.location.pathname,window.location.search));setView('hall');}
   function showLeaderboard({back=false}={}){if(back&&window.location.hash==='#hall-of-fame'){window.history.back();return;}if(window.location.hash==='#hall-of-fame')window.history.replaceState({},'',leaderboardUrl(window.location.pathname,window.location.search));setView('leaderboard');}
   function choosePeriod(value){setPeriod(value);showLeaderboard();const q=new URLSearchParams(window.location.search);q.set('period',value);window.history.replaceState({},'',window.location.pathname+'?'+q.toString());}
+
+  useEffect(() => {
+    let cancelled = false;
+    getBlockedUserIds(createClient(), viewerId).then(ids => { if (!cancelled) setBlockedIds(ids); }).catch(() => {});
+    return () => { cancelled = true; };
+  }, [viewerId]);
 
   useEffect(() => {
     let cancelled = false;
@@ -100,19 +108,21 @@ export default function LeaderboardClient({ viewerId }) {
         setLoading(false);
         return;
       }
-      setRows(data || []);
-      setMyRank((rank || []).find(r => r.user_id === viewerId)?.rank || null);
+      const blocked = new Set(blockedIds.map(String));
+      const visibleData = (data || []).filter(row => !blocked.has(String(row.user_id))).map((row,index)=>({...row,rank:index+1}));
+      setRows(visibleData);
+      setMyRank(visibleData.find(r => r.user_id === viewerId)?.rank || null);
       if (scope === 'city' && !data?.length && !rank) setCityMissing(true);
       setLoading(false);
     }
     load();
     return () => { cancelled = true; };
-  }, [scope, groupId, period, view]);
+  }, [scope, groupId, period, view, blockedIds.join(',')]);
 
   const viewer = useMemo(() => rows.find(row => row.user_id === viewerId) || null, [rows, viewerId]);
   useEffect(() => { const t=window.setInterval(()=>setEnding(countdownText()),60000); return()=>window.clearInterval(t); }, []);
 
-  useEffect(() => { if(view!=='hall') return; let cancelled=false; (async()=>{ setHallLoading(true); const {data,error:e}=await createClient().rpc('get_hall_of_fame',{p_scope:scope,p_group_id:groupId,p_limit:12}); if(cancelled)return; if(e)setError(e.message||'Could not load Hall of Fame.'); else setHall(data||[]); setHallLoading(false); })(); return()=>{cancelled=true}; }, [scope,groupId,view]);
+  useEffect(() => { if(view!=='hall') return; let cancelled=false; (async()=>{ setHallLoading(true); const {data,error:e}=await createClient().rpc('get_hall_of_fame',{p_scope:scope,p_group_id:groupId,p_limit:12}); if(cancelled)return; if(e)setError(e.message||'Could not load Hall of Fame.'); else { const blocked = new Set(blockedIds.map(String)); setHall((data||[]).filter(row => !blocked.has(String(row.user_id)))); } setHallLoading(false); })(); return()=>{cancelled=true}; }, [scope,groupId,view,blockedIds.join(',')]);
 
   const rankedRows = useMemo(() => strictRank(rows), [rows]);
   const top = rankedRows.slice(0, 3);
@@ -126,7 +136,7 @@ export default function LeaderboardClient({ viewerId }) {
       p_group_id:groupId, p_period:period, p_limit:PAGE_SIZE, p_offset:rows.length
     });
     if (moreError) setError(moreError.message || 'Could not load more members.');
-    else setRows(prev => [...prev, ...(data || [])]);
+    else { const blocked = new Set(blockedIds.map(String)); setRows(prev => { const next=[...prev, ...(data || []).filter(row => !blocked.has(String(row.user_id)))]; return next.map((row,index)=>({...row,rank:index+1})); }); }
     setLoadingMore(false);
   }
 
