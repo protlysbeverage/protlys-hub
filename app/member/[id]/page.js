@@ -25,6 +25,7 @@ export const revalidate = 0;
 
 export default async function MemberProfilePage({params}){
   const {id}=await params; const supabase=await createClient(); const {data:{user}}=await supabase.auth.getUser(); if(!user)redirect('/login');
+  if(String(user.id)!==String(id)){const {data:blocked}=await supabase.from('blocks').select('blocked_id').eq('blocker_id',user.id).eq('blocked_id',id).maybeSingle();if(blocked)notFound();}
   const [{data:profile},{data:posts},{count:postCount},{data:achievements},{data:movementDays},{data:movementPosts},{count:followerCount},{count:followingCount},{data:followRow}]=await Promise.all([
     supabase.from('profiles').select('id, display_name, avatar_url, bio, created_at, streak, step_streak, total_steps, step_goal, target_g').eq('id',id).maybeSingle(),
     supabase.from('feed_posts').select('id, body, image_url, post_type, stats, created_at, feed_likes(count), feed_comments(count)').eq('user_id',id).order('created_at',{ascending:false}).limit(20),
