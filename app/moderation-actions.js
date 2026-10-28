@@ -92,6 +92,7 @@ export async function createReportAction({
     return { error: error.message };
   }
 
+  try { await supabase.functions.invoke('notify-report', { body: { reportId: data?.id } }); } catch (notificationError) { console.error('Report notification failed', notificationError); }
   revalidatePath('/settings');
   return { ok: true, reportId: data?.id };
 }
