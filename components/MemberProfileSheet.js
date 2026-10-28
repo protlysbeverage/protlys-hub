@@ -5,6 +5,7 @@ import {createClient} from '@/lib/supabase/client';
 import MemberAvatar from './MemberAvatar';
 import {isoWeekStart,weekContextLabel} from '@/lib/leaderboard-week';
 import {barHeight,compactSteps,dayMeta,MEMBER_MOVEMENT_CACHE_MS,normalizeMovementWindow} from '@/lib/member-movement';
+import ModerationSheet from './ModerationSheet';
 
 const TZ='Africa/Nairobi',cache=new Map();
 const fmt=v=>Number(v||0).toLocaleString('en-US');
@@ -16,6 +17,7 @@ async function loadMovement(id,groupId,force=false){
 }
 export default function MemberProfileSheet({open,row,weekStart,groupId=null,viewerId,onClose,returnFocusRef}){
  const [loadKey,setLoadKey]=useState(0),[state,setState]=useState({loading:true,stats:null,error:''}),[selectedDate,setSelectedDate]=useState('');
+ const [moderationSheet,setModerationSheet]=useState(null);
  const dialogRef=useRef(null),startY=useRef(null),closing=useRef(false),historyPushed=useRef(false),closeRef=useRef(onClose);closeRef.current=onClose;
  const finishClose=useCallback(()=>{closeRef.current?.()},[]);
  const close=useCallback(()=>{if(closing.current)return;closing.current=true;if(historyPushed.current){historyPushed.current=false;history.back();setTimeout(()=>{if(closing.current){closing.current=false;finishClose()}},180)}else{closing.current=false;finishClose()}},[finishClose]);
@@ -37,6 +39,6 @@ export default function MemberProfileSheet({open,row,weekStart,groupId=null,view
     <div className="member-chart-summary"><div><small>Total steps</small><strong>{state.loading?'—':fmt(summary?.total)}</strong></div><div><small>Daily average</small><strong>{state.loading?'—':fmt(summary?.average)}</strong></div><div><small>vs previous 7 days</small><strong className={summary?.changeTone==='positive'?'positive':''}>{state.loading?'—':summary?.change}</strong></div></div>
     {state.loading?<div className="member-chart-loading">{Array.from({length:7},(_,i)=><i key={i} style={{height:(25+i*9)+'px'}}/>)}</div>:<><div className="member-chart-plot">{summary?.average>0?<div className="member-chart-average" style={{bottom:(Math.min(118,(summary.average/summary.max)*118)+26)+'px'}}><span>Avg {compactSteps(summary.average)}</span></div>:null}{summary?.days.map(d=>{const m=dayMeta(d.date,today),active=d.date===selected?.date;return <button type="button" className="member-chart-column" key={d.date} aria-label={`${m.detail}: ${d.steps} steps`} onClick={()=>setSelectedDate(d.date)}><span className="member-chart-value">{compactSteps(d.steps)}</span><i className={'member-chart-bar '+(m.today?'today ':'')+(active?'selected':'')} style={{height:barHeight(d.steps,summary.max)+'px'}}/></button>})}</div><div className="member-chart-labels">{summary?.days.map(d=>{const m=dayMeta(d.date,today);return <div key={d.date} className={m.today?'today':''}><strong>{m.today?'Today':m.weekday}</strong><span>{m.day}</span></div>})}</div><div className="member-chart-detail"><div><strong>{selectedMeta?.detail} · {fmt(selected?.steps)} steps</strong><span>{selected?.steps?summary.average>0?pct+'% of your daily average':'No daily average yet':'No steps recorded'}</span></div><em>{summary?.best?.date===selected?.date?'★ Best day':selectedMeta?.today?'Today':''}</em></div></>}
    </div></>}
-  {row.user_id!==viewerId?<div className="member-sheet-actions"><button type="button" className="member-sheet-action primary">Cheer</button><a href={`/messages?member=${encodeURIComponent(row.user_id)}`} className="member-sheet-action">Message</a></div>:null}
+  {row.user_id!==viewerId?<><div className="member-sheet-actions"><button type="button" className="member-sheet-action primary">Cheer</button><a href={`/messages?member=${encodeURIComponent(row.user_id)}`} className="member-sheet-action">Message</a><button type="button" className="member-sheet-action" onClick={()=>setModerationSheet({mode:'report'})}>Report / Block</button></div>{moderationSheet&&<ModerationSheet open={true} onClose={()=>setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={row.user_id} reportedUsername={row.username||'Member'} contentType="profile" contentId={row.user_id} contentSnapshot={{user_id:row.user_id,username:row.username||null}} onBlocked={()=>{setModerationSheet(null);onClose?.();}}/>}</>:null}
  </section></div>,document.body);
 }
