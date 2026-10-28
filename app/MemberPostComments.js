@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { addFeedCommentAction, getFeedCommentsAction, getFeedLikeStateAction, toggleFeedLikeAction, toggleFeedCommentLikeAction } from './feed-actions';
+import ModerationSheet from '@/components/ModerationSheet';
+import { createClient } from '@/lib/supabase/client';
 
 function Avatar({ name, url, userId }) {
   const content = url ? <img src={url} alt="" style={{ width:30,height:30,minWidth:30,minHeight:30,aspectRatio:'1 / 1',borderRadius:'50%',objectFit:'cover',display:'block' }} /> : <div style={{ width:30,height:30,minWidth:30,minHeight:30,aspectRatio:'1 / 1',borderRadius:'50%',background:'var(--green-soft)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'var(--green-dark)' }}>{(name || '?')[0].toUpperCase()}</div>;
@@ -19,13 +21,13 @@ function timeAgo(value) {
 function HeartIcon({ liked }) { return <svg viewBox="0 0 24 24" width="15" height="15" fill={liked?'#E1306C':'none'} stroke={liked?'#E1306C':'currentColor'} strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20.8 8.8c0 5-8.8 10.2-8.8 10.2S3.2 13.8 3.2 8.8A4.4 4.4 0 0 1 12 7.4a4.4 4.4 0 0 1 8.8 1.4Z" /></svg>; }
 function CommentIcon() { return <svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M20 11.5a7.5 7.5 0 0 1-7.7 7.5 8.5 8.5 0 0 1-3.4-.7L4 20l1.3-3.7A7.2 7.2 0 0 1 4.5 12 7.5 7.5 0 0 1 12 4.5h.5A7.5 7.5 0 0 1 20 11.5Z" /></svg>; }
 
-function CommentRow({ comment, onLike, onReply }) {
+function CommentRow({ comment, onLike, onReply, currentUserId, onModerate }) {
   const [replyOpen,setReplyOpen]=useState(false); const [reply,setReply]=useState(''); const [posting,setPosting]=useState(false);
   async function submitReply(){ const clean=reply.trim(); if(!clean||posting)return; setPosting(true); try{const ok=await onReply(comment.id,clean);if(ok){setReply('');setReplyOpen(false);}}finally{setPosting(false);} }
   return <div style={{ display:'flex',gap:8,alignItems:'flex-start' }}>
     <Avatar name={comment.profiles?.display_name} url={comment.profiles?.avatar_url} userId={comment.user_id}/>
     <div style={{ minWidth:0,flex:1 }}>
-      <div style={{ fontSize:12,lineHeight:1.35 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight:800,color:'var(--ink)',textDecoration:'none' }}>{comment.profiles?.display_name||'Member'}</Link><span style={{ color:'var(--ink-45)',marginLeft:6,fontSize:10.5 }}>{timeAgo(comment.created_at)}</span></div>
+      <div style={{ fontSize:12,lineHeight:1.35,display:'flex',alignItems:'center',gap:6 }}><Link href={`/member/${comment.user_id}`} style={{ fontWeight:800,color:'var(--ink)',textDecoration:'none' }}>{comment.profiles?.display_name||'Member'}</Link><span style={{ color:'var(--ink-45)',fontSize:10.5 }}>{timeAgo(comment.created_at)}</span>{String(comment.user_id)!==String(currentUserId)&&<button type="button" aria-label="Comment options" onClick={()=>onModerate?.(comment)} style={{border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:18,lineHeight:1}}>⋮</button>}</div>
       <div style={{ fontSize:12.5,lineHeight:1.45,marginTop:2,whiteSpace:'pre-wrap',overflowWrap:'anywhere' }}>{comment.body}</div>
       <div style={{ display:'flex',alignItems:'center',gap:12,marginTop:5 }}><button type="button" onClick={()=>onLike(comment.id)} style={{ border:0,background:'transparent',padding:0,display:'inline-flex',alignItems:'center',gap:4,color:comment.liked?'#E1306C':'var(--ink-45)',fontSize:10.5,fontWeight:700,cursor:'pointer' }}><HeartIcon liked={comment.liked}/>{comment.like_count||0}</button><button type="button" onClick={()=>setReplyOpen(v=>!v)} style={{ border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:10.5,fontWeight:700,cursor:'pointer' }}>{replyOpen?'Cancel':'Reply'}</button></div>
       {replyOpen&&<div style={{ display:'flex',gap:7,marginTop:7 }}><input className="field-input" value={reply} onChange={e=>setReply(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submitReply()} placeholder="Reply…" style={{ flex:1,minWidth:0,padding:'7px 10px',fontSize:12 }}/><button type="button" className="btn-secondary" onClick={submitReply} disabled={posting||!reply.trim()} style={{ width:'auto',padding:'7px 10px',marginTop:0,fontSize:11 }}>{posting?'Posting…':'Reply'}</button></div>}
@@ -34,7 +36,8 @@ function CommentRow({ comment, onLike, onReply }) {
 }
 
 export default function MemberPostComments({ postId, initialCount=0, initialLikeCount=0 }) {
-  const inputRef=useRef(null); const [comments,setComments]=useState(null); const [expanded,setExpanded]=useState(false); const [loading,setLoading]=useState(false); const [posting,setPosting]=useState(false); const [error,setError]=useState(''); const [body,setBody]=useState(''); const [likeCount,setLikeCount]=useState(Number(initialLikeCount||0)); const [liked,setLiked]=useState(false); const [likeLoading,setLikeLoading]=useState(false);
+  const inputRef=useRef(null); const [comments,setComments]=useState(null); const [viewerId,setViewerId]=useState(null); const [moderationSheet,setModerationSheet]=useState(null); const [expanded,setExpanded]=useState(false); const [loading,setLoading]=useState(false); const [posting,setPosting]=useState(false); const [error,setError]=useState(''); const [body,setBody]=useState(''); const [likeCount,setLikeCount]=useState(Number(initialLikeCount||0)); const [liked,setLiked]=useState(false); const [likeLoading,setLikeLoading]=useState(false);
+  useEffect(()=>{createClient().auth.getUser().then(({data})=>setViewerId(data?.user?.id||null));},[]);
   async function load(){ if(loading)return; setLoading(true);setError('');try{const result=await getFeedCommentsAction({postId});if(result?.error){setError(result.error);return;}setComments(result.comments||[]);}catch{setError('Could not load comments. Check your connection and try again.');}finally{setLoading(false);} }
   useEffect(()=>{if(initialCount>0)load();getFeedLikeStateAction({postId}).then(result=>{if(!result?.error)setLiked(Boolean(result.liked));});},[postId,initialCount]);
   async function focusComments(){if(comments===null)await load();requestAnimationFrame(()=>inputRef.current?.focus());}
@@ -51,11 +54,12 @@ export default function MemberPostComments({ postId, initialCount=0, initialLike
       {error&&<div style={{ color:'#B3261E',fontSize:12,marginTop:8 }}>{error}</div>}
       {!error&&list.length===0&&<div style={{ fontSize:12,color:'var(--ink-45)',padding:'7px 0 1px' }}>No comments yet.</div>}
       {!error&&roots.length>0&&<div style={{ display:'grid',gap:11,marginTop:8 }}>
-        {visibleRoots.map(comment=><div key={comment.id}><CommentRow comment={comment} onLike={toggleCommentLike} onReply={replyTo}/>{replies.filter(reply=>String(reply.parent_comment_id)===String(comment.id)).map(reply=><div key={reply.id} style={{ marginLeft:38,marginTop:9,paddingLeft:10,borderLeft:'2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} onReply={replyTo}/></div>)}</div>)}
+        {visibleRoots.map(comment=><div key={comment.id}><CommentRow comment={comment} onLike={toggleCommentLike} onReply={replyTo} currentUserId={viewerId} onModerate={comment=>setModerationSheet({mode:'report',userId:comment.user_id,username:comment.profiles?.display_name||'Member',contentType:'comment',contentId:comment.id,snapshot:{body:comment.body,created_at:comment.created_at,post_id:postId}})}/>{replies.filter(reply=>String(reply.parent_comment_id)===String(comment.id)).map(reply=><div key={reply.id} style={{ marginLeft:38,marginTop:9,paddingLeft:10,borderLeft:'2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} onReply={replyTo} currentUserId={viewerId} onModerate={comment=>setModerationSheet({mode:'report',userId:comment.user_id,username:comment.profiles?.display_name||'Member',contentType:'comment',contentId:comment.id,snapshot:{body:comment.body,created_at:comment.created_at,post_id:postId}})}/></div>)}</div>)}
         {hiddenCount>0&&<button onClick={()=>setExpanded(true)} style={{ border:0,background:'transparent',padding:'2px 0',textAlign:'left',color:'var(--ink-60)',font:'inherit',fontSize:12,fontWeight:700,cursor:'pointer' }}>View {hiddenCount} more {hiddenCount===1?'comment':'comments'}</button>}
       </div>}
       {expanded&&roots.length>3&&<button onClick={()=>setExpanded(false)} style={{ border:0,background:'transparent',padding:'6px 0 2px',color:'var(--ink-60)',font:'inherit',fontSize:12,fontWeight:700,cursor:'pointer' }}>Show less</button>}
     </>}
+    {moderationSheet&&<ModerationSheet open={true} onClose={()=>setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={()=>setModerationSheet(null)}/>} 
     <div style={{ display:'flex',gap:8,marginTop:9 }}><input ref={inputRef} value={body} onChange={e=>setBody(e.target.value)} onKeyDown={e=>e.key==='Enter'&&submit()} className="field-input" placeholder="Add a comment…" style={{ flex:1,minWidth:0,padding:'8px 11px',fontSize:12.5 }}/><button onClick={submit} disabled={posting||!body.trim()} className="btn-secondary" style={{ width:'auto',padding:'8px 12px',marginTop:0,fontSize:12 }}>{posting?'Posting…':'Post'}</button></div>
   </div>;
 }
