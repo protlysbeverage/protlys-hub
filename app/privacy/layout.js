@@ -1,0 +1,1 @@
+export const metadata = { title: 'Privacy Policy | Protlys Hub', description: 'Read how Protlys Hub handles account, movement, protein and community information.', alternates: { canonical: '/privacy' } }; export default function PrivacyLayout({ children }) { return children; }

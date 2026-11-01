@@ -45,10 +45,10 @@ export async function proxy(request) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const publicPaths = ['/login', '/signup', '/reset-password', '/calculator', '/c', '/challenges'];
-  const isPublicPath = publicPaths.some((path) =>
-    request.nextUrl.pathname.startsWith(path)
-  );
+  const pathname = request.nextUrl.pathname;
+  const publicExactPaths = ['/', '/robots.txt', '/sitemap.xml', '/privacy', '/terms', '/delete-account'];
+  const publicPathPrefixes = ['/login', '/signup', '/reset-password', '/calculator', '/c', '/challenges'];
+  const isPublicPath = publicExactPaths.includes(pathname) || publicPathPrefixes.some((path) => pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
     const url = request.nextUrl.clone();
@@ -60,9 +60,10 @@ export async function proxy(request) {
   const isCalculatorPath = request.nextUrl.pathname === '/calculator' || request.nextUrl.pathname === '/c';
   const isChallengesPath = request.nextUrl.pathname === '/challenges' || request.nextUrl.pathname.startsWith('/challenges/');
 
-  if (user && isPublicPath && !isCalculatorPath && !isChallengesPath) {
+  const isAuthEntryPath = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/reset-password');
+  if (user && isAuthEntryPath) {
     const url = request.nextUrl.clone();
-    url.pathname = '/';
+    url.pathname = '/movement';
     url.search = '';
     return NextResponse.redirect(url);
   }

@@ -1,0 +1,1 @@
+export const metadata = { title: 'Create an account | Protlys Hub', description: 'Join Protlys Hub to track movement, work towards protein goals and take part in community challenges.', alternates: { canonical: '/signup' }, robots: { index: false, follow: true } }; export default function SignupLayout({ children }) { return children; }

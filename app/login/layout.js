@@ -1,0 +1,1 @@
+export const metadata = { title: 'Log in | Protlys Hub', description: 'Log in to your Protlys Hub account to view your movement, protein goals and community activity.', alternates: { canonical: '/login' }, robots: { index: false, follow: true } }; export default function LoginLayout({ children }) { return children; }
