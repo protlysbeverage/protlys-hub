@@ -61,7 +61,7 @@ export async function proxy(request) {
   const isChallengesPath = request.nextUrl.pathname === '/challenges' || request.nextUrl.pathname.startsWith('/challenges/');
 
   const isAuthEntryPath = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/reset-password');
-  if (user && isAuthEntryPath) {
+  if (user && (isAuthEntryPath || pathname === '/')) {
     const url = request.nextUrl.clone();
     url.pathname = '/movement';
     url.search = '';
