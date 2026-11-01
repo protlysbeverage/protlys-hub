@@ -1,0 +1,1 @@
+export const metadata = { title: 'Delete Your Account | Protlys Hub', description: 'Find instructions for deleting your Protlys Hub account and associated personal data.', alternates: { canonical: '/delete-account' } }; export default function DeleteAccountLayout({ children }) { return children; }
