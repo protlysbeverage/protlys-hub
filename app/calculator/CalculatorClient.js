@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
+import Link from 'next/link';
 import { saveTargetAction } from '@/app/actions';
 import { createClient } from '@/lib/supabase/client';
 import TargetShareButton from './TargetShareButton';
@@ -143,6 +144,7 @@ export default function CalculatorClient({ savedTarget, profile }) {
   const step={fontSize:14,fontWeight:900,letterSpacing:'.05em'};
 
   return <div className="screen-pad" style={{maxWidth:520,margin:'0 auto',paddingBottom:'calc(130px + env(safe-area-inset-bottom))'}}>
+    <nav aria-label="Breadcrumb" style={{fontSize:12,marginBottom:14,color:'var(--ink-70)'}}><Link href="/" style={{color:'inherit'}}>Home</Link><span aria-hidden="true"> / </span><span aria-current="page">Protein calculator</span></nav>
     <span className="eyebrow">Protlys</span><h1 style={{fontSize:26}}>Find your daily protein target</h1><p className="subhead">Get a clear number you can actually use. Takes about 30 seconds.</p>
     <section className="section-card" style={{marginTop:18}}><span className="field-label calculator-step-label" style={step}>STEP 1 — YOUR WEIGHT</span><div style={{display:'flex',alignItems:'center',gap:10,marginTop:8}}><input id="weight" type="number" min="30" max="250" value={weight} onChange={e=>setWeight(e.target.value)} className="field-input mono" style={{fontSize:28,fontWeight:700,flex:1}}/><span className="mono" style={{fontSize:18,opacity:.55}}>kg</span></div></section>
     <section className="section-card" style={{marginTop:14}}><StepProgress step={2}/><span className="field-label calculator-step-label" style={step}>STEP 2 — BIOLOGICAL SEX</span><OptionGrid items={SEX} value={sex} onChange={setSex} getValue={i=>i.v} height={112}/></section>
