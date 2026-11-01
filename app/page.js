@@ -80,6 +80,7 @@ export default function HomePage() {
         <nav aria-label="Main navigation" style={{ display: 'flex', alignItems: 'center', gap: 18, fontSize: 14, fontWeight: 700 }}>
           <a href="#how-it-works" style={{ color: 'inherit', textDecoration: 'none' }}>How it works</a>
           <a href="#faqs" style={{ color: 'inherit', textDecoration: 'none' }}>FAQs</a>
+          <Link href="/calculator" style={{ color: 'inherit', textDecoration: 'none' }}>Protein calculator</Link>
           <Link href="/login" style={{ color: 'inherit', textDecoration: 'none' }}>Log in</Link>
           <Link href="/signup" style={{ background: '#6BCB45', color: '#10200F', padding: '11px 17px', borderRadius: 999, textDecoration: 'none' }}>Join Protlys</Link>
         </nav>
