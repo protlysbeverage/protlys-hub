@@ -1,0 +1,1 @@
+export const metadata = { title: 'Terms & Conditions | Protlys Hub', description: 'Read the terms that apply when you create an account and use Protlys Hub.', alternates: { canonical: '/terms' } }; export default function TermsLayout({ children }) { return children; }
