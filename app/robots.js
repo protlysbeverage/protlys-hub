@@ -5,6 +5,5 @@ export default function robots() {
       { userAgent: 'Googlebot', allow: '/' },
     ],
     sitemap: 'https://hub.protlys.com/sitemap.xml',
-    host: 'https://hub.protlys.com',
   };
 }
