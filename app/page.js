@@ -1,8 +1,4 @@
 import Link from 'next/link';
-import { redirect } from 'next/navigation';
-import { createClient } from '@/lib/supabase/server';
-
-export const dynamic = 'force-dynamic';
 
 const siteUrl = 'https://hub.protlys.com';
 const faqs = [
@@ -72,11 +68,7 @@ function Schema() {
   return <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd).replace(/</g, '\\u003c') }} />;
 }
 
-export default async function HomePage() {
-  const supabase = await createClient();
-  const { data: { user } } = await supabase.auth.getUser();
-  if (user) redirect('/movement');
-
+export default function HomePage() {
   return (
     <main style={{ minHeight: '100vh', background: '#F7F8F6', color: '#172019', fontFamily: "'Plus Jakarta Sans',system-ui,sans-serif" }}>
       <Schema />
