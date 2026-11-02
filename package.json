@@ -10,19 +10,20 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
+    "@fontsource-variable/manrope": "^5.2.6",
+    "@fontsource-variable/space-grotesk": "^5.2.6",
+    "@fontsource/anton": "^5.2.6",
+    "@fontsource/archivo": "^5.2.6",
+    "@fontsource/ibm-plex-mono": "^5.2.6",
+    "@fontsource/plus-jakarta-sans": "^5.2.6",
+    "@sentry/nextjs": "^11.10.0",
     "@supabase/ssr": "^0.12.4",
     "@supabase/supabase-js": "^2.45.0",
+    "html-to-image": "^1.11.13",
     "next": "^16.3.2",
     "qrcode": "^1.5.4",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
-    "html-to-image": "^1.11.13",
-    "@fontsource/plus-jakarta-sans": "^5.2.6",
-    "@fontsource-variable/manrope": "^5.2.6",
-    "@fontsource-variable/space-grotesk": "^5.2.6",
-    "@fontsource/ibm-plex-mono": "^5.2.6",
-    "@fontsource/anton": "^5.2.6",
-    "@fontsource/archivo": "^5.2.6",
     "sharp": "^0.34.3"
   },
   "devDependencies": {
