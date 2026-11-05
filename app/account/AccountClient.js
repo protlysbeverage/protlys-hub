@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-import MemberShareSheet from '@/components/MemberShareSheet';
+const MemberShareSheet = dynamic(() => import('@/components/MemberShareSheet'), { ssr: false });
 import BuildStamp from '@/components/BuildStamp';
-import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
+const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 
 function Icon({ name, size = 19 }) {
   const paths = {
@@ -25,6 +26,9 @@ function Icon({ name, size = 19 }) {
 function formatDistance(km) { if (km < 1) return `${Math.round(km * 1000)} m`; return `${km.toFixed(1)} km`; }
 function dateLabel(key) {
   return new Intl.DateTimeFormat('en-US', { timeZone:'Africa/Nairobi', weekday:'short', month:'short', day:'numeric' }).format(new Date(key + 'T12:00:00+03:00'));
+}
+function localDateStr(date = new Date()) {
+  return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 
 function CircularProgress({ steps, goal, dayKey }) {
@@ -84,6 +88,76 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
+  const [dashboardTodaySteps, setDashboardTodaySteps] = useState(Number(dashboardTodaySteps || 0));
+  const [dashboardWeekSteps, setDashboardWeekSteps] = useState(weekSteps || []);
+  const [dashboardMovementDays, setDashboardMovementDays] = useState(dashboardMovementDays || []);
+  const [dashboardRefreshing, setDashboardRefreshing] = useState(false);
+  const [dashboardError, setDashboardError] = useState('');
+  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v1:${profile.id}` : null;
+
+  const refreshDashboard = useCallback(async () => {
+    if (!profile?.id) return;
+    setDashboardRefreshing(true);
+    setDashboardError('');
+    try {
+      const today = localDateStr();
+      const oldestDate = new Date(today + 'T12:00:00+03:00');
+      oldestDate.setUTCDate(oldestDate.getUTCDate() - 364);
+      const oldest = localDateStr(oldestDate);
+      const supabase = createClient();
+      const { data, error } = await supabase
+        .from('daily_steps')
+        .select('step_date,steps')
+        .eq('user_id', profile.id)
+        .gte('step_date', oldest)
+        .lte('step_date', today)
+        .order('step_date', { ascending: false })
+        .limit(365);
+      if (error) throw error;
+
+      const rows = data || [];
+      const weekAgoDate = new Date(today + 'T12:00:00+03:00');
+      weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
+      const weekAgo = localDateStr(weekAgoDate);
+      const recentWeek = rows
+        .filter(row => row.step_date >= weekAgo && row.step_date <= today)
+        .sort((a, b) => a.step_date.localeCompare(b.step_date));
+      const todayCount = Number(recentWeek.find(row => row.step_date === today)?.steps || 0);
+
+      setDashboardMovementDays(rows);
+      setDashboardWeekSteps(recentWeek);
+      setDashboardTodaySteps(todayCount);
+      if (dashboardCacheKey) {
+        try {
+          localStorage.setItem(dashboardCacheKey, JSON.stringify({
+            movementDays: rows,
+            weekSteps: recentWeek,
+            todaySteps: todayCount,
+            cachedAt: Date.now(),
+          }));
+        } catch {}
+      }
+    } catch {
+      setDashboardError('Could not refresh movement history. Saved activity remains visible when available.');
+    } finally {
+      setDashboardRefreshing(false);
+    }
+  }, [profile?.id, dashboardCacheKey]);
+
+  useEffect(() => {
+    try {
+      const raw = dashboardCacheKey ? localStorage.getItem(dashboardCacheKey) : null;
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (Array.isArray(cached.movementDays)) {
+          setDashboardMovementDays(cached.movementDays);
+          setDashboardWeekSteps(Array.isArray(cached.weekSteps) ? cached.weekSteps : []);
+          setDashboardTodaySteps(Number(cached.todaySteps || 0));
+        }
+      }
+    } catch {}
+    refreshDashboard();
+  }, [dashboardCacheKey, refreshDashboard]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
@@ -112,22 +186,22 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const activeDays = Array.from({ length:7 }, (_, index) => {
     const date = new Date(); date.setDate(date.getDate() - (6 - index));
     const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
-    const row = weekSteps.find(item => item.step_date === key);
+    const row = dashboardWeekSteps.find(item => item.step_date === key);
     return { key, steps:Number(row?.steps || 0) };
   });
   const activeDayCount = activeDays.filter(day => day.steps > 0).length;
   const activeRows = activeDays.filter(day => day.steps > 0).slice().reverse();
   const weekTotalSteps = activeDays.reduce((sum,day)=>sum+day.steps,0);
-  const mascotProgress = Math.min(100, Math.max(0, Math.round((Number(todaySteps || 0) / Math.max(1, stepGoal)) * 100)));
+  const mascotProgress = Math.min(100, Math.max(0, Math.round((Number(dashboardTodaySteps || 0) / Math.max(1, stepGoal)) * 100)));
   const mascotMessage = mascotProgress >= 100 ? 'Goal reached. That’s the energy.' : mascotProgress >= 60 ? 'You’re getting close. Keep moving.' : mascotProgress > 0 ? 'Good start. Let’s build the day.' : 'Ready when you are. Let’s get moving.';
   useEffect(() => { mascotRef.current?.setProgress(mascotProgress); }, [mascotProgress]);
-  const todayDistanceKm = (Number(todaySteps) * 0.75) / 1000;
+  const todayDistanceKm = (Number(dashboardTodaySteps) * 0.75) / 1000;
   const totalDistanceKm = (totalSteps * 0.75) / 1000;
   const sheetGoal = Number(stepGoal) || 8000;
-  const movementHistory = useMemo(() => (movementDays || [])
+  const movementHistory = useMemo(() => (dashboardMovementDays || [])
     .map(row => ({ key: row.step_date, steps: Number(row.steps || 0) }))
     .filter(row => row.key)
-    .sort((a, b) => a.key.localeCompare(b.key)), [movementDays]);
+    .sort((a, b) => a.key.localeCompare(b.key)), [dashboardMovementDays]);
   const last30Movement = useMemo(() => {
     const end = new Date(todayKey + 'T12:00:00+03:00');
     const keys = [];
@@ -201,6 +275,11 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <span className="eyebrow">Dashboard</span>
       <h1 style={{fontSize:"clamp(20px, 5vw, 26px)",marginBottom:4,lineHeight:1.2,overflowWrap:"anywhere"}}>{greetingText}{greetingUsername ? ` ${greetingUsername}` : ""}</h1>
       <p className="subhead">A simple view of your movement and what you have recorded.</p>
+      {dashboardRefreshing && <p className="subhead" aria-live="polite" style={{marginTop:6}}>Refreshing your activity…</p>}
+      {dashboardError && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',margin:'12px 0',border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:12}}>
+        <span>{dashboardError}</span>
+        <button type="button" onClick={refreshDashboard} style={{border:0,borderRadius:999,padding:'7px 11px',background:'#8F241D',color:'#fff',fontWeight:800,cursor:'pointer'}}>Retry</button>
+      </div>}
 
       <div role="link" tabIndex={0} aria-label="Go to your profile" onClick={() => router.push(profileUrl)} onKeyDown={(event) => { if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); router.push(profileUrl); } }} style={{display:'flex',alignItems:'flex-start',gap:16,marginTop:16,background:'var(--card)',border:'1.5px solid var(--line)',borderRadius:16,padding:14,cursor:'pointer'}}>
         <button type="button" onClick={(event) => { event.stopPropagation(); fileRef.current?.click(); }} disabled={uploading} aria-label="Change profile photo" style={{width:76,height:76,minWidth:76,minHeight:76,borderRadius:'50%',background:'var(--green-soft)',border:0,padding:0,overflow:'hidden',position:'relative',display:'flex',alignItems:'center',justifyContent:'center',color:'var(--green-dark)',flex:'0 0 76px',cursor:'pointer'}}>
@@ -226,7 +305,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         <div className="dashboard-mascot-copy">
           <div className="dashboard-mascot-kicker">Your move</div>
           <div className="dashboard-mascot-message">{mascotMessage}</div>
-          <div className="dashboard-mascot-progress">{Number(todaySteps || 0).toLocaleString()} / {Number(stepGoal).toLocaleString()} steps</div>
+          <div className="dashboard-mascot-progress">{Number(dashboardTodaySteps || 0).toLocaleString()} / {Number(stepGoal).toLocaleString()} steps</div>
         </div>
       </section>
     </div>
@@ -234,7 +313,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     <div className="screen-pad" style={{paddingTop:4,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
-        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(todaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(dashboardTodaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
       </div>
 
 
