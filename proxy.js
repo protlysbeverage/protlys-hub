@@ -15,6 +15,7 @@ export async function proxy(request) {
     request.nextUrl.pathname === '/manifest' ||
     request.nextUrl.pathname === '/manifest.json' ||
     request.nextUrl.pathname === '/sw.js' ||
+    request.nextUrl.pathname === '/offline.html' ||
     request.nextUrl.pathname === '/version.json'
   ) {
     return NextResponse.next();
@@ -63,7 +64,7 @@ export async function proxy(request) {
   const isAuthEntryPath = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/reset-password');
   if (user && (isAuthEntryPath || pathname === '/')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/movement';
+    url.pathname = '/feed';
     url.search = '';
     return NextResponse.redirect(url);
   }
