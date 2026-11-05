@@ -16,7 +16,7 @@ self.addEventListener('install', event => {
     const loginResponse = await cache.match('/login');
     if (loginResponse) {
       const html = await loginResponse.clone().text();
-      const assets = [...html.matchAll(/["']([^"']*\\/_next\\/static\\/[^"']+)["']/g)]
+      const assets = [...html.matchAll(/["']([^"']*\/_next\/static\/[^"']+)["']/g)]
         .map(match => match[1])
         .filter(path => path.startsWith('/_next/static/'));
       await Promise.all(assets.map(async path => {
