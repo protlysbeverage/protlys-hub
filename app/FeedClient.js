@@ -2,7 +2,6 @@
 
 import Link from 'next/link';
 import { useRef, useState, useCallback, useEffect } from 'react';
-import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
@@ -283,7 +282,6 @@ function RelaxationContextCard() {
 }
 
 export default function FeedClient({ posts, likedIds, userId, profile, loadError: initialError, hasMore: initialHasMore, nextOffset: initialNextOffset }) {
-  const router = useRouter();
   const [feedPosts, setFeedPosts] = useState(posts || []);
   const [feedProfile, setFeedProfile] = useState(profile || null);
   const [feedError, setFeedError] = useState(initialError || '');
@@ -386,12 +384,24 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   function showToast(message) { setToast(message); window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => setToast(''), 2200); }
   async function handleLike(postId) {
     const wasLiked = liked.has(postId);
-    setLiked(current => { const next = new Set(current); if (next.has(postId)) next.delete(postId); else next.add(postId); return next; });
+    const delta = wasLiked ? -1 : 1;
+    setLiked(current => { const next = new Set(current); if (wasLiked) next.delete(postId); else next.add(postId); return next; });
+    setFeedPosts(current => current.map(post => post.id === postId ? { ...post, like_count: Math.max(0, Number(post.like_count || 0) + delta) } : post));
     const result = await toggleFeedLikeAction({ postId });
-    if (result?.error) { setLiked(current => { const next = new Set(current); if (wasLiked) next.add(postId); else next.delete(postId); return next; }); showToast(result.error); return; }
-    router.refresh();
+    if (result?.error) {
+      setLiked(current => { const next = new Set(current); if (wasLiked) next.add(postId); else next.delete(postId); return next; });
+      setFeedPosts(current => current.map(post => post.id === postId ? { ...post, like_count: Math.max(0, Number(post.like_count || 0) - delta) } : post));
+      showToast(result.error);
+    }
   }
-  async function handleDelete(post) { setMenu(null); if (!window.confirm('Delete this post? This will also remove its photo and comments.')) return; const result = await deleteFeedPostAction({ postId: post.id }); if (result?.error) { showToast(result.error); return; } showToast('Post deleted'); router.refresh(); }
+  async function handleDelete(post) {
+    setMenu(null);
+    if (!window.confirm('Delete this post? This will also remove its photo and comments.')) return;
+    const result = await deleteFeedPostAction({ postId: post.id });
+    if (result?.error) { showToast(result.error); return; }
+    setFeedPosts(current => current.filter(item => item.id !== post.id));
+    showToast('Post deleted');
+  }
   function handleShare(post) { setSharePost(post); }
   function moderate(target) { setModerationMenu(target); }
   function openReport(target) { setModerationMenu(null); setModerationSheet({ ...target, mode:'report' }); }
