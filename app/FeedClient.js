@@ -6,8 +6,6 @@ import { useRouter } from 'next/navigation';
 import dynamic from 'next/dynamic';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
-const PostShareSheet = dynamic(() => import('@/components/PostShareSheet'), { ssr: false });
-const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 import {
   createFeedPostAction,
   updateFeedPostAction,
@@ -18,6 +16,9 @@ import {
   addFeedCommentAction,
   getMoreFeedPostsAction,
 } from './feed-actions';
+
+const PostShareSheet = dynamic(() => import('@/components/PostShareSheet'), { ssr: false });
+const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 
 const POST_TYPES = [
   { value: 'progress', label: 'Progress' },
