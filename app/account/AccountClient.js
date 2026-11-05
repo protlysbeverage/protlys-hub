@@ -4,8 +4,9 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-const MemberShareSheet = dynamic(() => import('@/components/MemberShareSheet'), { ssr: false });
 import BuildStamp from '@/components/BuildStamp';
+
+const MemberShareSheet = dynamic(() => import('@/components/MemberShareSheet'), { ssr: false });
 const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 
 function Icon({ name, size = 19 }) {
@@ -88,9 +89,9 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
   const [message, setMessage] = useState('');
-  const [dashboardTodaySteps, setDashboardTodaySteps] = useState(Number(dashboardTodaySteps || 0));
+  const [dashboardTodaySteps, setDashboardTodaySteps] = useState(Number(todaySteps || 0));
   const [dashboardWeekSteps, setDashboardWeekSteps] = useState(weekSteps || []);
-  const [dashboardMovementDays, setDashboardMovementDays] = useState(dashboardMovementDays || []);
+  const [dashboardMovementDays, setDashboardMovementDays] = useState(movementDays || []);
   const [dashboardRefreshing, setDashboardRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
   const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v1:${profile.id}` : null;
