@@ -64,7 +64,7 @@ export async function proxy(request) {
   const isAuthEntryPath = pathname.startsWith('/login') || pathname.startsWith('/signup') || pathname.startsWith('/reset-password');
   if (user && (isAuthEntryPath || pathname === '/')) {
     const url = request.nextUrl.clone();
-    url.pathname = '/feed';
+    url.pathname = '/movement';
     url.search = '';
     return NextResponse.redirect(url);
   }
