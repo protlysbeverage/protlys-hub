@@ -258,7 +258,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 
   async function handleSignOut() {
     setSigningOut(true);
-    try { if (profile?.id) localStorage.removeItem(`protlys-feed-cache-v1:${profile.id}`); } catch {}
+    try { if (profile?.id) { localStorage.removeItem(`protlys-feed-cache-v1:${profile.id}`); localStorage.removeItem(`protlys-dashboard-cache-v1:${profile.id}`); } } catch {}
     const supabase = createClient(); await supabase.auth.signOut(); router.push('/login'); router.refresh();
   }
 
