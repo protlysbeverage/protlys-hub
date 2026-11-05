@@ -3,6 +3,7 @@
 import { createClient } from '@/lib/supabase/server';
 import { revalidatePath } from 'next/cache';
 import { applyMovementDelta, dateFromTimestamp, extractStepCount } from '@/lib/movement-sync';
+import { getFeedPage } from '@/lib/feed-data';
 
 async function getAuthedClient() {
   const supabase = await createClient();
@@ -237,4 +238,11 @@ export async function toggleFeedCommentLikeAction({ commentId }) {
   const { error } = await supabase.from('feed_comment_likes').insert({ comment_id: id, user_id: user.id });
   if (error) return { error: error.message };
   return { ok: true, liked: true };
+}
+
+
+export async function getMoreFeedPostsAction({ offset = 0 } = {}) {
+  const { supabase, user } = await getAuthedClient();
+  if (!user) return { error: 'Not signed in' };
+  return getFeedPage(supabase, user.id, offset);
 }
