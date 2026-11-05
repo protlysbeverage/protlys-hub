@@ -370,7 +370,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     } finally {
       setLoadingMore(false);
     }
-  }, [loadingMore, hasMore, feedError, nextOffset]);
+  }, [loadingMore, refreshing, hasMore, feedError, nextOffset]);
 
   useEffect(() => {
     const target = sentinelRef.current;
