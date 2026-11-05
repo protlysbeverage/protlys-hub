@@ -14,6 +14,7 @@ import {
   toggleFeedLikeAction,
   toggleFeedCommentLikeAction,
   addFeedCommentAction,
+  getFeedPageAction,
   getMoreFeedPostsAction,
 } from './feed-actions';
 
@@ -284,7 +285,10 @@ function RelaxationContextCard() {
 export default function FeedClient({ posts, likedIds, userId, profile, loadError: initialError, hasMore: initialHasMore, nextOffset: initialNextOffset }) {
   const router = useRouter();
   const [feedPosts, setFeedPosts] = useState(posts || []);
+  const [feedProfile, setFeedProfile] = useState(profile || null);
   const [feedError, setFeedError] = useState(initialError || '');
+  const [initialLoading, setInitialLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore));
   const [nextOffset, setNextOffset] = useState(Number(initialNextOffset) || 0);
@@ -292,17 +296,66 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   const [liked, setLiked] = useState(new Set(likedIds || []));
   const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
   const [moderationMenu, setModerationMenu] = useState(null); const [moderationSheet, setModerationSheet] = useState(null);
+  const cacheKey = userId ? `protlys-feed-cache-v1:${userId}` : null;
+
+  const refreshFeed = useCallback(async () => {
+    setRefreshing(true);
+    setFeedError('');
+    try {
+      const result = await getFeedPageAction();
+      if (result?.error) {
+        setFeedError(result.error);
+        return;
+      }
+      setFeedPosts(result.posts || []);
+      setLiked(new Set(result.likedIds || []));
+      setFeedProfile(result.profile || null);
+      setHasMore(Boolean(result.hasMore));
+      setNextOffset(Number(result.nextOffset || 0));
+    } catch (error) {
+      setFeedError(error?.message || 'Could not refresh the feed. Check your connection and try again.');
+    } finally {
+      setRefreshing(false);
+      setInitialLoading(false);
+    }
+  }, []);
 
   useEffect(() => {
-    setFeedPosts(posts || []);
-    setLiked(new Set(likedIds || []));
-    setFeedError(initialError || '');
-    setHasMore(Boolean(initialHasMore));
-    setNextOffset(Number(initialNextOffset) || 0);
-  }, [posts, likedIds, initialError, initialHasMore, initialNextOffset]);
+    let hasCachedPosts = false;
+    try {
+      const raw = cacheKey ? localStorage.getItem(cacheKey) : null;
+      if (raw) {
+        const cached = JSON.parse(raw);
+        if (Array.isArray(cached.posts)) {
+          setFeedPosts(cached.posts);
+          setLiked(new Set(cached.likedIds || []));
+          setFeedProfile(cached.profile || null);
+          setHasMore(Boolean(cached.hasMore));
+          setNextOffset(Number(cached.nextOffset || 0));
+          hasCachedPosts = cached.posts.length > 0;
+        }
+      }
+    } catch {}
+    setInitialLoading(!hasCachedPosts);
+    refreshFeed();
+  }, [cacheKey, refreshFeed]);
+
+  useEffect(() => {
+    if (!cacheKey || !feedPosts.length) return;
+    try {
+      localStorage.setItem(cacheKey, JSON.stringify({
+        posts: feedPosts,
+        likedIds: [...liked],
+        profile: feedProfile,
+        hasMore,
+        nextOffset,
+        cachedAt: Date.now(),
+      }));
+    } catch {}
+  }, [cacheKey, feedPosts, liked, feedProfile, hasMore, nextOffset]);
 
   const loadMore = useCallback(async () => {
-    if (loadingMore || !hasMore || feedError) return;
+    if (loadingMore || refreshing || !hasMore || feedError) return;
     setLoadingMore(true);
     try {
       const result = await getMoreFeedPostsAction({ offset: nextOffset });
@@ -348,15 +401,19 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     <span className="eyebrow">Community</span>
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
-    <ComposePost profile={profile} onPosted={() => { showToast('Posted'); router.refresh(); }} />
+    <ComposePost profile={feedProfile} onPosted={() => { showToast('Posted'); refreshFeed(); }} />
 
     <RelaxationContextCard />
 
     {feedError && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'12px 14px',marginBottom:14,border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:13}}>
       <span>We couldn't load the feed: {feedError}</span>
-      <button type="button" onClick={() => router.refresh()} style={{border:0,borderRadius:999,padding:'8px 12px',background:'#8F241D',color:'#fff',fontWeight:800,cursor:'pointer'}}>Retry</button>
+      <button type="button" onClick={refreshFeed} style={{border:0,borderRadius:999,padding:'8px 12px',background:'#8F241D',color:'#fff',fontWeight:800,cursor:'pointer'}}>Retry</button>
     </div>}
 
+    {refreshing && feedPosts.length > 0 && <p className="subhead" aria-live="polite" style={{marginBottom:10}}>Refreshing your feed…</p>}
+    {!feedPosts.length && initialLoading && <div aria-busy="true" style={{padding:'24px 0',display:'grid',gap:12}}>
+      {[0,1,2].map(item => <div key={item} style={{height:150,borderRadius:16,background:'var(--card)',border:'1px solid var(--line)',opacity:.65}} />)}
+    </div>}
     {feedPosts?.length ? feedPosts.map(post => {
       const isLiked = liked.has(post.id);
       const likeCount = post.like_count || 0;
@@ -376,7 +433,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
           </div>
         </div>
 
-        {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); router.refresh(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
+        {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); refreshFeed(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
           <div className="feed-card-body">
             {post.body && <p className="post-content-text" style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{post.body}</p>}
             {post.image_url && <img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" />}
@@ -390,11 +447,11 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
               <button onClick={() => handleShare(post)} className="profile-action share-action"><Icon name="share" size={19} /><span>Share</span></button>
             </div>
             <div className="profile-like-summary">{likeCount} {likeCount === 1 ? 'like' : 'likes'}</div>
-            <div id={`comments-${post.id}`}><CommentsPanel postId={post.id} initialCount={commentCount} onCommented={() => router.refresh()} currentUserId={userId} onModerate={comment => moderate({userId:comment.user_id,username:comment.profiles?.display_name||'Member',contentType:'comment',contentId:comment.id,snapshot:{body:comment.body,created_at:comment.created_at,post_id:post.id}})} /></div>
+            <div id={`comments-${post.id}`}><CommentsPanel postId={post.id} initialCount={commentCount} onCommented={refreshFeed} currentUserId={userId} onModerate={comment => moderate({userId:comment.user_id,username:comment.profiles?.display_name||'Member',contentType:'comment',contentId:comment.id,snapshot:{body:comment.body,created_at:comment.created_at,post_id:post.id}})} /></div>
           </div>
         </>}
       </article>;
-    }) : feedError ? null : <EmptyState />}
+    }) : feedError || initialLoading ? null : <EmptyState />}
 
     {hasMore && <div ref={sentinelRef} aria-live="polite" style={{display:'flex',justifyContent:'center',padding:'12px 0 22px',minHeight:48}}>
       {loadingMore ? <span className="subhead">Loading more posts…</span> : <button type="button" onClick={loadMore} className="btn-secondary" style={{width:'auto',marginTop:0,padding:'9px 16px'}}>Load more</button>}
@@ -402,6 +459,6 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
     <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
-    {moderationSheet && <ModerationSheet open={true} onClose={() => setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={() => { setModerationSheet(null); router.refresh(); }} />}
+    {moderationSheet && <ModerationSheet open={true} onClose={() => setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={() => { setModerationSheet(null); refreshFeed(); }} />}
   </div>;
 }
