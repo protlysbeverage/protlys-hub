@@ -32,6 +32,21 @@ function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 
+async function prepareAvatarImage(file) {
+  const bitmap = await createImageBitmap(file);
+  const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
+  const canvas = document.createElement('canvas');
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const context = canvas.getContext('2d');
+  if (!context) { bitmap.close(); throw new Error('Could not process profile photo.'); }
+  context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close();
+  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  if (!blob) throw new Error('Could not process profile photo.');
+  return blob;
+}
+
 function CircularProgress({ steps, goal, dayKey }) {
   const size=40, stroke=4, radius=16, circumference=2*Math.PI*radius;
   const reached=goal>0 && steps>=goal;
@@ -244,9 +259,9 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     try {
       const supabase = createClient(); const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      const ext = (file.name.split('.').pop() || 'jpg').toLowerCase().replace(/[^a-z0-9]/g, '') || 'jpg';
-      const path = `avatars/${user.id}/profile-${Date.now()}.${ext}`;
-      const { error } = await supabase.storage.from('feed-images').upload(path, file, { cacheControl:'3600', upsert:false });
+      const avatarBlob = await prepareAvatarImage(file);
+      const path = `avatars/${user.id}/profile-${Date.now()}.webp`;
+      const { error } = await supabase.storage.from('feed-images').upload(path, avatarBlob, { cacheControl:'31536000', upsert:false, contentType:'image/webp' });
       if (error) throw error;
       const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
       const { error: profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id);
