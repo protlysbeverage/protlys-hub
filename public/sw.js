@@ -25,6 +25,8 @@ self.addEventListener('install', event => {
           if (response.ok) await cache.put(path, response);
         } catch {}
       }));
+      // Keep only the static shell assets, never cache authenticated page HTML.
+      await cache.delete('/login');
     }
 
     await self.skipWaiting();
