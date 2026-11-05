@@ -106,9 +106,17 @@ async function prepareImage(file) {
   const canvas = document.createElement('canvas');
   canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
   const ctx = canvas.getContext('2d'); ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+  let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  let extension = 'webp';
+  let type = 'image/webp';
+  if (!blob) {
+    blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+    extension = 'jpg';
+    type = 'image/jpeg';
+  }
+  if (!blob) throw new Error('Could not process this image. Try another photo.');
   const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = reject; reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(blob); });
-  return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.jpg`, type: 'image/jpeg' };
+  return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.${extension}`, type };
 }
 
 function CommentInput({ postId, parentCommentId = null, onDone, compact = false }) {
