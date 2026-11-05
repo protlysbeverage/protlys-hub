@@ -3,10 +3,11 @@
 import Link from 'next/link';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import dynamic from 'next/dynamic';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
-import PostShareSheet from '@/components/PostShareSheet';
-import { ProtlysLoader } from '@/app/calculator/ProtlysLoader';
+const PostShareSheet = dynamic(() => import('@/components/PostShareSheet'), { ssr: false });
+const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 import {
   createFeedPostAction,
   updateFeedPostAction,
@@ -15,6 +16,7 @@ import {
   toggleFeedLikeAction,
   toggleFeedCommentLikeAction,
   addFeedCommentAction,
+  getMoreFeedPostsAction,
 } from './feed-actions';
 
 const POST_TYPES = [
@@ -54,7 +56,7 @@ function CommentIcon({ size = 19 }) {
 
 function Avatar({ name, url, size = 40, href }) {
   const avatar = url
-    ? <img src={url} alt="" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
+    ? <img src={url} alt="" loading="lazy" decoding="async" style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover', flexShrink: 0 }} />
     : <div style={{ width: size, height: size, borderRadius: '50%', background: 'var(--green-soft)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.38, fontWeight: 800, color: 'var(--green-dark)', flexShrink: 0 }}>{(name || '?')[0].toUpperCase()}</div>;
   if (!href) return avatar;
   return <Link href={href} aria-label={`View ${name || 'member'} profile`} style={{ display: 'block', lineHeight: 0 }}>{avatar}</Link>;
@@ -278,11 +280,55 @@ function RelaxationContextCard() {
   </Link>;
 }
 
-export default function FeedClient({ posts, likedIds, userId, profile }) {
+export default function FeedClient({ posts, likedIds, userId, profile, loadError: initialError, hasMore: initialHasMore, nextOffset: initialNextOffset }) {
   const router = useRouter();
-  const [liked, setLiked] = useState(new Set(likedIds));
+  const [feedPosts, setFeedPosts] = useState(posts || []);
+  const [feedError, setFeedError] = useState(initialError || '');
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [hasMore, setHasMore] = useState(Boolean(initialHasMore));
+  const [nextOffset, setNextOffset] = useState(Number(initialNextOffset) || 0);
+  const sentinelRef = useRef(null);
+  const [liked, setLiked] = useState(new Set(likedIds || []));
   const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
   const [moderationMenu, setModerationMenu] = useState(null); const [moderationSheet, setModerationSheet] = useState(null);
+
+  useEffect(() => {
+    setFeedPosts(posts || []);
+    setLiked(new Set(likedIds || []));
+    setFeedError(initialError || '');
+    setHasMore(Boolean(initialHasMore));
+    setNextOffset(Number(initialNextOffset) || 0);
+  }, [posts, likedIds, initialError, initialHasMore, initialNextOffset]);
+
+  const loadMore = useCallback(async () => {
+    if (loadingMore || !hasMore || feedError) return;
+    setLoadingMore(true);
+    try {
+      const result = await getMoreFeedPostsAction({ offset: nextOffset });
+      if (result?.error) {
+        setFeedError(result.error);
+        return;
+      }
+      setFeedPosts(current => [...current, ...(result.posts || [])]);
+      setLiked(current => new Set([...current, ...(result.likedIds || [])]));
+      setNextOffset(Number(result.nextOffset || nextOffset));
+      setHasMore(Boolean(result.hasMore));
+    } catch {
+      setFeedError('Could not load more posts. Check your connection and try again.');
+    } finally {
+      setLoadingMore(false);
+    }
+  }, [loadingMore, hasMore, feedError, nextOffset]);
+
+  useEffect(() => {
+    const target = sentinelRef.current;
+    if (!target || !hasMore || feedError || loadingMore || typeof IntersectionObserver === 'undefined') return;
+    const observer = new IntersectionObserver(entries => {
+      if (entries.some(entry => entry.isIntersecting)) loadMore();
+    }, { rootMargin: '360px' });
+    observer.observe(target);
+    return () => observer.disconnect();
+  }, [hasMore, feedError, loadingMore, loadMore]);
   function showToast(message) { setToast(message); window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => setToast(''), 2200); }
   async function handleLike(postId) {
     const wasLiked = liked.has(postId);
@@ -305,7 +351,12 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
 
     <RelaxationContextCard />
 
-    {posts?.length ? posts.map(post => {
+    {feedError && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'12px 14px',marginBottom:14,border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:13}}>
+      <span>We couldn't load the feed: {feedError}</span>
+      <button type="button" onClick={() => router.refresh()} style={{border:0,borderRadius:999,padding:'8px 12px',background:'#8F241D',color:'#fff',fontWeight:800,cursor:'pointer'}}>Retry</button>
+    </div>}
+
+    {feedPosts?.length ? feedPosts.map(post => {
       const isLiked = liked.has(post.id);
       const likeCount = post.like_count || 0;
       const commentCount = post.comment_count || 0;
@@ -327,7 +378,7 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
         {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); router.refresh(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
           <div className="feed-card-body">
             {post.body && <p className="post-content-text" style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{post.body}</p>}
-            {post.image_url && <img src={post.image_url} alt="Post photo" />}
+            {post.image_url && <img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" />}
             {post.stats && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>{post.stats.steps && <StatChip label="Steps" value={post.stats.steps} />}{post.stats.distance && <StatChip label="Distance" value={`${post.stats.distance} km`} />}{post.stats.duration && <StatChip label="Duration" value={post.stats.duration} />}</div>}
           </div>
 
@@ -342,7 +393,11 @@ export default function FeedClient({ posts, likedIds, userId, profile }) {
           </div>
         </>}
       </article>;
-    }) : <EmptyState />}
+    }) : feedError ? null : <EmptyState />}
+
+    {hasMore && <div ref={sentinelRef} aria-live="polite" style={{display:'flex',justifyContent:'center',padding:'12px 0 22px',minHeight:48}}>
+      {loadingMore ? <span className="subhead">Loading more posts…</span> : <button type="button" onClick={loadMore} className="btn-secondary" style={{width:'auto',marginTop:0,padding:'9px 16px'}}>Load more</button>}
+    </div>}
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
     <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
