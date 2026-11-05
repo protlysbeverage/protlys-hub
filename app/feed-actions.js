@@ -246,3 +246,18 @@ export async function getMoreFeedPostsAction({ offset = 0 } = {}) {
   if (!user) return { error: 'Not signed in' };
   return getFeedPage(supabase, user.id, offset);
 }
+
+
+export async function getFeedPageAction() {
+  const { supabase, user } = await getAuthedClient();
+  if (!user) return { error: 'Not signed in' };
+  const [feed, profileResult] = await Promise.all([
+    getFeedPage(supabase, user.id, 0),
+    supabase.from('profiles').select('id,display_name,avatar_url').eq('id', user.id).maybeSingle(),
+  ]);
+  return {
+    ...feed,
+    profile: profileResult.data || null,
+    error: feed.error || profileResult.error?.message || null,
+  };
+}
