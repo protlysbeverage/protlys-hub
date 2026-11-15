@@ -82,12 +82,20 @@ Deno.serve(async (req) => {
   const days = Array.isArray(body?.days) ? body.days : [];
   if (days.length < 1 || days.length > 31) return json({ error: "Send between 1 and 31 days" }, 400);
 
+  // Restrict client-supplied dates to the supported rolling history window.
+  const today = new Intl.DateTimeFormat("en-CA", {
+    timeZone: "Africa/Nairobi", year: "numeric", month: "2-digit", day: "2-digit",
+  }).format(new Date());
+  const minimumDate = addDays(today, -366);
+
   // Collapse duplicate dates and clamp untrusted client input before touching the database.
   const byDate = new Map<string, number>();
   for (const row of days) {
     const date = String(row?.date || "");
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) continue;
-    const steps = Math.max(0, Math.min(60000, Math.floor(Number(row?.steps || 0))));
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < minimumDate || date > today) continue;
+    const rawSteps = Number(row?.steps ?? 0);
+    if (!Number.isFinite(rawSteps)) continue;
+    const steps = Math.max(0, Math.min(60000, Math.floor(rawSteps)));
     byDate.set(date, Math.max(byDate.get(date) ?? 0, steps));
   }
   if (!byDate.size) return json({ error: "No valid movement data" }, 400);
@@ -137,11 +145,12 @@ Deno.serve(async (req) => {
   const stepStreak = calculateStreak(allSteps || []);
   const lastStepDate = allSteps?.length ? allSteps[allSteps.length - 1].step_date : null;
 
-  await admin.from("profiles").update({
+  const { error: profileUpdateError } = await admin.from("profiles").update({
     total_steps: totalSteps,
     step_streak: stepStreak,
     last_step_date: lastStepDate,
   }).eq("id", connection.user_id);
+  if (profileUpdateError) return json({ error: profileUpdateError.message }, 500);
 
   await admin.from("device_tracking_tokens").update({
     last_used_at: new Date().toISOString(),
