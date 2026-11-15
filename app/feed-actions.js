@@ -253,11 +253,13 @@ export async function getFeedPageAction() {
   if (!user) return { error: 'Not signed in' };
   const profileQuery = supabase.from('profiles').select('id,display_name,avatar_url').eq('id', user.id).maybeSingle();
   let profileTimer;
-  const profileResult = await Promise.race([
-    Promise.resolve(profileQuery),
-    new Promise(resolve => { profileTimer = setTimeout(() => resolve({ data: null, error: { message: 'Profile request timed out after 8 seconds' } }), 8000); }),
-  ]).finally(() => clearTimeout(profileTimer));
-  const feed = await getFeedPage(supabase, user.id, 0);
+  const [feed, profileResult] = await Promise.all([
+    getFeedPage(supabase, user.id, 0),
+    Promise.race([
+      Promise.resolve(profileQuery),
+      new Promise(resolve => { profileTimer = setTimeout(() => resolve({ data: null, error: { message: 'Profile request timed out after 8 seconds' } }), 8000); }),
+    ]).finally(() => clearTimeout(profileTimer)),
+  ]);
   return {
     ...feed,
     profile: profileResult.data || null,
