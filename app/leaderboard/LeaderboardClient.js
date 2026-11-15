@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeekStart } from '@/lib/leaderboard-week';
 import { strictRank } from '@/lib/leaderboard-ranking';
 import MemberAvatar from '@/components/MemberAvatar';
-import MemberProfileSheet from '@/components/MemberProfileSheet';
+const MemberProfileSheet = dynamic(() => import('@/components/MemberProfileSheet'), { ssr: false });
 import { hallUrl, hallViewFromHash, leaderboardUrl } from '@/lib/hall-navigation';
 import { getBlockedUserIds } from '@/lib/blocks';
 
@@ -64,6 +65,9 @@ export default function LeaderboardClient({ viewerId }) {
   const [hallLoading, setHallLoading] = useState(false);
   const [ending, setEnding] = useState(() => countdownText());
   const [blockedIds, setBlockedIds] = useState([]);
+  const [offline, setOffline] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState(null);
+  const cacheKey = `protlys-leaderboard-cache-v1:${viewerId}:${groupId || 'all'}:${period}`;
   const listRef = useRef(null);
 
   useEffect(() => {
@@ -91,11 +95,23 @@ export default function LeaderboardClient({ viewerId }) {
     let cancelled = false;
     async function load() {
       if (view === 'hall') return;
-      setLoading(true);
+      let hasCachedRows = false;
+      try {
+        const cached = JSON.parse(localStorage.getItem(cacheKey) || 'null');
+        if (Array.isArray(cached?.rows)) {
+          const blocked = new Set(blockedIds.map(String));
+          const visibleCached = cached.rows.filter(row => !blocked.has(String(row.user_id)));
+          setRows(visibleCached);
+          setMyRank(cached.myRank || null);
+          setLastUpdated(cached.cachedAt || null);
+          setOffline(!navigator.onLine);
+          hasCachedRows = visibleCached.length > 0;
+        }
+      } catch {}
+      setLoading(!hasCachedRows);
       setLoadingMore(false);
       setError('');
-      setRows([]);
-      setMyRank(null);
+      if (!hasCachedRows) { setRows([]); setMyRank(null); }
       setCityMissing(false);
       const supabase = createClient();
       const [{ data, error: listError }, { data: rank, error: rankError }] = await Promise.all([
@@ -104,20 +120,25 @@ export default function LeaderboardClient({ viewerId }) {
       ]);
       if (cancelled) return;
       if (listError || rankError) {
-        setError((listError || rankError)?.message || 'Could not load the leaderboard.');
+        if (hasCachedRows) setOffline(true);
+        else setError((listError || rankError)?.message || 'Could not load the leaderboard.');
         setLoading(false);
         return;
       }
       const blocked = new Set(blockedIds.map(String));
       const visibleData = (data || []).filter(row => !blocked.has(String(row.user_id))).map((row,index)=>({...row,rank:index+1}));
       setRows(visibleData);
-      setMyRank(visibleData.find(r => r.user_id === viewerId)?.rank || null);
+      const nextRank = visibleData.find(r => r.user_id === viewerId)?.rank || null;
+      setMyRank(nextRank);
+      setOffline(false);
+      setLastUpdated(Date.now());
+      try { localStorage.setItem(cacheKey, JSON.stringify({ rows:visibleData, myRank:nextRank, cachedAt:Date.now() })); } catch {}
       if (scope === 'city' && !data?.length && !rank) setCityMissing(true);
       setLoading(false);
     }
     load();
     return () => { cancelled = true; };
-  }, [scope, groupId, period, view, blockedIds.join(',')]);
+  }, [scope, groupId, period, view, blockedIds.join(','), cacheKey]);
 
   const viewer = useMemo(() => rows.find(row => row.user_id === viewerId) || null, [rows, viewerId]);
   useEffect(() => { const t=window.setInterval(()=>setEnding(countdownText()),60000); return()=>window.clearInterval(t); }, []);
@@ -168,6 +189,7 @@ export default function LeaderboardClient({ viewerId }) {
       <div className="lb-glow" aria-hidden="true" />
       <div className="lb-group-context"><button type="button" aria-label="Back to group chat" onClick={()=>router.back()}>‹</button><div><strong>{groupName}</strong><span>{rows.length ? `${rows.length}${rows.length===PAGE_SIZE?'+' : ''} members ranked` : 'Group members'}</span></div></div>
       <div className="lb-period" role="tablist" aria-label="Leaderboard period">{[['this_week','This week'],['last_week','Last week'],['most_improved','Improved']].map(([value,label]) => <button key={value} type="button" className={period===value?'active':''} onClick={() => choosePeriod(value)}>{label}</button>)}<button type="button" className="lb-trophy" aria-label="Open Hall of Fame" onClick={showHall}>🏆</button></div>
+      {offline && rows.length > 0 && <div className="lb-notice">Offline · last updated {lastUpdated ? new Date(lastUpdated).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'previously'}</div>}
       <div className="lb-meta"><span>Weekly steps · {monthLabel()}</span><span className="lb-ending">{ending}</span></div>
       {view === 'hall' ? <HallOfFame rows={hall} loading={hallLoading} error={error} onOpen={openMember} onBack={()=>showLeaderboard({back:true})} /> : (loading ? <div className="lb-state">Loading leaderboard…</div> : error ? <div className="lb-state lb-error">{error}</div> : (
         <>

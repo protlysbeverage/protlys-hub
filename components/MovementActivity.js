@@ -1,6 +1,8 @@
 'use client';
 
-import ShareCardSheet from '@/components/ShareCardSheet';
+import dynamic from 'next/dynamic';
+
+const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 import { ShareIconButton } from '@/components/ShareIcon';
 
 import { useEffect, useMemo, useRef, useState } from 'react';

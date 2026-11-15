@@ -1,10 +1,12 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
-import ShareCardSheet from '@/components/ShareCardSheet';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
+
+const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
@@ -41,6 +43,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const todayKey = localDateStr();
   const cacheKey = `protlys_movement_cache_v2_${userId || 'unknown'}`;
   const [ready, setReady] = useState(false);
+  const [offlineAt, setOfflineAt] = useState(null);
+  const [isOffline, setIsOffline] = useState(false);
   const [todaySteps, setTodaySteps] = useState(0);
   const [lastSync, setLastSync] = useState(null);
   const [source, setSource] = useState(null);
@@ -65,6 +69,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         ...current,
         ...patch,
         date: todayKey,
+        cachedAt: Date.now(),
       }));
     } catch {}
   }, [cacheKey, todayKey]);
@@ -118,7 +123,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     }).then(data => {
       applyToday(data);
       return data;
-    }).catch(() => null).finally(() => {
+    }).catch(() => { setIsOffline(true); return null; }).finally(() => {
       refreshInFlight.current = null;
     });
     return refreshInFlight.current;
@@ -153,12 +158,18 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
+    const onOffline = () => setIsOffline(true);
+    const onOnline = () => { setIsOffline(false); scheduleRefresh(0); };
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
 
     // Cache-first: paint the saved snapshot before any network request.
     try {
       const cached = JSON.parse(window.localStorage.getItem(cacheKey) || 'null');
-      if (cached && cached.date === todayKey) {
-        if (Number.isFinite(Number(cached.todaySteps))) {
+      if (cached) {
+        setOfflineAt(cached.cachedAt || null);
+        setIsOffline(!navigator.onLine);
+        if (cached.date === todayKey && Number.isFinite(Number(cached.todaySteps))) {
           displayedTodayRef.current = Number(cached.todaySteps);
           setTodaySteps(Number(cached.todaySteps));
         }
@@ -202,6 +213,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       window.removeEventListener('focus', foreground);
       document.removeEventListener('visibilitychange', onVisibility);
+      window.removeEventListener('offline', onOffline);
+      window.removeEventListener('online', onOnline);
     };
   }, [cacheKey, todayKey, userId, scheduleRefresh]);
 
@@ -233,6 +246,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     <>
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
+        {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}
         <h1 style={{fontSize:22}}>Your movement</h1>
         <p className="subhead">Your steps are tracked automatically.</p>
       </div>

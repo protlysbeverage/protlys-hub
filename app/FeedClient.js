@@ -126,6 +126,7 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
   async function submit() {
     const body = ref.current?.value?.trim();
     if (!body || loading) return;
+    if (!navigator.onLine) { setError('You are offline. Reconnect to comment.'); return; }
     setLoading(true); setError('');
     try {
       const result = await addFeedCommentAction({ postId, body, parentCommentId });
@@ -192,6 +193,7 @@ function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onMod
   }, [postId, initialCount]);
 
   async function toggleCommentLike(commentId) {
+    if (!navigator.onLine) { setError('You are offline. Reconnect to like comments.'); return; }
     setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, Number(comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
     const result = await toggleFeedCommentLikeAction({ commentId });
     if (result?.error) { setError(result.error); await loadComments(); }
@@ -251,6 +253,7 @@ function ComposePost({ profile, onPosted }) {
   function handleFile(e) { const file = e.target.files?.[0]; if (!file) return; if (!file.type.startsWith('image/')) { setError('Please choose an image file.'); return; } setError(''); setPreview(URL.createObjectURL(file)); prepareImage(file).then(setImageData).catch(() => setError('Could not prepare that photo.')); }
   const handleStatChange = useCallback(key => e => setStats(current => ({ ...current, [key]: e.target.value })), []);
   async function handlePost() {
+    if (!navigator.onLine) { setError('You are offline. Reconnect to publish your post.'); return; }
     const body = bodyRef.current?.value ?? ''; if (!body.trim() && !imageData) { setError('Add a caption or photo before posting.'); return; }
     setLoading(true); setError('');
     const statsData = (stats.steps || stats.distance || stats.duration) ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null } : null;
@@ -291,10 +294,14 @@ function RelaxationContextCard() {
 
 export default function FeedClient({ posts, likedIds, userId, profile, loadError: initialError, hasMore: initialHasMore, nextOffset: initialNextOffset }) {
   const [feedPosts, setFeedPosts] = useState(posts || []);
+  const feedPostsCountRef = useRef((posts || []).length);
+  feedPostsCountRef.current = feedPosts.length;
   const [feedProfile, setFeedProfile] = useState(profile || null);
   const [feedError, setFeedError] = useState(initialError || '');
   const [initialLoading, setInitialLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [offlineAt, setOfflineAt] = useState(null);
+  const [isOffline, setIsOffline] = useState(false);
   const [loadingMore, setLoadingMore] = useState(false);
   const [hasMore, setHasMore] = useState(Boolean(initialHasMore));
   const [nextOffset, setNextOffset] = useState(Number(initialNextOffset) || 0);
@@ -310,21 +317,33 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     try {
       const result = await getFeedPageAction();
       if (result?.error) {
+        if (feedPostsCountRef.current) setIsOffline(true);
         setFeedError(result.error);
         return;
       }
       setFeedPosts(result.posts || []);
+      setIsOffline(false);
+      setOfflineAt(Date.now());
       setLiked(new Set(result.likedIds || []));
       setFeedProfile(result.profile || null);
       setHasMore(Boolean(result.hasMore));
       setNextOffset(Number(result.nextOffset || 0));
     } catch (error) {
+      if (feedPostsCountRef.current) setIsOffline(true);
       setFeedError(error?.message || 'Could not refresh the feed. Check your connection and try again.');
     } finally {
       setRefreshing(false);
       setInitialLoading(false);
     }
   }, []);
+
+  useEffect(() => {
+    const onOffline = () => setIsOffline(true);
+    const onOnline = () => refreshFeed();
+    window.addEventListener('offline', onOffline);
+    window.addEventListener('online', onOnline);
+    return () => { window.removeEventListener('offline', onOffline); window.removeEventListener('online', onOnline); };
+  }, [refreshFeed]);
 
   useEffect(() => {
     let hasCachedPosts = false;
@@ -334,6 +353,8 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.posts)) {
           setFeedPosts(cached.posts);
+          setOfflineAt(cached.cachedAt || null);
+          setIsOffline(!navigator.onLine);
           setLiked(new Set(cached.likedIds || []));
           setFeedProfile(cached.profile || null);
           setHasMore(Boolean(cached.hasMore));
@@ -366,6 +387,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     try {
       const result = await getMoreFeedPostsAction({ offset: nextOffset });
       if (result?.error) {
+        if (feedPostsCountRef.current) setIsOffline(true);
         setFeedError(result.error);
         return;
       }
@@ -391,6 +413,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   }, [hasMore, feedError, loadingMore, loadMore]);
   function showToast(message) { setToast(message); window.clearTimeout(showToast.timer); showToast.timer = window.setTimeout(() => setToast(''), 2200); }
   async function handleLike(postId) {
+    if (!navigator.onLine) { showToast('You are offline. Likes will be available when you reconnect.'); return; }
     const wasLiked = liked.has(postId);
     const delta = wasLiked ? -1 : 1;
     setLiked(current => { const next = new Set(current); if (wasLiked) next.delete(postId); else next.add(postId); return next; });
@@ -423,7 +446,8 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
 
     <RelaxationContextCard />
 
-    {feedError && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'12px 14px',marginBottom:14,border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:13}}>
+    {isOffline && feedPosts.length > 0 && <div role="status" style={{padding:'8px 11px',marginBottom:12,borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'previously'}</div>}
+    {feedError && !feedPosts.length && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,padding:'12px 14px',marginBottom:14,border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:13}}>
       <span>We couldn't load the feed: {feedError}</span>
       <button type="button" onClick={refreshFeed} style={{border:0,borderRadius:999,padding:'8px 12px',background:'#8F241D',color:'#fff',fontWeight:800,cursor:'pointer'}}>Retry</button>
     </div>}
