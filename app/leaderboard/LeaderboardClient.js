@@ -1,12 +1,13 @@
 'use client';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
+import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { isoWeekStart } from '@/lib/leaderboard-week';
 import { strictRank } from '@/lib/leaderboard-ranking';
 import MemberAvatar from '@/components/MemberAvatar';
-import MemberProfileSheet from '@/components/MemberProfileSheet';
+const MemberProfileSheet = dynamic(() => import('@/components/MemberProfileSheet'), { ssr: false });
 import { hallUrl, hallViewFromHash, leaderboardUrl } from '@/lib/hall-navigation';
 import { getBlockedUserIds } from '@/lib/blocks';
 
