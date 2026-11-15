@@ -251,13 +251,16 @@ export async function getMoreFeedPostsAction({ offset = 0 } = {}) {
 export async function getFeedPageAction() {
   const { supabase, user } = await getAuthedClient();
   if (!user) return { error: 'Not signed in' };
-  const [feed, profileResult] = await Promise.all([
-    getFeedPage(supabase, user.id, 0),
-    supabase.from('profiles').select('id,display_name,avatar_url').eq('id', user.id).maybeSingle(),
-  ]);
+  const profileQuery = supabase.from('profiles').select('id,display_name,avatar_url').eq('id', user.id).maybeSingle();
+  let profileTimer;
+  const profileResult = await Promise.race([
+    Promise.resolve(profileQuery),
+    new Promise(resolve => { profileTimer = setTimeout(() => resolve({ data: null, error: { message: 'Profile request timed out after 8 seconds' } }), 8000); }),
+  ]).finally(() => clearTimeout(profileTimer));
+  const feed = await getFeedPage(supabase, user.id, 0);
   return {
     ...feed,
     profile: profileResult.data || null,
-    error: feed.error || profileResult.error?.message || null,
+    error: feed.error || null,
   };
 }

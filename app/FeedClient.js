@@ -126,6 +126,7 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
   async function submit() {
     const body = ref.current?.value?.trim();
     if (!body || loading) return;
+    if (!navigator.onLine) { setError('You are offline. Reconnect to comment.'); return; }
     setLoading(true); setError('');
     try {
       const result = await addFeedCommentAction({ postId, body, parentCommentId });
@@ -292,6 +293,8 @@ function RelaxationContextCard() {
 
 export default function FeedClient({ posts, likedIds, userId, profile, loadError: initialError, hasMore: initialHasMore, nextOffset: initialNextOffset }) {
   const [feedPosts, setFeedPosts] = useState(posts || []);
+  const feedPostsCountRef = useRef((posts || []).length);
+  feedPostsCountRef.current = feedPosts.length;
   const [feedProfile, setFeedProfile] = useState(profile || null);
   const [feedError, setFeedError] = useState(initialError || '');
   const [initialLoading, setInitialLoading] = useState(true);
@@ -313,7 +316,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     try {
       const result = await getFeedPageAction();
       if (result?.error) {
-        if (feedPosts.length) { setIsOffline(!navigator.onLine); setOfflineAt(Date.now()); }
+        if (feedPostsCountRef.current) { setIsOffline(true); setOfflineAt(Date.now()); }
         setFeedError(result.error);
         return;
       }
@@ -325,13 +328,13 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
       setHasMore(Boolean(result.hasMore));
       setNextOffset(Number(result.nextOffset || 0));
     } catch (error) {
-      if (feedPosts.length) { setIsOffline(true); setOfflineAt(Date.now()); }
+      if (feedPostsCountRef.current) { setIsOffline(true); setOfflineAt(Date.now()); }
       setFeedError(error?.message || 'Could not refresh the feed. Check your connection and try again.');
     } finally {
       setRefreshing(false);
       setInitialLoading(false);
     }
-  }, [feedPosts.length]);
+  }, []);
 
   useEffect(() => {
     const onOffline = () => setIsOffline(true);
@@ -383,6 +386,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     try {
       const result = await getMoreFeedPostsAction({ offset: nextOffset });
       if (result?.error) {
+        if (feedPostsCountRef.current) setIsOffline(true);
         setFeedError(result.error);
         return;
       }

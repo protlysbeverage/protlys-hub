@@ -109,6 +109,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [dashboardMovementDays, setDashboardMovementDays] = useState(movementDays || []);
   const [dashboardRefreshing, setDashboardRefreshing] = useState(false);
   const [dashboardError, setDashboardError] = useState('');
+  const [dashboardOffline, setDashboardOffline] = useState(false);
+  const [dashboardCachedAt, setDashboardCachedAt] = useState(null);
   const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v1:${profile.id}` : null;
 
   const refreshDashboard = useCallback(async () => {
@@ -143,6 +145,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       setDashboardMovementDays(rows);
       setDashboardWeekSteps(recentWeek);
       setDashboardTodaySteps(todayCount);
+      setDashboardOffline(false);
+      setDashboardCachedAt(Date.now());
       if (dashboardCacheKey) {
         try {
           localStorage.setItem(dashboardCacheKey, JSON.stringify({
@@ -154,6 +158,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         } catch {}
       }
     } catch {
+      setDashboardOffline(true);
       setDashboardError('Could not refresh movement history. Saved activity remains visible when available.');
     } finally {
       setDashboardRefreshing(false);
@@ -169,6 +174,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           setDashboardMovementDays(cached.movementDays);
           setDashboardWeekSteps(Array.isArray(cached.weekSteps) ? cached.weekSteps : []);
           setDashboardTodaySteps(Number(cached.todaySteps || 0));
+          setDashboardCachedAt(cached.cachedAt || null);
+          setDashboardOffline(!navigator.onLine);
         }
       }
     } catch {}
@@ -291,6 +298,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <span className="eyebrow">Dashboard</span>
       <h1 style={{fontSize:"clamp(20px, 5vw, 26px)",marginBottom:4,lineHeight:1.2,overflowWrap:"anywhere"}}>{greetingText}{greetingUsername ? ` ${greetingUsername}` : ""}</h1>
       <p className="subhead">A simple view of your movement and what you have recorded.</p>
+      {dashboardOffline && <div role="status" style={{padding:'8px 11px',marginTop:10,borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {dashboardCachedAt ? new Date(dashboardCachedAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'previously'}</div>}
       {dashboardRefreshing && <p className="subhead" aria-live="polite" style={{marginTop:6}}>Refreshing your activity…</p>}
       {dashboardError && <div role="alert" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'10px 12px',margin:'12px 0',border:'1px solid #E8B4B0',borderRadius:12,background:'#FFF7F6',color:'#8F241D',fontSize:12}}>
         <span>{dashboardError}</span>

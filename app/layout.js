@@ -55,7 +55,7 @@ export const viewport = {
   width: 'device-width',
   initialScale: 1,
   viewportFit: 'cover',
-  themeColor: '#F5F6F1',
+  themeColor: '#6BCB45',
 };
 
 export default function RootLayout({ children }) {
@@ -64,7 +64,7 @@ export default function RootLayout({ children }) {
       <head>
         <link rel="manifest" href="/manifest.webmanifest" />
         <meta name="color-scheme" content="light dark" />
-        <meta name="theme-color" content="#F7F8F6" />
+        <meta name="theme-color" content="#6BCB45" />
         <script dangerouslySetInnerHTML={{ __html: String.raw`(()=> {
           try {
             const root = document.documentElement;
@@ -90,6 +90,24 @@ export default function RootLayout({ children }) {
               const source = target && (target.src || target.href || '');
               const message = event && event.message || '';
               return (source && source.includes('/_next/static/chunks/')) || /ChunkLoadError|Loading chunk .* failed|Failed to load chunk/i.test(message);
+            };
+            window.onerror = (message, source, line, column, error) => {
+              if (/ChunkLoadError|Loading chunk .* failed/i.test(String(message || ''))) {
+                retryChunk();
+                return false;
+              }
+              try {
+                if (!document.getElementById('protlys-runtime-retry')) {
+                  const panel = document.createElement('div');
+                  panel.id = 'protlys-runtime-retry';
+                  panel.setAttribute('role', 'alert');
+                  panel.style.cssText = 'position:fixed;inset:0;z-index:2147483647;display:grid;place-items:center;padding:24px;background:#F7F8F6;color:#111;font:14px Arial,sans-serif';
+                  panel.innerHTML = '<div style="width:min(100%,360px);padding:26px;border:1px solid #e5e8e2;border-radius:18px;background:#fff;text-align:center"><img src="/protlys-logo-exact.png" alt="Protlys" style="width:110px;height:auto;margin-bottom:14px"><h1 style="font-size:20px;margin:0 0 8px">Something went wrong</h1><p style="color:#62685f;line-height:1.5">The app hit an unexpected error. Your saved data has not been cleared.</p><button id="protlys-runtime-retry-button" style="border:0;border-radius:999px;padding:11px 20px;background:#6BCB45;color:#111;font-weight:800">Retry</button></div>';
+                  document.body.appendChild(panel);
+                  panel.querySelector('#protlys-runtime-retry-button').addEventListener('click', () => window.location.reload());
+                }
+              } catch {}
+              return false;
             };
             window.addEventListener('error', event => {
               if (isChunkFailure(event)) retryChunk();

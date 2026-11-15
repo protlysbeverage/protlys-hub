@@ -1,6 +1,6 @@
 const CACHE_NAME = 'protlys-hub-shell-v5';
 const SHELL_URLS = ['/offline.html', '/protlys-logo-exact.png', '/manifest.webmanifest'];
-const HASHED_ASSET = /-[A-Za-z0-9_-]{6,}\\.(?:js|css|woff2?|ttf|otf)$/;
+const HASHED_ASSET = /-[A-Za-z0-9_-]{6,}\.(?:js|css|woff2?|ttf|otf)$/;
 
 self.addEventListener('install', event => {
   event.waitUntil((async () => {
@@ -44,14 +44,16 @@ self.addEventListener('fetch', event => {
       try {
         const response = await fetch(new Request(request, { cache: 'no-store' }));
         if (response && response.ok && response.type !== 'opaque') {
-          await cache.put(request, response.clone());
-          if (url.pathname === '/') await cache.put('/index.html', response.clone());
+          try {
+            await cache.put(request, response.clone());
+            if (url.pathname === '/') await cache.put('/index.html', response.clone());
+          } catch {}
         }
         return response;
       } catch {
         const exact = await cache.match(request);
         if (exact) return exact;
-        const home = await cache.match('/index.html') || await cache.match('/');
+        const home = await cache.match('/index.html') || await cache.match('/') || await cache.match('/feed') || await cache.match('/account') || await cache.match('/movement');
         if (home) return home;
         return (await cache.match('/offline.html')) || new Response('Offline', { status: 503, headers: { 'Content-Type': 'text/plain' } });
       }
