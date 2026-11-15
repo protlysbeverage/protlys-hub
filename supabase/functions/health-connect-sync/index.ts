@@ -100,8 +100,10 @@ Deno.serve(async (req) => {
     .in("step_date", dates);
   if (existingError) return json({ error: existingError.message }, 500);
 
-  const existingByDate = new Map(
-    (existingRows || []).map((row: any) => [row.step_date, Number(row.steps || 0)]),
+  const existingByDate = new Map<string, number>(
+    (existingRows || []).map((row: any) =>
+      [String(row.step_date), Number(row.steps || 0)] as [string, number]
+    ),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
   // Health Connect aggregate with a lower phone-only sensor count.
