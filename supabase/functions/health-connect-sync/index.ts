@@ -156,10 +156,6 @@ Deno.serve(async (req) => {
     last_used_at: new Date().toISOString(),
   }).eq("id", connection.id);
 
-  const today = new Intl.DateTimeFormat("en-CA", {
-    timeZone: "Africa/Nairobi", year: "numeric", month: "2-digit", day: "2-digit",
-  }).format(new Date());
-
   return json({
     ok: true,
     synced: cleaned.length,
