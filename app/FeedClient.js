@@ -193,6 +193,7 @@ function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onMod
   }, [postId, initialCount]);
 
   async function toggleCommentLike(commentId) {
+    if (!navigator.onLine) { setError('You are offline. Reconnect to like comments.'); return; }
     setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, Number(comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
     const result = await toggleFeedCommentLikeAction({ commentId });
     if (result?.error) { setError(result.error); await loadComments(); }
@@ -328,7 +329,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
       setHasMore(Boolean(result.hasMore));
       setNextOffset(Number(result.nextOffset || 0));
     } catch (error) {
-      if (feedPostsCountRef.current) { setIsOffline(true); setOfflineAt(Date.now()); }
+      if (feedPostsCountRef.current) setIsOffline(true);
       setFeedError(error?.message || 'Could not refresh the feed. Check your connection and try again.');
     } finally {
       setRefreshing(false);

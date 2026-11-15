@@ -3,9 +3,10 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
-const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
+
+const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
 function localDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
