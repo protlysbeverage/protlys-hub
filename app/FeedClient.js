@@ -316,7 +316,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     try {
       const result = await getFeedPageAction();
       if (result?.error) {
-        if (feedPostsCountRef.current) { setIsOffline(true); setOfflineAt(Date.now()); }
+        if (feedPostsCountRef.current) setIsOffline(true);
         setFeedError(result.error);
         return;
       }
