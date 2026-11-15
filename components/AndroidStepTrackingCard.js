@@ -52,7 +52,7 @@ export default function AndroidStepTrackingCard() {
       const deepLink = 'protlys://health-connect?token=' + encodeURIComponent(data.token);
       window.location.href = deepLink;
       setStatus('connected');
-      setMessage('Finish the Health Connect permission step in the Protlys app.');
+      setMessage('Approve step access in the Protlys app. Your phone sensor will keep counting if Health Connect is unavailable.');
     } catch (error) {
       setStatus('error');
       setMessage(error?.message || 'Could not connect step tracking. Please try again.');
@@ -72,8 +72,8 @@ export default function AndroidStepTrackingCard() {
           <div style={{fontSize:15,fontWeight:800}}>Automatic steps</div>
           <div style={{fontSize:12.5,color:'var(--ink-45)',lineHeight:1.45,marginTop:4}}>
             {status === 'connected'
-              ? 'Connected. Protlys will use Health Connect first and the phone step counter as a fallback.'
-              : 'Connect your Android phone so today’s steps can sync into Movement and the leaderboard automatically.'}
+              ? 'Connected. Protlys combines your phone’s live step sensor with Health Connect’s daily total, without adding overlapping counts.'
+              : 'Connect your Android phone to show today’s steps in Movement and sync them automatically.'}
           </div>
           {message && <div style={{fontSize:11,color:status === 'error' ? 'var(--ink)' : 'var(--green-dark)',lineHeight:1.4,marginTop:7}}>{message}</div>}
           <button
@@ -83,7 +83,7 @@ export default function AndroidStepTrackingCard() {
             disabled={status === 'working'}
             style={{marginTop:11,minHeight:42,padding:'9px 14px'}}
           >
-            {status === 'working' ? 'Connecting…' : status === 'connected' ? 'Reconnect steps' : 'Enable automatic steps'}
+            {status === 'working' ? 'Connecting…' : status === 'connected' ? 'Refresh step connection' : 'Connect automatic steps'}
           </button>
         </div>
       </div>
