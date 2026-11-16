@@ -193,7 +193,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       intervalRef.current = window.setInterval(() => {
         if (document.visibilityState === 'visible') scheduleRefresh(7000);
-      }, 45000);
+      }, 15000);
     };
     const background = () => {
       if (intervalRef.current) {
@@ -225,7 +225,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
   // Optional app-to-app signal for native Health Connect integrations.
   useEffect(() => {
-    const onCustom = () => scheduleRefresh(7000);
+    const onCustom = () => scheduleRefresh(0);
     window.addEventListener('protlys:steps-updated', onCustom);
     return () => window.removeEventListener('protlys:steps-updated', onCustom);
   }, [scheduleRefresh]);
