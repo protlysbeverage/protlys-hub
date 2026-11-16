@@ -1,6 +1,5 @@
 'use client';
 import MovementClient from './MovementClient';
-import AndroidStepTrackingCard from '@/components/AndroidStepTrackingCard';
 import MovementDiagnosticsTrigger from '@/components/MovementDiagnosticsTrigger';
 
 export default function MovementPolish(props) {
@@ -10,7 +9,6 @@ export default function MovementPolish(props) {
       <MovementClient {...props} />
       <MovementDiagnosticsTrigger />
       <div className="screen-pad" style={{paddingTop:0,paddingBottom:72}}>
-        <AndroidStepTrackingCard />
         <div className="hub-card" style={{marginTop:10,padding:14}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <div style={{width:44,height:44,borderRadius:12,display:'grid',placeItems:'center',flex:'0 0 44px',background:'var(--green-soft)',color:'var(--green-dark)'}}>
