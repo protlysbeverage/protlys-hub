@@ -64,7 +64,7 @@ export default function AndroidStepTrackingCard() {
           </svg>
         </div>
         <div style={{minWidth:0,flex:1}}>
-          <div style={{fontSize:15,fontWeight:800}}>Allow Protlys to read your steps</div>
+          <div style={{fontSize:15,fontWeight:800}}>{status === 'connected' ? 'Step tracking is on' : 'Allow Protlys to read your steps'}</div>
           <div style={{fontSize:12.5,color:'var(--ink-45)',lineHeight:1.45,marginTop:4}}>
             {status === 'connected'
               ? 'Step tracking is connected. Your phone sensor and Health Connect totals are reconciled without double-counting.'
