@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
+import AndroidStepTrackingCard from '@/components/AndroidStepTrackingCard';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
 
@@ -193,7 +194,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       intervalRef.current = window.setInterval(() => {
         if (document.visibilityState === 'visible') scheduleRefresh(7000);
-      }, 45000);
+      }, 15000);
     };
     const background = () => {
       if (intervalRef.current) {
@@ -225,7 +226,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
   // Optional app-to-app signal for native Health Connect integrations.
   useEffect(() => {
-    const onCustom = () => scheduleRefresh(7000);
+    const onCustom = () => scheduleRefresh(0);
     window.addEventListener('protlys:steps-updated', onCustom);
     return () => window.removeEventListener('protlys:steps-updated', onCustom);
   }, [scheduleRefresh]);
@@ -250,6 +251,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         <h1 style={{fontSize:22}}>Your movement</h1>
         <p className="subhead">Your steps are tracked automatically.</p>
       </div>
+
+      <AndroidStepTrackingCard />
 
       <div className="screen-pad" style={{paddingTop:6}}>
         <div className="hub-card" style={{padding:16,minHeight:196}}>

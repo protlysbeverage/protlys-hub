@@ -1,14 +1,13 @@
 'use client';
-
 import MovementClient from './MovementClient';
+import MovementDiagnosticsTrigger from '@/components/MovementDiagnosticsTrigger';
 
 export default function MovementPolish(props) {
   return (
     <div className="movement-polish">
-      <style>{`
-        .movement-polish .hub-card .mono,.movement-polish .metric-number,.movement-polish .stat-number{font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em;}
-      `}</style>
+      <style>{".movement-polish .hub-card .mono,.movement-polish .metric-number,.movement-polish .stat-number{font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em;}"} </style>
       <MovementClient {...props} />
+      <MovementDiagnosticsTrigger />
       <div className="screen-pad" style={{paddingTop:0,paddingBottom:72}}>
         <div className="hub-card" style={{marginTop:10,padding:14}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
