@@ -237,6 +237,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       setNativePermission(native.permissionStatus());
 
       const applyNativeSteps = value => {
+        setNativePermission(native.permissionStatus());
         const incoming = Math.max(0, Number(value || 0));
         const next = Math.max(Number(displayedTodayRef.current || 0), incoming);
         if (next === Number(displayedTodayRef.current || 0)) return;
@@ -314,8 +315,13 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}
         {nativePermission && nativePermission !== 'granted' && (
           <div role="status" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11.5,lineHeight:1.35}}>
-            <span>Step access is off. Allow it to keep your Movement total up to date.</span>
-            <button type="button" onClick={() => window.ProtlysNative?.requestPermission?.()} style={{border:0,borderRadius:999,padding:'7px 11px',background:'var(--green)',color:'#111',fontWeight:800,whiteSpace:'nowrap'}}>{nativePermission === 'permanently_denied' ? 'Open settings' : 'Allow'}</button>
+            <span>{nativePermission === 'battery_restricted' ? 'Battery settings may pause step counting when your screen is off.' : nativePermission === 'service_stopped' ? 'Step tracking needs to restart.' : nativePermission === 'sensor_unavailable' ? 'This phone does not provide a supported step sensor.' : 'Step access is off. Allow it to keep your Movement total up to date.'}</span>
+            {nativePermission !== 'sensor_unavailable' && <button type="button" onClick={() => {
+              const native = window.ProtlysNative;
+              if (nativePermission === 'battery_restricted') native?.openBatterySettings?.();
+              else if (nativePermission === 'service_stopped') native?.startTracking?.();
+              else native?.requestPermission?.();
+            }} style={{border:0,borderRadius:999,padding:'7px 11px',background:'var(--green)',color:'#111',fontWeight:800,whiteSpace:'nowrap'}}>{nativePermission === 'permanently_denied' ? 'Open settings' : nativePermission === 'battery_restricted' ? 'Allow background' : nativePermission === 'service_stopped' ? 'Restart' : 'Allow'}</button>}
           </div>
         )}
         <h1 style={{fontSize:22}}>Your movement</h1>
