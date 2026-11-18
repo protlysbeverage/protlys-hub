@@ -5,7 +5,6 @@ import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
-import { createClient } from '@/lib/supabase/client';
 
 const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
@@ -63,7 +62,6 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const displayedTodayRef = useRef(0);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
-  const nativePairInFlight = useRef(false);
 
   const persist = useCallback((patch = {}) => {
     try {
@@ -262,27 +260,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       try {
         unsubscribe?.();
         unsubscribe = native.onStepsChanged(applyNativeSteps);
-        native.startTracking();
       } catch {}
 
-      // Pair the signed-in member once so the native service can sync while the
-      // WebView is closed. The token is stored encrypted by Android.
-      try {
-        if (!native.hasSyncTokenForUser?.(String(userId)) && !nativePairInFlight.current) {
-          nativePairInFlight.current = true;
-          createClient().functions.invoke('health-connect-pair', {
-            body: {
-              action: 'pair',
-              platform: 'android',
-              device_name: 'Protlys Hub native Android',
-            },
-          }).then(({ data, error }) => {
-            if (!cancelled && !error && data?.token) {
-              native.setSyncToken(data.token, String(userId));
-            }
-          }).catch(() => {}).finally(() => { nativePairInFlight.current = false; });
-        }
-      } catch {}
     };
 
     window.addEventListener('protlys:native-ready', connectNative);
