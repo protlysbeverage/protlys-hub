@@ -4,6 +4,7 @@ import { useEffect, useState, useTransition } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import { unblockUserAction } from '@/app/moderation-actions';
+import BuildStamp from '@/components/BuildStamp';
 
 function Toggle({label,description,checked,onChange}){return <label style={{display:'flex',justifyContent:'space-between',gap:15,alignItems:'center',padding:'14px 0',borderBottom:'1px solid var(--line)',cursor:'pointer'}}><span><span style={{display:'block',fontSize:13,fontWeight:800}}>{label}</span><span style={{display:'block',fontSize:10.8,color:'var(--ink-45)',marginTop:3,lineHeight:1.35}}>{description}</span></span><input type="checkbox" checked={checked} onChange={e=>onChange(e.target.checked)}/></label>}
 
