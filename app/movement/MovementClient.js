@@ -268,7 +268,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       // Pair the signed-in member once so the native service can sync while the
       // WebView is closed. The token is stored encrypted by Android.
       try {
-        if (!native.hasSyncToken?.() && !nativePairInFlight.current) {
+        if (!native.hasSyncTokenForUser?.(String(userId)) && !nativePairInFlight.current) {
           nativePairInFlight.current = true;
           createClient().functions.invoke('health-connect-pair', {
             body: {
@@ -278,7 +278,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
             },
           }).then(({ data, error }) => {
             if (!cancelled && !error && data?.token) {
-              native.setSyncToken(data.token);
+              native.setSyncToken(data.token, String(userId));
             }
           }).catch(() => {}).finally(() => { nativePairInFlight.current = false; });
         }
