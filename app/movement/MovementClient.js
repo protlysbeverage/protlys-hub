@@ -152,9 +152,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (!response.ok) return;
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
-      weekStepsRef.current = rows;
-      setWeekSteps(rows);
-      persist({ weekSteps: rows });
+      const liveToday = Number(displayedTodayRef.current || 0);
+      const serverToday = Number(rows.find(row => row.step_date === todayKey)?.steps || 0);
+      const mergedRows = liveToday > serverToday
+        ? [...rows.filter(row => row.step_date !== todayKey), { step_date: todayKey, steps: liveToday, source: 'phone_sensor', synced_at: null }].sort((a, b) => a.step_date.localeCompare(b.step_date))
+        : rows;
+      weekStepsRef.current = mergedRows;
+      setWeekSteps(mergedRows);
+      persist({ weekSteps: mergedRows });
     } catch {}
   }, [persist]);
 
