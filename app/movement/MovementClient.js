@@ -60,6 +60,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const intervalRef = useRef(null);
   const weekLoadedRef = useRef(false);
   const displayedTodayRef = useRef(0);
+  const lastDayRef = useRef(todayKey);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
 
@@ -159,7 +160,18 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       setWeekSteps(mergedRows);
       persist({ weekSteps: mergedRows });
     } catch {}
-  }, [persist]);
+  }, [persist, todayKey]);
+
+  useEffect(() => {
+    if (lastDayRef.current === todayKey) return;
+    lastDayRef.current = todayKey;
+    displayedTodayRef.current = 0;
+    setTodaySteps(0);
+    weekLoadedRef.current = false;
+    persist({ todaySteps: 0 });
+    loadWeekOnce();
+    scheduleRefresh(0);
+  }, [loadWeekOnce, persist, scheduleRefresh, todayKey]);
 
   useEffect(() => {
     if (!userId) return undefined;
