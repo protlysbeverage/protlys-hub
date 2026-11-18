@@ -223,6 +223,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
+  // Start the native Android phone step sensor when this page is open in the Protlys app.
+  useEffect(() => {
+    if (!userId) return;
+    try {
+      window.ProtlysNative?.startTracking?.(String(userId));
+    } catch {}
+  }, [userId]);
+
   // Optional app-to-app signal for native Health Connect integrations.
   useEffect(() => {
     const onCustom = () => scheduleRefresh(7000);
