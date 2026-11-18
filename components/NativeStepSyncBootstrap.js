@@ -38,10 +38,12 @@ export default function NativeStepSyncBootstrap() {
 
     const onNativeReady = () => { provisionToken(); };
     window.addEventListener('protlys:native-ready', onNativeReady);
+    window.addEventListener('online', onNativeReady);
     provisionToken();
     return () => {
       cancelled = true;
       window.removeEventListener('protlys:native-ready', onNativeReady);
+      window.removeEventListener('online', onNativeReady);
     };
   }, []);
 
