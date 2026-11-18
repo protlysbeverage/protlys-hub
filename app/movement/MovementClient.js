@@ -46,6 +46,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const [offlineAt, setOfflineAt] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
   const [todaySteps, setTodaySteps] = useState(0);
+  const [nativePermission, setNativePermission] = useState(null);
   const [lastSync, setLastSync] = useState(null);
   const [source, setSource] = useState(null);
   const [weekSteps, setWeekSteps] = useState([]);
@@ -59,6 +60,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const intervalRef = useRef(null);
   const weekLoadedRef = useRef(false);
   const displayedTodayRef = useRef(0);
+  const lastDayRef = useRef(todayKey);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
 
@@ -149,11 +151,27 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (!response.ok) return;
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
-      weekStepsRef.current = rows;
-      setWeekSteps(rows);
-      persist({ weekSteps: rows });
+      const liveToday = Number(displayedTodayRef.current || 0);
+      const serverToday = Number(rows.find(row => row.step_date === todayKey)?.steps || 0);
+      const mergedRows = liveToday > serverToday
+        ? [...rows.filter(row => row.step_date !== todayKey), { step_date: todayKey, steps: liveToday, source: 'phone_sensor', synced_at: null }].sort((a, b) => a.step_date.localeCompare(b.step_date))
+        : rows;
+      weekStepsRef.current = mergedRows;
+      setWeekSteps(mergedRows);
+      persist({ weekSteps: mergedRows });
     } catch {}
-  }, [persist]);
+  }, [persist, todayKey]);
+
+  useEffect(() => {
+    if (lastDayRef.current === todayKey) return;
+    lastDayRef.current = todayKey;
+    displayedTodayRef.current = 0;
+    setTodaySteps(0);
+    weekLoadedRef.current = false;
+    persist({ todaySteps: 0 });
+    loadWeekOnce();
+    scheduleRefresh(0);
+  }, [loadWeekOnce, persist, scheduleRefresh, todayKey]);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -184,7 +202,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       }
     } catch {}
 
-    // The shell never waits for Health Connect or the network.
+    // The shell never waits for the sensor or network.
     if (!cancelled) setReady(true);
 
     const foreground = () => {
@@ -223,15 +241,51 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
-  // Start the native Android phone step sensor when this page is open in the Protlys app.
+  // Read the live sensor directly from the native shell. The Hub remains the UI.
   useEffect(() => {
-    if (!userId) return;
-    try {
-      window.ProtlysNative?.startTracking?.(String(userId));
-    } catch {}
-  }, [userId]);
+    if (!userId) return undefined;
+    let unsubscribe = null;
+    let cancelled = false;
 
-  // Optional app-to-app signal for native Health Connect integrations.
+    const connectNative = () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable?.() || cancelled) return;
+      setNativePermission(native.permissionStatus());
+
+      const applyNativeSteps = value => {
+        setNativePermission(native.permissionStatus());
+        const incoming = Math.max(0, Number(value || 0));
+        const next = Math.max(Number(displayedTodayRef.current || 0), incoming);
+        if (next === Number(displayedTodayRef.current || 0)) return;
+        displayedTodayRef.current = next;
+        setTodaySteps(next);
+        setSource('phone_sensor');
+        const rows = [
+          ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+          { step_date: todayKey, steps: next, source: 'phone_sensor', synced_at: null },
+        ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+        weekStepsRef.current = rows;
+        setWeekSteps(rows);
+        persist({ todaySteps: next, source: 'phone_sensor', weekSteps: rows });
+      };
+
+      try {
+        unsubscribe?.();
+        unsubscribe = native.onStepsChanged(applyNativeSteps);
+      } catch {}
+
+    };
+
+    window.addEventListener('protlys:native-ready', connectNative);
+    connectNative();
+    return () => {
+      cancelled = true;
+      window.removeEventListener('protlys:native-ready', connectNative);
+      unsubscribe?.();
+    };
+  }, [persist, todayKey, userId]);
+
+  // Refresh the server snapshot after native step updates.
   useEffect(() => {
     const onCustom = () => scheduleRefresh(7000);
     window.addEventListener('protlys:steps-updated', onCustom);
@@ -255,8 +309,19 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
         {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}
+        {nativePermission && nativePermission !== 'granted' && (
+          <div role="status" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11.5,lineHeight:1.35}}>
+            <span>{nativePermission === 'battery_restricted' ? 'Battery settings may pause step counting when your screen is off.' : nativePermission === 'service_stopped' ? 'Step tracking needs to restart.' : nativePermission === 'sensor_unavailable' ? 'This phone does not provide a supported step sensor.' : 'Step access is off. Allow it to keep your Movement total up to date.'}</span>
+            {nativePermission !== 'sensor_unavailable' && <button type="button" onClick={() => {
+              const native = window.ProtlysNative;
+              if (nativePermission === 'battery_restricted') native?.openBatterySettings?.();
+              else if (nativePermission === 'service_stopped') native?.startTracking?.();
+              else native?.requestPermission?.();
+            }} style={{border:0,borderRadius:999,padding:'7px 11px',background:'var(--green)',color:'#111',fontWeight:800,whiteSpace:'nowrap'}}>{nativePermission === 'permanently_denied' ? 'Open settings' : nativePermission === 'battery_restricted' ? 'Allow background' : nativePermission === 'service_stopped' ? 'Restart' : 'Allow'}</button>}
+          </div>
+        )}
         <h1 style={{fontSize:22}}>Your movement</h1>
-        <p className="subhead">Your steps are tracked automatically.</p>
+        
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
@@ -264,7 +329,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8,minHeight:32}}>
-              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : source === 'android_sensor' || source === 'phone_sensor' ? 'Phone sensor' : 'Movement data'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
               {hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>}
             </div>
           </div>
