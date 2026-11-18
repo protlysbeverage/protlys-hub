@@ -63,6 +63,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const displayedTodayRef = useRef(0);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
+  const nativePairInFlight = useRef(false);
 
   const persist = useCallback((patch = {}) => {
     try {
@@ -186,7 +187,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       }
     } catch {}
 
-    // The shell never waits for Health Connect or the network.
+    // The shell never waits for the sensor or network.
     if (!cancelled) setReady(true);
 
     const foreground = () => {
@@ -263,7 +264,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       // WebView is closed. The token is stored encrypted by Android.
       try {
         const pairKey = `protlys_native_step_pair_v1_${userId}`;
-        if (window.localStorage.getItem(pairKey) !== '1') {
+        if (window.localStorage.getItem(pairKey) !== '1' && !nativePairInFlight.current) {
+          nativePairInFlight.current = true;
           createClient().functions.invoke('health-connect-pair', {
             body: {
               action: 'pair',
@@ -275,7 +277,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
               native.setSyncToken(data.token);
               window.localStorage.setItem(pairKey, '1');
             }
-          }).catch(() => {});
+          }).catch(() => {}).finally(() => { nativePairInFlight.current = false; });
         }
       } catch {}
     };
@@ -289,7 +291,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     };
   }, [persist, todayKey, userId]);
 
-  // Optional app-to-app signal for native Health Connect integrations.
+  // Refresh the server snapshot after native step updates.
   useEffect(() => {
     const onCustom = () => scheduleRefresh(7000);
     window.addEventListener('protlys:steps-updated', onCustom);
