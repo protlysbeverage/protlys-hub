@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
+import { createClient } from '@/lib/supabase/client';
 
 const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
@@ -46,6 +47,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const [offlineAt, setOfflineAt] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
   const [todaySteps, setTodaySteps] = useState(0);
+  const [nativePermission, setNativePermission] = useState(null);
   const [lastSync, setLastSync] = useState(null);
   const [source, setSource] = useState(null);
   const [weekSteps, setWeekSteps] = useState([]);
@@ -223,13 +225,68 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
-  // Start the native Android phone step sensor when this page is open in the Protlys app.
+  // Read the live sensor directly from the native shell. The Hub remains the UI.
   useEffect(() => {
-    if (!userId) return;
-    try {
-      window.ProtlysNative?.startTracking?.(String(userId));
-    } catch {}
-  }, [userId]);
+    if (!userId) return undefined;
+    let unsubscribe = null;
+    let cancelled = false;
+
+    const connectNative = () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable?.() || cancelled) return;
+      setNativePermission(native.permissionStatus());
+
+      const applyNativeSteps = value => {
+        const incoming = Math.max(0, Number(value || 0));
+        const next = Math.max(Number(displayedTodayRef.current || 0), incoming);
+        if (next === Number(displayedTodayRef.current || 0)) return;
+        displayedTodayRef.current = next;
+        setTodaySteps(next);
+        setSource('phone_sensor');
+        const rows = [
+          ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+          { step_date: todayKey, steps: next, source: 'phone_sensor', synced_at: null },
+        ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+        weekStepsRef.current = rows;
+        setWeekSteps(rows);
+        persist({ todaySteps: next, source: 'phone_sensor', weekSteps: rows });
+      };
+
+      try {
+        unsubscribe?.();
+        unsubscribe = native.onStepsChanged(applyNativeSteps);
+        native.startTracking();
+      } catch {}
+
+      // Pair the signed-in member once so the native service can sync while the
+      // WebView is closed. The token is stored encrypted by Android.
+      try {
+        const pairKey = `protlys_native_step_pair_v1_${userId}`;
+        if (window.localStorage.getItem(pairKey) !== '1') {
+          createClient().functions.invoke('health-connect-pair', {
+            body: {
+              action: 'pair',
+              platform: 'android',
+              device_name: 'Protlys Hub native Android',
+            },
+          }).then(({ data, error }) => {
+            if (!cancelled && !error && data?.token) {
+              native.setSyncToken(data.token);
+              window.localStorage.setItem(pairKey, '1');
+            }
+          }).catch(() => {});
+        }
+      } catch {}
+    };
+
+    window.addEventListener('protlys:native-ready', connectNative);
+    connectNative();
+    return () => {
+      cancelled = true;
+      window.removeEventListener('protlys:native-ready', connectNative);
+      unsubscribe?.();
+    };
+  }, [persist, todayKey, userId]);
 
   // Optional app-to-app signal for native Health Connect integrations.
   useEffect(() => {
@@ -255,8 +312,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
         {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}
+        {nativePermission && nativePermission !== 'granted' && (
+          <div role="status" style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:10,padding:'9px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11.5,lineHeight:1.35}}>
+            <span>Step access is off. Allow it to keep your Movement total up to date.</span>
+            <button type="button" onClick={() => window.ProtlysNative?.requestPermission?.()} style={{border:0,borderRadius:999,padding:'7px 11px',background:'var(--green)',color:'#111',fontWeight:800,whiteSpace:'nowrap'}}>{nativePermission === 'permanently_denied' ? 'Open settings' : 'Allow'}</button>
+          </div>
+        )}
         <h1 style={{fontSize:22}}>Your movement</h1>
-        <p className="subhead">Your steps are tracked automatically.</p>
+        
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
@@ -264,7 +327,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8,minHeight:32}}>
-              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : source === 'phone_sensor' ? 'Phone sensor' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
               {hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>}
             </div>
           </div>
