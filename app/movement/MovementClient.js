@@ -333,7 +333,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8,minHeight:32}}>
-              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : source === 'phone_sensor' ? 'Phone sensor' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Phone sensor'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
               {hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>}
             </div>
           </div>
