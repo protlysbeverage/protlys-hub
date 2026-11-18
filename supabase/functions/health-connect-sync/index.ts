@@ -79,6 +79,7 @@ Deno.serve(async (req) => {
   if (!connection) return json({ error: "Tracking connection is not active" }, 401);
 
   const body = await req.json().catch(() => ({}));
+  const source = body?.source === "android_sensor" ? "android_sensor" : "health_connect";
   const days = Array.isArray(body?.days) ? body.days : [];
   if (days.length < 1 || days.length > 31) return json({ error: "Send between 1 and 31 days" }, 400);
 
@@ -103,29 +104,36 @@ Deno.serve(async (req) => {
   const dates = [...byDate.keys()];
   const { data: existingRows, error: existingError } = await admin
     .from("daily_steps")
-    .select("step_date,steps")
+    .select("step_date,steps,source")
     .eq("user_id", connection.user_id)
     .in("step_date", dates);
   if (existingError) return json({ error: existingError.message }, 500);
 
-  const existingByDate = new Map<string, number>(
-    (existingRows || []).map((row: any) =>
-      [String(row.step_date), Number(row.steps || 0)] as [string, number]
-    ),
+  const existingByDate = new Map<string, { steps: number; source: string }>(
+    (existingRows || []).map((row: any) => [String(row.step_date), {
+      steps: Number(row.steps || 0),
+      source: String(row.source || "health_connect"),
+    }]),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
   // Health Connect aggregate with a lower phone-only sensor count.
-  const cleaned = dates.map((date) => ({
-    step_date: date,
-    steps: Math.max(byDate.get(date) ?? 0, existingByDate.get(date) ?? 0),
-  }));
+  const cleaned = dates.map((date) => {
+    const incomingSteps = byDate.get(date) ?? 0;
+    const existing = existingByDate.get(date);
+    const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
+    return {
+      step_date: date,
+      steps: Math.max(incomingSteps, existing?.steps ?? 0),
+      source: keepIncoming ? source : (existing?.source || "health_connect"),
+    };
+  });
 
   const { error: upsertError } = await admin.from("daily_steps").upsert(
     cleaned.map((row) => ({
       user_id: connection.user_id,
       step_date: row.step_date,
       steps: row.steps,
-      source: "health_connect",
+      source: row.source,
       synced_at: new Date().toISOString(),
     })),
     { onConflict: "user_id,step_date" },
