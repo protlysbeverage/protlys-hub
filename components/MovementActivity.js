@@ -11,7 +11,9 @@ import { getShareData } from '@/lib/share-data';
 import { monthIndex, shiftMonth, canGoPrevious, canGoNext as canGoNextMonth } from '@/lib/movement-calendar';
 
 function dateKey(date = new Date()) {
-  const parts = new Intl.DateTimeFormat('en-CA', { year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
+  // Use the same calendar day on the server and in the browser.
+  // Protlys Hub's movement dates are based on Nairobi local time.
+  const parts = new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).formatToParts(date);
   const get = type => parts.find(part => part.type === type)?.value || '';
   return `${get('year')}-${get('month')}-${get('day')}`;
 }
@@ -130,7 +132,10 @@ function ProgressRing({ steps, goal }) {
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null }) {
   const [expanded, setExpanded] = useState(false);
   const [todayKey, setTodayKey] = useState(() => dateKey(new Date()));
-  const [calendarMonth, setCalendarMonth] = useState(() => { const d = new Date(); return new Date(d.getFullYear(), d.getMonth(), 1); });
+  const [calendarMonth, setCalendarMonth] = useState(() => {
+    const today = parseKey(dateKey(new Date()));
+    return new Date(today.getFullYear(), today.getMonth(), 1);
+  });
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
   const [monthError, setMonthError] = useState('');
