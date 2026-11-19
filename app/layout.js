@@ -91,6 +91,52 @@ export default function RootLayout({ children }) {
               const message = event && event.message || '';
               return (source && source.includes('/_next/static/chunks/')) || /ChunkLoadError|Loading chunk .* failed|Failed to load chunk/i.test(message);
             };
+            const reportClientFailure = (kind, details = {}) => {
+              try {
+                const payload = {
+                  kind,
+                  message: String(details.message || '').slice(0, 1000),
+                  source: String(details.source || '').split('?')[0].slice(0, 500),
+                  stack: String(details.stack || '').slice(0, 3000),
+                  pathname: window.location.pathname,
+                  line: Number.isFinite(details.line) ? details.line : null,
+                  column: Number.isFinite(details.column) ? details.column : null,
+                  build: String(window.__PROTLYS_BUILD_ID__ || '').slice(0, 100)
+                };
+                console.error('[Protlys browser diagnostic]', payload);
+                fetch('/api/client-diagnostic', {
+                  method: 'POST',
+                  headers: { 'content-type': 'application/json' },
+                  body: JSON.stringify(payload),
+                  keepalive: true,
+                  credentials: 'same-origin'
+                }).catch(() => {});
+              } catch (reportingError) {
+                console.error('[Protlys diagnostic reporter failed]', reportingError);
+              }
+            };
+            window.addEventListener('error', event => {
+              const target = event && event.target;
+              if (target && target !== window) {
+                const source = target.src || target.href || '';
+                reportClientFailure('resource-load', { message: 'Resource failed to load', source });
+              } else {
+                reportClientFailure('javascript', {
+                  message: event.message,
+                  source: event.filename,
+                  line: event.lineno,
+                  column: event.colno,
+                  stack: event.error && event.error.stack
+                });
+              }
+            }, true);
+            window.addEventListener('unhandledrejection', event => {
+              const reason = event && event.reason;
+              reportClientFailure('unhandled-rejection', {
+                message: reason && reason.message ? reason.message : String(reason || 'Unhandled promise rejection'),
+                stack: reason && reason.stack
+              });
+            });
             window.onerror = (message, source, line, column, error) => {
               if (/ChunkLoadError|Loading chunk .* failed/i.test(String(message || ''))) {
                 retryChunk();
