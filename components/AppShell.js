@@ -207,7 +207,7 @@ export default function AppShell({ children }) {
         width:min(432px,100vw)!important;
         transform:translateX(-50%)!important;
         z-index:9999!important;
-        padding:7px 4px calc(12px + env(safe-area-inset-bottom))!important;
+        padding:7px 4px calc(12px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)))!important;
       }
       .protlys-app .app-shell {
         height:100dvh!important;
@@ -220,8 +220,8 @@ export default function AppShell({ children }) {
         height:auto!important;
         overflow-y:auto!important;
         overflow-x:hidden!important;
-        padding-bottom:calc(87px + env(safe-area-inset-bottom) + 12px)!important;
-        scroll-padding-bottom:calc(87px + env(safe-area-inset-bottom) + 12px)!important;
+        padding-bottom:calc(87px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 12px)!important;
+        scroll-padding-bottom:calc(87px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 12px)!important;
         -webkit-overflow-scrolling:touch!important;
       }
     }
@@ -265,7 +265,8 @@ export default function AppShell({ children }) {
     }
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
-      .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important;min-height:72px!important;height:72px!important;padding:9px 14px!important;box-sizing:border-box!important; }
+      .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important;min-height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;padding:calc(9px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px))) 14px 9px!important;box-sizing:border-box!important; }
+      .protlys-app .screen .screen-pad:first-of-type { padding-top:12px!important; }
       .protlys-app .app-header > .theme-toggle { grid-column:1!important;grid-row:1!important;justify-self:start!important;align-self:center!important; }
       .protlys-app .app-header > .brand-link { grid-column:2!important;grid-row:1!important;justify-self:center!important; }
       .protlys-app .app-header > .shop-header-link { grid-column:3!important;grid-row:1!important;justify-self:end!important;margin-left:0!important; }
