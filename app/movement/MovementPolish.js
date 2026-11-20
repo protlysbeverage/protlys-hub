@@ -1,7 +1,7 @@
 'use client';
 
 import MovementClient from './MovementClient';
-import AndroidStepTrackingCard from '@/components/AndroidStepTrackingCard';
+import AndroidStepPermissionPrompt from '@/components/AndroidStepPermissionPrompt';
 
 export default function MovementPolish(props) {
   return (
@@ -11,7 +11,7 @@ export default function MovementPolish(props) {
       `}</style>
       <MovementClient {...props} />
       <div className="screen-pad" style={{paddingTop:0}}>
-        <AndroidStepTrackingCard />
+        <AndroidStepPermissionPrompt />
       </div>
       <div className="screen-pad" style={{paddingTop:0,paddingBottom:72}}>
         <div className="hub-card" style={{marginTop:10,padding:14}}>
