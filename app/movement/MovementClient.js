@@ -158,7 +158,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       setWeekSteps(normalized);
       persist({ weekSteps: normalized });
     } catch {}
-  }, [persist]);
+  }, [persist, todayKey]);
 
   useEffect(() => {
     if (!userId) return undefined;
