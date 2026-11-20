@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useRef, useState, useCallback, useEffect } from 'react';
 import dynamic from 'next/dynamic';
+import NativeStepTrackerBootstrap from '@/components/NativeStepTrackerBootstrap';
 import { Message, MessageAvatar, MessageContent, MessageHeader, MessageFooter } from '@/components/ui/message';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 import {
@@ -439,6 +440,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   function openBlock(target) { setModerationMenu(null); setModerationSheet({ ...target, mode:'block' }); }
 
   return <div className="screen-pad feed-home">
+    <NativeStepTrackerBootstrap userId={userId} />
     <span className="eyebrow">Community</span>
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
