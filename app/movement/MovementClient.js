@@ -62,6 +62,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const displayedTodayRef = useRef(0);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
+  const displayedDayRef = useRef(todayKey);
 
   const persist = useCallback((patch = {}) => {
     try {
@@ -74,6 +75,22 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       }));
     } catch {}
   }, [cacheKey, todayKey]);
+
+  useEffect(() => {
+    if (displayedDayRef.current === todayKey) return;
+    displayedDayRef.current = todayKey;
+    displayedTodayRef.current = 0;
+    const nextRows = [
+      ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+      { step_date: todayKey, steps: 0, source: null, synced_at: null },
+    ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+    weekStepsRef.current = nextRows;
+    setTodaySteps(0);
+    setLastSync(null);
+    setSource(null);
+    setWeekSteps(nextRows);
+    persist({ todaySteps: 0, lastSync: null, source: null, weekSteps: nextRows });
+  }, [persist, todayKey]);
 
   const applyToday = useCallback((data) => {
     if (!data) return;
