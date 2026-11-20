@@ -94,6 +94,8 @@ Deno.serve(async (req) => {
   for (const row of days) {
     const date = String(row?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < minimumDate || date > today) continue;
+    // Health Connect is historical backfill only; today's total always comes from the phone sensor.
+    if (date === today && source !== "android_sensor") continue;
     const rawSteps = Number(row?.steps ?? 0);
     if (!Number.isFinite(rawSteps)) continue;
     const steps = Math.max(0, Math.min(60000, Math.floor(rawSteps)));
@@ -119,7 +121,9 @@ Deno.serve(async (req) => {
   // Health Connect aggregate with a lower phone-only sensor count.
   const cleaned = dates.map((date) => {
     const incomingSteps = byDate.get(date) ?? 0;
-    const existing = existingByDate.get(date);
+    const stored = existingByDate.get(date);
+    // Discard a legacy Health Connect value for today when the sensor takes over.
+    const existing = date === today && stored?.source === "health_connect" ? undefined : stored;
     const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
     return {
       step_date: date,
@@ -142,16 +146,19 @@ Deno.serve(async (req) => {
 
   const { data: allSteps, error: allStepsError } = await admin
     .from("daily_steps")
-    .select("step_date,steps")
+    .select("step_date,steps,source")
     .eq("user_id", connection.user_id)
     .gt("steps", 0)
     .order("step_date", { ascending: true });
 
   if (allStepsError) return json({ error: allStepsError.message }, 500);
 
-  const totalSteps = (allSteps || []).reduce((sum: number, row: any) => sum + Number(row.steps || 0), 0);
-  const stepStreak = calculateStreak(allSteps || []);
-  const lastStepDate = allSteps?.length ? allSteps[allSteps.length - 1].step_date : null;
+  const validSteps = (allSteps || []).filter((row: any) =>
+    !(row.step_date === today && row.source === "health_connect")
+  );
+  const totalSteps = validSteps.reduce((sum: number, row: any) => sum + Number(row.steps || 0), 0);
+  const stepStreak = calculateStreak(validSteps);
+  const lastStepDate = validSteps.length ? validSteps[validSteps.length - 1].step_date : null;
 
   const { error: profileUpdateError } = await admin.from("profiles").update({
     total_steps: totalSteps,
