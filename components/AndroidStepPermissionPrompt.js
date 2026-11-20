@@ -44,7 +44,7 @@ export default function AndroidStepPermissionPrompt() {
         style={{ minHeight: 38, padding: '8px 13px', flex: '0 0 auto' }}
         onClick={() => window.ProtlysNative?.requestPermission?.()}
       >
-        {status === 'permanently_denied' ? 'Open settings' : 'Allow'}
+        Open settings
       </button>
     </div>
     </div>
