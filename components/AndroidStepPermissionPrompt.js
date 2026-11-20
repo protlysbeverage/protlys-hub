@@ -33,6 +33,7 @@ export default function AndroidStepPermissionPrompt() {
   if (!status) return null;
 
   return (
+    <div className="screen-pad" style={{ paddingTop: 0, paddingBottom: 0 }}>
     <div className="hub-card" role="status" style={{ marginTop: 10, padding: '12px 14px', display: 'flex', alignItems: 'center', gap: 12 }}>
       <div style={{ minWidth: 0, flex: 1, fontSize: 12.5, lineHeight: 1.45, color: 'var(--ink-70)' }}>
         Allow activity recognition to count steps
@@ -45,6 +46,7 @@ export default function AndroidStepPermissionPrompt() {
       >
         {status === 'permanently_denied' ? 'Open settings' : 'Allow'}
       </button>
+    </div>
     </div>
   );
 }
