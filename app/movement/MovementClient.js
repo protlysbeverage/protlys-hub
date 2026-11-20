@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
+import NativeStepTrackerBootstrap from '@/components/NativeStepTrackerBootstrap';
 
 const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
@@ -61,6 +62,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const displayedTodayRef = useRef(0);
   const weekStepsRef = useRef([]);
   const lifetimeStepsRef = useRef(0);
+  const displayedDayRef = useRef(todayKey);
 
   const persist = useCallback((patch = {}) => {
     try {
@@ -74,13 +76,30 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     } catch {}
   }, [cacheKey, todayKey]);
 
+  useEffect(() => {
+    if (displayedDayRef.current === todayKey) return;
+    displayedDayRef.current = todayKey;
+    displayedTodayRef.current = 0;
+    const nextRows = [
+      ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+      { step_date: todayKey, steps: 0, source: null, synced_at: null },
+    ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+    weekStepsRef.current = nextRows;
+    setTodaySteps(0);
+    setLastSync(null);
+    setSource(null);
+    setWeekSteps(nextRows);
+    persist({ todaySteps: 0, lastSync: null, source: null, weekSteps: nextRows });
+  }, [persist, todayKey]);
+
   const applyToday = useCallback((data) => {
     if (!data) return;
+    if (data.date !== todayKey) return;
     const incoming = Number(data.steps || 0);
     const current = Number(displayedTodayRef.current || 0);
     // Same-day reconciliation is monotonic: a stale response can never make
-    // the number on screen drop.
-    const next = data.date === todayKey ? Math.max(current, incoming) : incoming;
+    // the number on screen drop, and a previous day's response is ignored.
+    const next = Math.max(current, incoming);
     displayedTodayRef.current = next;
     const nextLifetime = Math.max(Number(lifetimeStepsRef.current || 0), Number(data.totalSteps || 0));
     const nextWeek = (() => {
@@ -149,11 +168,15 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (!response.ok) return;
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
-      weekStepsRef.current = rows;
-      setWeekSteps(rows);
-      persist({ weekSteps: rows });
+      const normalized = [
+        ...rows.filter(row => row.step_date !== todayKey),
+        { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
+      ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+      weekStepsRef.current = normalized;
+      setWeekSteps(normalized);
+      persist({ weekSteps: normalized });
     } catch {}
-  }, [persist]);
+  }, [persist, todayKey]);
 
   useEffect(() => {
     if (!userId) return undefined;
@@ -175,7 +198,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         }
         if (cached.lastSync) setLastSync(cached.lastSync);
         if (cached.source) setSource(cached.source);
-        if (Array.isArray(cached.weekSteps)) { weekStepsRef.current = cached.weekSteps; setWeekSteps(cached.weekSteps); }
+        if (Array.isArray(cached.weekSteps)) {
+          const cachedRows = [
+            ...cached.weekSteps.filter(row => row.step_date !== todayKey),
+            { step_date: todayKey, steps: cached.date === todayKey ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey ? cached.source || null : null },
+          ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+          weekStepsRef.current = cachedRows;
+          setWeekSteps(cachedRows);
+        }
         if (Number.isFinite(Number(cached.lifetimeSteps))) { lifetimeStepsRef.current = Number(cached.lifetimeSteps); setLifetimeSteps(Number(cached.lifetimeSteps)); }
         if (Number.isFinite(Number(cached.currentStreak))) setCurrentStreak(Number(cached.currentStreak));
         if (Number.isFinite(Number(cached.stepGoal))) setStepGoal(Number(cached.stepGoal));
@@ -223,23 +253,47 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
-  // Start the native Android phone step sensor when this page is open in the Protlys app.
-  useEffect(() => {
-    if (!userId) return;
-    try {
-      window.ProtlysNative?.startTracking?.(String(userId));
-    } catch {}
-  }, [userId]);
 
-  // Optional app-to-app signal for native Health Connect integrations.
+  // Native sensor events update the live counter and the calendar from one daily value.
   useEffect(() => {
-    const onCustom = () => scheduleRefresh(7000);
+    const onCustom = event => {
+      const incoming = Math.max(0, Number(event?.detail?.steps || 0));
+      const current = Math.max(0, Number(displayedTodayRef.current || 0));
+      const next = Math.max(current, incoming);
+      displayedTodayRef.current = next;
+      setTodaySteps(next);
+      const nextRows = [
+        ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+        { step_date: todayKey, steps: next, source: 'android_sensor', synced_at: new Date().toISOString() },
+      ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+      weekStepsRef.current = nextRows;
+      setWeekSteps(nextRows);
+      persist({ todaySteps: next, weekSteps: nextRows, source: 'android_sensor' });
+    };
+    let unsubscribeNative = null;
+    const attachNative = () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable) return;
+      onCustom({ detail: { steps: native.getTodaySteps?.() || 0 } });
+      if (unsubscribeNative) unsubscribeNative();
+      unsubscribeNative = native.onStepsChanged?.(steps => onCustom({ detail: { steps } })) || null;
+    };
+    attachNative();
+    window.addEventListener('protlys:native-ready', attachNative);
     window.addEventListener('protlys:steps-updated', onCustom);
-    return () => window.removeEventListener('protlys:steps-updated', onCustom);
-  }, [scheduleRefresh]);
+    return () => {
+      window.removeEventListener('protlys:native-ready', attachNative);
+      window.removeEventListener('protlys:steps-updated', onCustom);
+      if (unsubscribeNative) unsubscribeNative();
+    };
+  }, [persist, todayKey]);
 
   const currentTodaySteps = todaySteps;
-  const recent = weekSteps.map(row => ({ dateStr: row.step_date, steps: Number(row.steps || 0) }));
+  const recentByDate = new Map(weekSteps.map(row => [row.step_date, Number(row.steps || 0)]));
+  recentByDate.set(todayKey, Number(currentTodaySteps || 0));
+  const recent = [...recentByDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateStr, steps]) => ({ dateStr, steps }));
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentActiveDays = recent.filter(d => d.steps > 0).length;
   const todayCalories = caloriesForSteps(currentTodaySteps);
@@ -252,6 +306,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
   return (
     <>
+      <NativeStepTrackerBootstrap userId={userId} />
       <div className="screen-pad">
         <span className="eyebrow">Movement</span>
         {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}

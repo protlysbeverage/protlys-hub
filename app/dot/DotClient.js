@@ -76,7 +76,7 @@ export default function PROTClient() {
         .protlys-dark .protlys-prot-panel{background:var(--card,#111820);color:var(--ink,#f2f5f7);border-color:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.45)}
         .protlys-dark .protlys-prot-msg.user{background:var(--green,#2e9e5b);color:#07140c}
         .protlys-dark .protlys-prot-starters button{border-color:rgba(255,255,255,.12)}
-        @media(max-width:899px){.protlys-prot-launch{bottom:92px;right:14px}.protlys-prot-panel{right:12px;bottom:86px;width:calc(100vw - 24px);height:min(680px,calc(100dvh - 104px));border-radius:22px}}
+        @media(max-width:899px){.protlys-prot-launch{bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 16px);right:14px}.protlys-prot-panel{right:12px;bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 16px);width:calc(100vw - 24px);height:min(680px,calc(100dvh - 120px - var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px))));border-radius:22px}}
         @media(prefers-reduced-motion:reduce){.protlys-prot-launch{transition:none}}
       `}</style>
       <button className="protlys-prot-launch" type="button" aria-label={open ? 'Close PROT' : 'Open PROT'} onClick={() => setOpen((value) => !value)}>
