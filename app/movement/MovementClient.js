@@ -94,11 +94,12 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
   const applyToday = useCallback((data) => {
     if (!data) return;
+    if (data.date !== todayKey) return;
     const incoming = Number(data.steps || 0);
     const current = Number(displayedTodayRef.current || 0);
     // Same-day reconciliation is monotonic: a stale response can never make
-    // the number on screen drop.
-    const next = data.date === todayKey ? Math.max(current, incoming) : incoming;
+    // the number on screen drop, and a previous day's response is ignored.
+    const next = Math.max(current, incoming);
     displayedTodayRef.current = next;
     const nextLifetime = Math.max(Number(lifetimeStepsRef.current || 0), Number(data.totalSteps || 0));
     const nextWeek = (() => {
