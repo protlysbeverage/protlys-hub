@@ -30,11 +30,12 @@ export async function GET() {
       .maybeSingle(),
   ]);
 
+  const todayFromSensorOnly = todayRow?.source !== 'health_connect';
   return NextResponse.json({
     date: today,
-    steps: Number(todayRow?.steps || 0),
-    source: todayRow?.source || null,
-    syncedAt: todayRow?.synced_at || null,
+    steps: todayFromSensorOnly ? Number(todayRow?.steps || 0) : 0,
+    source: todayFromSensorOnly ? todayRow?.source || null : null,
+    syncedAt: todayFromSensorOnly ? todayRow?.synced_at || null : null,
     totalSteps: Number(profile?.total_steps || 0),
     currentStreak: Number(profile?.step_streak || 0),
     stepGoal: Number(profile?.step_goal || 7500),
