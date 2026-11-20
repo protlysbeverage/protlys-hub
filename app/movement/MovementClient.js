@@ -284,8 +284,22 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       setWeekSteps(nextRows);
       persist({ todaySteps: next, weekSteps: nextRows, source: 'android_sensor' });
     };
+    let unsubscribeNative = null;
+    const attachNative = () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable) return;
+      onCustom({ detail: { steps: native.getTodaySteps?.() || 0 } });
+      if (unsubscribeNative) unsubscribeNative();
+      unsubscribeNative = native.onStepsChanged?.(steps => onCustom({ detail: { steps } })) || null;
+    };
+    attachNative();
+    window.addEventListener('protlys:native-ready', attachNative);
     window.addEventListener('protlys:steps-updated', onCustom);
-    return () => window.removeEventListener('protlys:steps-updated', onCustom);
+    return () => {
+      window.removeEventListener('protlys:native-ready', attachNative);
+      window.removeEventListener('protlys:steps-updated', onCustom);
+      if (unsubscribeNative) unsubscribeNative();
+    };
   }, [persist, todayKey]);
 
   const currentTodaySteps = todaySteps;
