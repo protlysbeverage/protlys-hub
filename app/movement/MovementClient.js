@@ -197,7 +197,14 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         }
         if (cached.lastSync) setLastSync(cached.lastSync);
         if (cached.source) setSource(cached.source);
-        if (Array.isArray(cached.weekSteps)) { weekStepsRef.current = cached.weekSteps; setWeekSteps(cached.weekSteps); }
+        if (Array.isArray(cached.weekSteps)) {
+          const cachedRows = [
+            ...cached.weekSteps.filter(row => row.step_date !== todayKey),
+            { step_date: todayKey, steps: cached.date === todayKey ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey ? cached.source || null : null },
+          ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+          weekStepsRef.current = cachedRows;
+          setWeekSteps(cachedRows);
+        }
         if (Number.isFinite(Number(cached.lifetimeSteps))) { lifetimeStepsRef.current = Number(cached.lifetimeSteps); setLifetimeSteps(Number(cached.lifetimeSteps)); }
         if (Number.isFinite(Number(cached.currentStreak))) setCurrentStreak(Number(cached.currentStreak));
         if (Number.isFinite(Number(cached.stepGoal))) setStepGoal(Number(cached.stepGoal));
