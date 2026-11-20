@@ -31,7 +31,12 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error: 'Unable to load movement history' }, { status: 500 });
 
-  return NextResponse.json({ rows: data || [] }, {
+  const rows = (data || []).map(row =>
+    row.step_date === today && row.source === 'health_connect'
+      ? { ...row, steps: 0, source: null, synced_at: null }
+      : row
+  );
+  return NextResponse.json({ rows }, {
     headers: { 'Cache-Control': 'private, no-store' },
   });
 }
