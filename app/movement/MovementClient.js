@@ -5,6 +5,7 @@ import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
 import { ShareIconButton } from '@/components/ShareIcon';
 import { getShareData } from '@/lib/share-data';
+import { createClient } from '@/lib/supabase/client';
 
 const ShareCardSheet = dynamic(() => import('@/components/ShareCardSheet'), { ssr: false });
 
@@ -149,9 +150,13 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (!response.ok) return;
       const data = await response.json();
       const rows = Array.isArray(data.rows) ? data.rows : [];
-      weekStepsRef.current = rows;
-      setWeekSteps(rows);
-      persist({ weekSteps: rows });
+      const normalized = [
+        ...rows.filter(row => row.step_date !== todayKey),
+        { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
+      ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+      weekStepsRef.current = normalized;
+      setWeekSteps(normalized);
+      persist({ weekSteps: normalized });
     } catch {}
   }, [persist]);
 
@@ -223,23 +228,72 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     loadWeekOnce();
   }, [loadWeekOnce, ready, userId, weekSteps.length]);
 
-  // Start the native Android phone step sensor when this page is open in the Protlys app.
+  // Pair the signed-in Hub account with the native sensor sync token automatically.
+  // The Android shell announces when its bridge is ready, so this also works when
+  // React mounts before the WebView JavaScript interface has been installed.
   useEffect(() => {
-    if (!userId) return;
-    try {
-      window.ProtlysNative?.startTracking?.(String(userId));
-    } catch {}
+    if (!userId) return undefined;
+    let cancelled = false;
+    let connecting = false;
+    const connectNative = async () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable || connecting || cancelled) return;
+      connecting = true;
+      try {
+        if (!native.hasSyncTokenForUser?.(String(userId))) {
+          native.clearSyncToken?.();
+          const supabase = createClient();
+          const { data, error } = await supabase.functions.invoke('health-connect-pair', {
+            body: {
+              action: 'pair',
+              platform: 'android',
+              device_name: String(window.navigator.userAgent || 'Android').slice(0, 120),
+            },
+          });
+          if (error || !data?.token || cancelled) return;
+          native.setSyncToken?.(data.token, String(userId));
+        }
+        if (!cancelled) native.startTracking?.(String(userId));
+      } catch {
+        // The native counter remains local; WorkManager retries sync after pairing/network recovery.
+      } finally {
+        connecting = false;
+      }
+    };
+    connectNative();
+    window.addEventListener('protlys:native-ready', connectNative);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('protlys:native-ready', connectNative);
+    };
   }, [userId]);
 
-  // Optional app-to-app signal for native Health Connect integrations.
+  // Native sensor events update the live counter and the calendar from one daily value.
   useEffect(() => {
-    const onCustom = () => scheduleRefresh(7000);
+    const onCustom = event => {
+      const incoming = Math.max(0, Number(event?.detail?.steps || 0));
+      const current = Math.max(0, Number(displayedTodayRef.current || 0));
+      const next = Math.max(current, incoming);
+      displayedTodayRef.current = next;
+      setTodaySteps(next);
+      const nextRows = [
+        ...(weekStepsRef.current || []).filter(row => row.step_date !== todayKey),
+        { step_date: todayKey, steps: next, source: 'android_sensor', synced_at: new Date().toISOString() },
+      ].sort((a, b) => a.step_date.localeCompare(b.step_date));
+      weekStepsRef.current = nextRows;
+      setWeekSteps(nextRows);
+      persist({ todaySteps: next, weekSteps: nextRows, source: 'android_sensor' });
+    };
     window.addEventListener('protlys:steps-updated', onCustom);
     return () => window.removeEventListener('protlys:steps-updated', onCustom);
-  }, [scheduleRefresh]);
+  }, [persist, todayKey]);
 
   const currentTodaySteps = todaySteps;
-  const recent = weekSteps.map(row => ({ dateStr: row.step_date, steps: Number(row.steps || 0) }));
+  const recentByDate = new Map(weekSteps.map(row => [row.step_date, Number(row.steps || 0)]));
+  recentByDate.set(todayKey, Number(currentTodaySteps || 0));
+  const recent = [...recentByDate.entries()]
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([dateStr, steps]) => ({ dateStr, steps }));
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
   const recentActiveDays = recent.filter(d => d.steps > 0).length;
   const todayCalories = caloriesForSteps(currentTodaySteps);
