@@ -21,6 +21,20 @@ function keyFromJson(name: string, fallbackName: string) {
   }
   return Deno.env.get(fallbackName) || "";
 }
+function createAdminClient(url: string, secret: string) {
+  return createClient(url, secret, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers || {});
+        // Supabase secret keys belong in apikey, never in Authorization: Bearer.
+        headers.delete("Authorization");
+        headers.set("apikey", secret);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
 async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -35,7 +49,7 @@ Deno.serve(async (req) => {
   const url = Deno.env.get("SUPABASE_URL")!;
   const secret = keyFromJson("SUPABASE_SECRET_KEYS", "SUPABASE_SERVICE_ROLE_KEY");
   if (!url || !secret) return json({ error: "Function configuration is incomplete" }, 500);
-  const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const admin = createAdminClient(url, secret);
   const tokenHash = await sha256Hex(token);
   const { data: device, error: tokenError } = await admin.from("device_tracking_tokens")
     .select("id,user_id,created_at").eq("token_hash", tokenHash).eq("platform", "android_widget")
