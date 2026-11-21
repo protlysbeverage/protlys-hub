@@ -1,3 +1,8 @@
+-- Record the Founding 250 capacity in group data; widget UI reads this value.
+update public.groups
+set member_limit = 250
+where name = 'Founding 250' and is_system = true and member_limit is null;
+
 -- Align weekly movement and leaderboard windows to Sunday 00:00–Saturday 23:59 Africa/Nairobi.
 -- Keep the in-app leaderboard and Android widget on the same week boundary.
 
