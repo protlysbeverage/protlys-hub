@@ -310,3 +310,63 @@ begin
   order by r.rank;
 end;
 $$;
+
+-- Service-role-only overload used by the native widget. It delegates ranking to the
+-- same authenticated RPC used by the app, then returns the top N plus the viewer.
+create or replace function public.get_group_leaderboard(
+  p_group_id uuid,
+  p_period text,
+  p_limit integer,
+  p_offset integer,
+  p_user_id uuid
+)
+returns table(
+  rank bigint,
+  user_id uuid,
+  username text,
+  avatar_url text,
+  steps bigint,
+  last_week_rank bigint,
+  steps_to_pass bigint,
+  rival_username text,
+  improvement numeric
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $function$
+declare
+  v_limit integer := least(greatest(coalesce(p_limit, 3), 1), 1000);
+  v_role text := coalesce(current_setting('request.jwt.claim.role', true), '');
+begin
+  if v_role <> 'service_role' then
+    raise exception 'Service role required';
+  end if;
+  if p_user_id is null then
+    raise exception 'Viewer is required';
+  end if;
+
+  perform set_config(
+    'request.jwt.claims',
+    jsonb_build_object('sub', p_user_id::text, 'role', 'authenticated')::text,
+    true
+  );
+  perform set_config('request.jwt.claim.sub', p_user_id::text, true);
+  perform set_config('request.jwt.claim.role', 'authenticated', true);
+
+  return query
+    select ranked.*
+    from public.get_group_leaderboard(p_group_id, p_period, 1000, 0) ranked
+    where ranked.rank <= v_limit or ranked.user_id = p_user_id
+    order by ranked.rank;
+end;
+$function$;
+
+revoke all on function public.get_group_leaderboard(uuid,text,integer,integer,uuid) from public, anon, authenticated;
+grant execute on function public.get_group_leaderboard(uuid,text,integer,integer,uuid) to service_role;
+
+comment on function public.get_group_leaderboard(uuid,text,integer,integer,uuid) is
+'Service-role-only widget overload. Uses the same group ranking RPC as the app and returns top N plus the specified authenticated viewer row.';
+
+comment on function public.get_group_weekly_steps(uuid) is 'Returns the current Sunday-Saturday Africa/Nairobi weekly steps leaderboard for a group.';
