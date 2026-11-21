@@ -32,6 +32,11 @@ begin
     left join public.daily_steps ds on ds.user_id=p.id
     left join public.weekly_results lw on lw.week_start=v_week-7 and lw.user_id=p.id and lw.scope='group' and lw.group_id=p_group_id
     where gm.group_id=p_group_id
+    where gm.group_id=p_group_id
+      and not exists (
+        select 1 from public.blocks b
+        where b.blocker_id=v_uid and b.blocked_id=p.id
+      )
     group by p.id,p.display_name,p.avatar_url,p.created_at,gm.joined_at,lw.steps,lw.rank,lw.created_at
   ), scored as (
     select e.*,case when v_period='most_improved' and e.last_steps >= (select most_improved_min_previous_steps from public.leaderboard_settings where id=true)
