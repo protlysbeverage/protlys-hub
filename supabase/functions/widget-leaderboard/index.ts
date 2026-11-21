@@ -38,10 +38,14 @@ Deno.serve(async (req) => {
   const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
   const tokenHash = await sha256Hex(token);
   const { data: device, error: tokenError } = await admin.from("device_tracking_tokens")
-    .select("id,user_id").eq("token_hash", tokenHash).eq("platform", "android_widget")
+    .select("id,user_id,created_at").eq("token_hash", tokenHash).eq("platform", "android_widget")
     .is("revoked_at", null).maybeSingle();
   if (tokenError) return json({ error: tokenError.message }, 500);
   if (!device) return json({ error: "Widget access revoked" }, 401);
+  if (Date.now() - Date.parse(device.created_at) > 30 * 24 * 60 * 60 * 1000) {
+    await admin.from("device_tracking_tokens").update({ revoked_at: new Date().toISOString() }).eq("id", device.id);
+    return json({ error: "Widget access expired" }, 401);
+  }
 
   const viewerId = String(device.user_id);
   const { data: viewerProfile, error: viewerProfileError } = await admin.from("profiles")
