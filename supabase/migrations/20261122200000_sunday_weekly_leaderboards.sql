@@ -367,7 +367,7 @@ returns table(
   improvement numeric
 )
 language plpgsql
-stable
+volatile
 security definer
 set search_path = ''
 as $function$
