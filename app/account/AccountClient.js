@@ -284,7 +284,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     const supabase = createClient();
     try { await supabase.functions.invoke('widget-pair', { body: { action:'revoke' } }); } catch {}
     await supabase.auth.signOut();
-    try { localStorage.removeItem('protlys-widget-pair-user'); } catch {}
+    try { localStorage.removeItem('protlys-widget-pair-user'); localStorage.removeItem('protlys-widget-pair-at'); } catch {}
     const isAndroidTwa = /Android/i.test(window.navigator.userAgent || '') &&
       (window.matchMedia?.('(display-mode: standalone)').matches ||
        String(document.referrer || '').startsWith('android-app://com.protlys.hub'));
