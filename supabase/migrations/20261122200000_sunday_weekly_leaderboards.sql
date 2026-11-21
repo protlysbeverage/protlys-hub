@@ -210,3 +210,103 @@ begin
     from public.profiles p where p.id=p_user_id;
 end;
 $$;
+
+
+-- Keep legacy group-profile overload and the weekly group card on the same Sunday boundary.
+
+create or replace function public.get_group_member_profile(p_user_id uuid,p_group_id uuid,p_local_date date) returns jsonb language plpgsql stable security definer set search_path='' as $$
+declare v_uid uuid:=(select auth.uid());v_shared boolean;v_steps boolean;v_protein boolean;v_result jsonb;v_group uuid;v_rank bigint;v_week date;
+begin if v_uid is null then raise exception 'Authentication required';end if;select exists(select 1 from public.group_members a join public.group_members b on b.group_id=a.group_id where a.user_id=v_uid and b.user_id=p_user_id) into v_shared;if not v_shared and v_uid<>p_user_id then raise exception 'Not a shared group member';end if;select show_group_steps,show_group_protein into v_steps,v_protein from public.profiles where id=p_user_id;v_steps:=v_steps or v_uid=p_user_id;v_protein:=v_protein or v_uid=p_user_id;if p_group_id is not null and exists(select 1 from public.group_members where group_id=p_group_id and user_id=v_uid) and exists(select 1 from public.group_members where group_id=p_group_id and user_id=p_user_id) then v_group:=p_group_id;else select a.group_id into v_group from public.group_members a join public.group_members b on b.group_id=a.group_id where a.user_id=v_uid and b.user_id=p_user_id order by(select count(*) from public.group_members x where x.group_id=a.group_id) desc,a.group_id limit 1;end if;v_week:=p_local_date-(extract(dow from p_local_date)::int);if v_steps then select l.rank into v_rank from public.get_group_leaderboard(v_group,'this_week',1000,0) l where l.user_id=p_user_id;end if;
+select jsonb_strip_nulls(jsonb_build_object('id',p.id,'name',coalesce(nullif(trim(p.display_name),''),'Protlys member'),'avatar_url',p.avatar_url,'joined_at',p.created_at,'founding_member',exists(select 1 from public.group_members fm join public.groups fg on fg.id=fm.group_id where fm.user_id=p.id and fg.is_system and fg.name='Founding 250'),'streak',case when v_steps then greatest(coalesce(p.step_streak,p.streak,0),0) end,'steps_week',case when v_steps then(select coalesce(sum(ds.steps),0)::bigint from public.daily_steps ds where ds.user_id=p.id and ds.step_date between v_week and v_week+6 and not coalesce(ds.is_flagged,false))end,'group_rank',case when v_steps then v_rank end,'last7',case when v_steps then(select jsonb_agg(jsonb_build_object('date',d::date,'steps',coalesce(ds.steps,0))order by d)from generate_series(p_local_date-6,p_local_date,'1 day')d left join public.daily_steps ds on ds.user_id=p.id and ds.step_date=d::date)end,'protein_today',case when v_protein then(select coalesce(sum(pl.grams),0)::bigint from public.protein_logs pl where pl.user_id=p.id and pl.log_date=p_local_date)end,'protein_goal',case when v_protein then p.target_g end,'challenges_joined',(select count(*)::bigint from public.challenge_members cm join public.challenges c on c.id=cm.challenge_id where cm.user_id=p.id and p_local_date between c.start_date and c.end_date),'cheered_today',exists(select 1 from public.cheers ch where ch.from_user_id=v_uid and ch.to_user_id=p.id and(ch.created_at at time zone 'Africa/Nairobi')::date=p_local_date),'group_id',v_group))into v_result from public.profiles p where p.id=p_user_id;return v_result;end;$$;
+
+create or replace function public.get_group_weekly_steps(p_group_id uuid)
+returns table(
+  rank bigint,
+  user_id uuid,
+  username text,
+  avatar_url text,
+  group_name text,
+  weekly_steps bigint,
+  steps_today bigint,
+  movement_days integer,
+  current_streak integer,
+  reached_at timestamptz
+)
+language plpgsql
+stable
+security definer
+set search_path = ''
+as $$
+declare
+  v_uid uuid := (select auth.uid());
+  v_week_start date := ((now() at time zone 'Africa/Nairobi')::date - extract(dow from (now() at time zone 'Africa/Nairobi'))::int);
+  v_week_end date := v_week_start + 7;
+begin
+  if v_uid is null then
+    raise exception 'Authentication required';
+  end if;
+
+  if p_group_id is null then
+    raise exception 'Group is required';
+  end if;
+
+  if not exists (
+    select 1
+    from public.group_members gm
+    where gm.group_id = p_group_id
+      and gm.user_id = v_uid
+  ) then
+    raise exception 'You are not a member of this group';
+  end if;
+
+  return query
+  with eligible as (
+    select
+      p.id,
+      coalesce(nullif(btrim(p.display_name), ''), 'Member')::text as username,
+      p.avatar_url,
+      g.name::text as group_name,
+      coalesce(sum(ds.steps), 0)::bigint as weekly_steps,
+      coalesce(
+        max(ds.steps) filter (
+          where ds.step_date = (now() at time zone 'Africa/Nairobi')::date
+        ), 0
+      )::bigint as steps_today,
+      count(*) filter (where ds.steps > 0)::integer as movement_days,
+      coalesce(p.step_streak, 0)::integer as current_streak,
+      max(ds.synced_at) as reached_at
+    from public.group_members gm
+    join public.groups g on g.id = gm.group_id
+    join public.profiles p on p.id = gm.user_id
+    left join public.daily_steps ds
+      on ds.user_id = p.id
+     and ds.step_date >= v_week_start
+     and ds.step_date < v_week_end
+    where gm.group_id = p_group_id
+    group by p.id, p.display_name, p.avatar_url, g.name, p.step_streak
+  ),
+  ranked as (
+    select
+      row_number() over (
+        order by weekly_steps desc,
+                 reached_at asc nulls last,
+                 id asc
+      )::bigint as rank,
+      *
+    from eligible
+  )
+  select
+    r.rank,
+    r.id,
+    r.username,
+    r.avatar_url,
+    r.group_name,
+    r.weekly_steps,
+    r.steps_today,
+    r.movement_days,
+    r.current_streak,
+    r.reached_at
+  from ranked r
+  order by r.rank;
+end;
+$$;
