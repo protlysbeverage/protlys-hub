@@ -8,6 +8,29 @@ export default function NativeStepTrackerBootstrap({ userId }) {
     if (!userId) return undefined;
     let cancelled = false;
     let connecting = false;
+    let widgetConnecting = false;
+    const connectWidget = async () => {
+      const native = window.ProtlysNative;
+      if (!native?.isAvailable || !native.hasWidgetTokenForUser || widgetConnecting || cancelled) return;
+      try {
+        if (native.hasWidgetTokenForUser(String(userId))) return;
+        widgetConnecting = true;
+        const supabase = createClient();
+        const deviceId = native.getWidgetDeviceId?.() || 'android';
+        const { data, error } = await supabase.functions.invoke('widget-pair', {
+          body: {
+            action: 'pair',
+            device_name: ('Protlys widget ' + String(deviceId)).slice(0, 120),
+          },
+        });
+        if (error || !data?.token || cancelled) return;
+        native.setWidgetToken?.(data.token, String(userId));
+      } catch {
+        // Widget pairing is optional; existing step tracking continues independently.
+      } finally {
+        widgetConnecting = false;
+      }
+    };
     const connectNative = async () => {
       const native = window.ProtlysNative;
       if (!native?.isAvailable || connecting || cancelled) return;
@@ -33,11 +56,14 @@ export default function NativeStepTrackerBootstrap({ userId }) {
         connecting = false;
       }
     };
+    connectWidget();
     connectNative();
     window.addEventListener('protlys:native-ready', connectNative);
+    window.addEventListener('protlys:native-ready', connectWidget);
     return () => {
       cancelled = true;
       window.removeEventListener('protlys:native-ready', connectNative);
+      window.removeEventListener('protlys:native-ready', connectWidget);
     };
   }, [userId]);
 
