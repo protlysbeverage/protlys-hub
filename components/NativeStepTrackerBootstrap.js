@@ -15,16 +15,23 @@ export default function NativeStepTrackerBootstrap({ userId }) {
            String(document.referrer || '').startsWith('android-app://com.protlys.hub'));
         if (!isAndroidTwa || cancelled) return;
         const pairedUser = localStorage.getItem('protlys-widget-pair-user');
-        if (pairedUser === String(userId)) return;
+        const pairedAt = Number(localStorage.getItem('protlys-widget-pair-at') || 0);
+        if (pairedUser === String(userId) && Date.now() - pairedAt < 24 * 60 * 60 * 1000) return;
+        let deviceId = localStorage.getItem('protlys-widget-device-id');
+        if (!deviceId) {
+          deviceId = window.crypto?.randomUUID?.() || (String(Date.now()) + '-' + Math.random().toString(16).slice(2));
+          localStorage.setItem('protlys-widget-device-id', deviceId);
+        }
         const supabase = createClient();
         const { data, error } = await supabase.functions.invoke('widget-pair', {
           body: {
             action: 'pair',
-            device_name: String(window.navigator.userAgent || 'Android').slice(0, 120),
+            device_name: ('Protlys widget ' + deviceId).slice(0, 120),
           },
         });
         if (error || !data?.token || cancelled) return;
         localStorage.setItem('protlys-widget-pair-user', String(userId));
+        localStorage.setItem('protlys-widget-pair-at', String(Date.now()));
         window.location.href = 'protlys://widget-auth?token=' + encodeURIComponent(data.token);
       } catch {
         // Widget pairing is optional; existing step tracking continues independently.
