@@ -32,7 +32,6 @@ begin
     left join public.daily_steps ds on ds.user_id=p.id
     left join public.weekly_results lw on lw.week_start=v_week-7 and lw.user_id=p.id and lw.scope='group' and lw.group_id=p_group_id
     where gm.group_id=p_group_id
-    where gm.group_id=p_group_id
       and not exists (
         select 1 from public.blocks b
         where b.blocker_id=v_uid and b.blocked_id=p.id
