@@ -60,6 +60,14 @@ Deno.serve(async (req) => {
     .map((b) => b.toString(16).padStart(2, "0")).join("");
   const tokenHash = await sha256Hex(rawToken);
   const deviceName = body?.device_name ? String(body.device_name).slice(0, 120) : "Android Protlys widget";
+  const { error: revokeError } = await admin.from("device_tracking_tokens")
+    .update({ revoked_at: new Date().toISOString() })
+    .eq("user_id", userData.user.id)
+    .eq("platform", "android_widget")
+    .eq("device_name", deviceName)
+    .is("revoked_at", null);
+  if (revokeError) return json({ error: revokeError.message }, 500);
+
   const { error } = await admin.from("device_tracking_tokens").insert({
     user_id: userData.user.id,
     token_hash: tokenHash,
