@@ -25,7 +25,7 @@ begin
   with eligible as (
     select p.id,p.display_name,p.avatar_url,p.created_at profile_joined,gm.joined_at group_joined,
       coalesce(sum(case when ds.step_date>=v_week and ds.step_date<v_week+7 and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced') then ds.steps else 0 end),0)::bigint current_steps,
-      min(case when ds.step_date>=v_week and ds.step_date<v_week+7 and ds.steps>0 then ds.synced_at end) current_reached_at,
+      min(case when ds.step_date>=v_week and ds.step_date<v_week+7 and ds.steps>0 and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced') then ds.synced_at end) current_reached_at,
       coalesce(lw.steps,0)::bigint last_steps, lw.rank::bigint last_rank,
       coalesce(lw.created_at,gm.joined_at,p.created_at) last_reached_at
     from public.group_members gm join public.profiles p on p.id=gm.user_id
