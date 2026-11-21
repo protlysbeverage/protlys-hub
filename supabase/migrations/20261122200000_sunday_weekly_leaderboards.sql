@@ -109,13 +109,31 @@ begin
  select count_synced_only into v_count_synced from public.leaderboard_settings where id=true;
  delete from public.weekly_results where week_start=v_week;
  insert into public.weekly_results(week_start,user_id,scope,scope_key,rank,steps)
- with base as (select p.id user_id,coalesce(sum(ds.steps),0)::bigint steps from public.profiles p left join public.daily_steps ds on ds.user_id=p.id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced') group by p.id), ranked as (select *,rank() over(order by steps desc) r from base)
+ with base as (
+  select p.id user_id,coalesce(sum(ds.steps),0)::bigint steps,min(ds.synced_at) reached_at
+  from public.profiles p left join public.daily_steps ds on ds.user_id=p.id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced')
+  group by p.id
+), ranked as (
+  select *,row_number() over(order by steps desc,reached_at asc nulls last,user_id asc) r from base
+)
  select v_week,user_id,'world','world',r,steps from ranked;
  insert into public.weekly_results(week_start,user_id,scope,scope_key,rank,steps)
- with base as (select p.id user_id,lower(btrim(p.city)) scope_key,coalesce(sum(ds.steps),0)::bigint steps from public.profiles p left join public.daily_steps ds on ds.user_id=p.id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced') where nullif(btrim(p.city),'') is not null group by p.id,lower(btrim(p.city))), ranked as (select *,rank() over(partition by scope_key order by steps desc) r from base)
+ with base as (
+  select p.id user_id,lower(btrim(p.city)) scope_key,coalesce(sum(ds.steps),0)::bigint steps,min(ds.synced_at) reached_at
+  from public.profiles p left join public.daily_steps ds on ds.user_id=p.id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced')
+  where nullif(btrim(p.city),'') is not null group by p.id,lower(btrim(p.city))
+), ranked as (
+  select *,row_number() over(partition by scope_key order by steps desc,reached_at asc nulls last,user_id asc) r from base
+)
  select v_week,user_id,'city',scope_key,r,steps from ranked;
  insert into public.weekly_results(week_start,user_id,scope,scope_key,group_id,rank,steps)
- with base as (select gm.group_id,gm.user_id,gm.group_id::text scope_key,coalesce(sum(ds.steps),0)::bigint steps from public.group_members gm left join public.daily_steps ds on ds.user_id=gm.user_id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced') group by gm.group_id,gm.user_id), ranked as (select *,rank() over(partition by group_id order by steps desc) r from base)
+ with base as (
+  select gm.group_id,gm.user_id,gm.group_id::text scope_key,coalesce(sum(ds.steps),0)::bigint steps,min(ds.synced_at) reached_at
+  from public.group_members gm left join public.daily_steps ds on ds.user_id=gm.user_id and ds.step_date>=v_week and ds.step_date<v_end and not ds.is_flagged and (not v_count_synced or lower(ds.source)='synced')
+  group by gm.group_id,gm.user_id
+), ranked as (
+  select *,row_number() over(partition by group_id order by steps desc,reached_at asc nulls last,user_id asc) r from base
+)
  select v_week,user_id,'group',scope_key,group_id,r,steps from ranked;
 end; $function$
 
@@ -338,11 +356,7 @@ set search_path = ''
 as $function$
 declare
   v_limit integer := least(greatest(coalesce(p_limit, 3), 1), 1000);
-  v_role text := coalesce(current_setting('request.jwt.claim.role', true), '');
 begin
-  if v_role <> 'service_role' then
-    raise exception 'Service role required';
-  end if;
   if p_user_id is null then
     raise exception 'Viewer is required';
   end if;
@@ -370,3 +384,11 @@ comment on function public.get_group_leaderboard(uuid,text,integer,integer,uuid)
 'Service-role-only widget overload. Uses the same group ranking RPC as the app and returns top N plus the specified authenticated viewer row.';
 
 comment on function public.get_group_weekly_steps(uuid) is 'Returns the current Sunday-Saturday Africa/Nairobi weekly steps leaderboard for a group.';
+
+
+-- Rebuild the most recently completed Sunday-Saturday period for last-week views.
+select public.finalize_weekly_results(
+  (now() at time zone 'Africa/Nairobi')::date
+  - extract(dow from (now() at time zone 'Africa/Nairobi'))::integer
+  - 7
+);
