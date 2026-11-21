@@ -208,7 +208,11 @@ begin
        or not exists(select 1 from public.group_members where group_id=p_group_id and user_id=p_user_id) then raise exception 'Member is outside this group leaderboard'; end if;
   end if;
   v_scope_key:=case when v_scope='world' then 'world' when v_scope='city' then lower(btrim(v_target_city)) else p_group_id::text end;
-  select rank into v_rank from public.get_leaderboard(v_scope,p_group_id,'this_week',1000,0) where user_id=p_user_id limit 1;
+  if v_scope='group' then
+    select rank into v_rank from public.get_group_leaderboard(p_group_id,'this_week',1000,0) where user_id=p_user_id limit 1;
+  else
+    select rank into v_rank from public.get_leaderboard(v_scope,p_group_id,'this_week',1000,0) where user_id=p_user_id limit 1;
+  end if;
   select rank into v_last_rank from public.weekly_results where week_start=v_week-7 and user_id=p_user_id and scope=v_scope and scope_key=v_scope_key and(v_scope<>'group' or group_id=p_group_id) limit 1;
   select count(*) filter(where rank=1),coalesce(max(steps),0),count(*) filter(where rank<=10)
     into v_weekly_wins,v_best_week,v_top10
