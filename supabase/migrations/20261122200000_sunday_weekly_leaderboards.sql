@@ -267,6 +267,7 @@ declare
   v_uid uuid := (select auth.uid());
   v_week_start date := ((now() at time zone 'Africa/Nairobi')::date - extract(dow from (now() at time zone 'Africa/Nairobi'))::int);
   v_week_end date := v_week_start + 7;
+  v_count_synced boolean := coalesce((select count_synced_only from public.leaderboard_settings where id=true), false);
 begin
   if v_uid is null then
     raise exception 'Authentication required';
@@ -280,6 +281,7 @@ begin
     select 1
     from public.group_members gm
     where gm.group_id = p_group_id
+      and not exists (select 1 from public.blocks b where b.blocker_id=v_uid and b.blocked_id=p.id)
       and gm.user_id = v_uid
   ) then
     raise exception 'You are not a member of this group';
@@ -300,7 +302,7 @@ begin
       )::bigint as steps_today,
       count(*) filter (where ds.steps > 0)::integer as movement_days,
       coalesce(p.step_streak, 0)::integer as current_streak,
-      max(ds.synced_at) as reached_at
+      min(ds.synced_at) as reached_at
     from public.group_members gm
     join public.groups g on g.id = gm.group_id
     join public.profiles p on p.id = gm.user_id
@@ -308,6 +310,8 @@ begin
       on ds.user_id = p.id
      and ds.step_date >= v_week_start
      and ds.step_date < v_week_end
+     and not ds.is_flagged
+     and (not v_count_synced or lower(ds.source)='synced')
     where gm.group_id = p_group_id
     group by p.id, p.display_name, p.avatar_url, g.name, p.step_streak
   ),
