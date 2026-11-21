@@ -68,7 +68,7 @@ Deno.serve(async (req) => {
   const dailyGoal = Number(viewerProfile?.step_goal || 8000);
 
   const { data: group, error: groupError } = await admin.from("groups")
-    .select("id,member_limit").eq("name", "Founding 250").eq("is_system", true).limit(1).maybeSingle();
+    .select("id,name,member_limit").eq("name", "Founding 250").eq("is_system", true).limit(1).maybeSingle();
   if (groupError) return json({ error: groupError.message }, 500);
   if (!group) return json({ error: "Leaderboard group unavailable" }, 404);
 
@@ -78,7 +78,7 @@ Deno.serve(async (req) => {
   await admin.from("device_tracking_tokens").update({ last_used_at: new Date().toISOString() }).eq("id", device.id);
 
   const capacity = Number(group.member_limit || 250);
-  if (!membership) return json({ joined: false, group_id: group.id, capacity, daily_goal: dailyGoal, top: [], viewer: null });
+  if (!membership) return json({ joined: false, group_id: group.id, group_name: group.name, capacity, daily_goal: dailyGoal, top: [], viewer: null });
 
   // This is the same ranking RPC the in-app leaderboard uses. The service-role-only
   // overload returns the top three and this device owner's own row, even outside the top three.
@@ -105,6 +105,7 @@ Deno.serve(async (req) => {
   return json({
     joined: true,
     group_id: group.id,
+    group_name: group.name,
     capacity,
     daily_goal: dailyGoal,
     top,
