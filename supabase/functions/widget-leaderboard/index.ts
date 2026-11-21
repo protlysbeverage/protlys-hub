@@ -57,6 +57,10 @@ Deno.serve(async (req) => {
   if (!device) return json({ error: "Widget access revoked" }, 401);
 
   const viewerId = String(device.user_id);
+  const { data: viewerProfile, error: viewerProfileError } = await admin.from("profiles")
+    .select("step_goal").eq("id", viewerId).maybeSingle();
+  if (viewerProfileError) return json({ error: viewerProfileError.message }, 500);
+  const dailyGoal = Number(viewerProfile?.step_goal || 8000);
   const { data: group, error: groupError } = await admin.from("groups")
     .select("id,member_limit").eq("name", "Founding 250").eq("is_system", true).limit(1).maybeSingle();
   if (groupError) return json({ error: groupError.message }, 500);
@@ -68,13 +72,13 @@ Deno.serve(async (req) => {
   await admin.from("device_tracking_tokens").update({ last_used_at: new Date().toISOString() }).eq("id", device.id);
 
   const capacity = Number(group.member_limit || 250);
-  if (!membership) return json({ joined: false, capacity, top: [], viewer: null });
+  if (!membership) return json({ joined: false, capacity, daily_goal: dailyGoal, top: [], viewer: null });
 
   const { data: members, error: membersError } = await admin.from("group_members")
     .select("user_id,joined_at").eq("group_id", group.id);
   if (membersError) return json({ error: membersError.message }, 500);
   const memberIds = (members || []).map((row: any) => String(row.user_id));
-  if (!memberIds.includes(viewerId)) return json({ joined: false, capacity, top: [], viewer: null });
+  if (!memberIds.includes(viewerId)) return json({ joined: false, capacity, daily_goal: dailyGoal, top: [], viewer: null });
 
   const weekStart = nairobiWeekStart();
   const weekEnd = addDays(weekStart, 7);
@@ -137,6 +141,7 @@ Deno.serve(async (req) => {
   return json({
     joined: true,
     capacity,
+    daily_goal: dailyGoal,
     week_start: weekStart,
     top,
     viewer: viewer ? { rank: viewer.rank, handle: viewer.handle, steps: viewer.steps } : null,
