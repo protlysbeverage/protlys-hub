@@ -283,15 +283,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     try { if (profile?.id) { localStorage.removeItem(`protlys-feed-cache-v1:${profile.id}`); localStorage.removeItem(`protlys-dashboard-cache-v1:${profile.id}`); } } catch {}
     const supabase = createClient();
     try { await supabase.functions.invoke('widget-pair', { body: { action:'revoke' } }); } catch {}
+    try { window.ProtlysNative?.clearWidgetToken?.(); } catch {}
     await supabase.auth.signOut();
-    try { localStorage.removeItem('protlys-widget-pair-user'); localStorage.removeItem('protlys-widget-pair-at'); } catch {}
-    const isAndroidTwa = /Android/i.test(window.navigator.userAgent || '') &&
-      (window.matchMedia?.('(display-mode: standalone)').matches ||
-       String(document.referrer || '').startsWith('android-app://com.protlys.hub'));
-    if (isAndroidTwa) {
-      window.location.href = 'protlys://widget-auth?clear=1';
-      return;
-    }
     router.push('/login'); router.refresh();
   }
 
