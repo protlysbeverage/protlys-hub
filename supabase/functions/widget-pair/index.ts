@@ -22,6 +22,20 @@ function keyFromJson(name: string, fallbackName: string) {
   }
   return Deno.env.get(fallbackName) || "";
 }
+function createAdminClient(url: string, secret: string) {
+  return createClient(url, secret, {
+    auth: { persistSession: false, autoRefreshToken: false },
+    global: {
+      fetch: (input, init = {}) => {
+        const headers = new Headers(init.headers || {});
+        // Supabase secret keys belong in apikey, never in Authorization: Bearer.
+        headers.delete("Authorization");
+        headers.set("apikey", secret);
+        return fetch(input, { ...init, headers });
+      },
+    },
+  });
+}
 async function sha256Hex(value: string) {
   const digest = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(value));
   return Array.from(new Uint8Array(digest)).map((b) => b.toString(16).padStart(2, "0")).join("");
@@ -41,7 +55,7 @@ Deno.serve(async (req) => {
   const authClient = createClient(url, publishable, { auth: { persistSession: false } });
   const { data: userData, error: userError } = await authClient.auth.getUser(jwt);
   if (userError || !userData.user) return json({ error: "Invalid session" }, 401);
-  const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
+  const admin = createAdminClient(url, secret);
   const body = await req.json().catch(() => ({}));
   const action = String(body?.action || "pair");
 
