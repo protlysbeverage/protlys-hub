@@ -140,6 +140,7 @@ Deno.serve(async (req) => {
   const leader = top[0] || null;
   return json({
     joined: true,
+    group_id: group.id,
     capacity,
     daily_goal: dailyGoal,
     week_start: weekStart,
