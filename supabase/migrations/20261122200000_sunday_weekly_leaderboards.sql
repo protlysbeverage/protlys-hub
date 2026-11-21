@@ -3,6 +3,17 @@ update public.groups
 set member_limit = 250
 where name = 'Founding 250' and is_system = true and member_limit is null;
 
+-- Backfill every existing member of the first 250-user cohort; the existing
+-- profile-insert trigger continues assigning future founding members.
+insert into public.group_members(group_id, user_id, role)
+select g.id, p.id, 'member'::public.group_role
+from public.groups g
+cross join (
+  select id from public.profiles order by created_at asc, id asc limit 250
+) p
+where g.name = 'Founding 250' and g.is_system = true
+on conflict (group_id, user_id) do nothing;
+
 -- Align weekly movement and leaderboard windows to Sunday 00:00–Saturday 23:59 Africa/Nairobi.
 -- Keep the in-app leaderboard and Android widget on the same week boundary.
 
