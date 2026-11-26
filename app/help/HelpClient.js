@@ -8,8 +8,8 @@ const SUPPORT_EMAIL = 'protlysbeverage@gmail.com';
 
 function getDeviceModel() {
   const ua = navigator.userAgent || '';
-  const android = ua.match(/Android[^;)]*;\\s*([^;)]+)/i);
-  if (android?.[1]) return android[1].replace(/\\s+Build\\/.*/i, '').trim();
+  const android = ua.match(/Android[^;)]*;\s*([^;)]+)/i);
+  if (android?.[1]) return android[1].replace(/\s+Build\/.*/i, '').trim();
   const apple = ua.match(/(iPhone|iPad|iPod)/i);
   return apple?.[1] || navigator.platform || 'Unknown device';
 }
