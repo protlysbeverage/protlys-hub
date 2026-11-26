@@ -85,7 +85,7 @@ export default function HelpClient({ initialEmail = '' }) {
         {error && <p role="alert" style={{fontSize:12,color:'#B3261E',margin:'10px 0 0'}}>{error}</p>}
         {sent && <p role="status" style={{fontSize:13,fontWeight:800,color:'var(--green-dark)',margin:'12px 0 0'}}>Sent. We'll reply to your email.</p>}
 
-        <button type="submit" disabled={sending || !message.trim() || !email.trim()} className="btn-primary" style={{width:'100%',height:46,minHeight:46,borderRadius:999,marginTop:15,opacity:(sending||!message.trim()||!email.trim())?.55:1}}>
+        <button type="submit" disabled={sending || !message.trim() || !email.trim()} className="btn-primary" style={{width:'100%',height:46,minHeight:46,borderRadius:999,marginTop:15,opacity:(sending||!message.trim()||!email.trim()) ? .55 : 1}}>
           {sending ? 'Sending…' : 'Send message'}
         </button>
       </form>
