@@ -32,7 +32,7 @@ export default function ReferralJoinClient({ code = '' }) {
       window.localStorage.setItem('protlys_referral_code', referralCode);
       document.cookie = `protlys_referral_code=${encodeURIComponent(referralCode)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`;
 
-      fetch('/api/referrals/click', {
+      await fetch('/api/referrals/click', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ code: referralCode, visitorId: getVisitorId() }),
