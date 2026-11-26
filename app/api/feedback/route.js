@@ -77,7 +77,7 @@ export async function POST(request) {
         `Submission ID: ${saved.id}`,
         '',
         message,
-      ].join('\\n'),
+      ].join('\n'),
     }),
     });
   } catch {
