@@ -51,7 +51,7 @@ begin
   select rc.code into v_code from public.referral_codes rc where rc.user_id = v_user;
   if v_code is not null then return v_code; end if;
   loop
-    v_code := upper(substr(encode(gen_random_bytes(8), 'hex'), 1, 10));
+    v_code := upper(substr(replace(gen_random_uuid()::text, '-', ''), 1, 10));
     insert into public.referral_codes(user_id, code) values (v_user, v_code)
       on conflict do nothing;
     select rc.code into v_code from public.referral_codes rc where rc.user_id = v_user;
