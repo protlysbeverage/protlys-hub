@@ -13,28 +13,49 @@ export default function LibraryClient() {
 
   useEffect(() => {
     let cancelled = false;
-    try {
-      const cached = window.localStorage.getItem(BLOG_CACHE_KEY);
-      if (cached) {
-        const parsed = JSON.parse(cached);
-        if (Array.isArray(parsed)) setPosts(parsed);
-      }
-    } catch {}
-
-    fetch('/api/blog', { cache: 'no-store' })
-      .then(async response => {
+    async function refresh({ quiet = false } = {}) {
+      if (!quiet && !posts.length) setLoading(true);
+      try {
+        const response = await fetch('/api/blog', { cache: 'no-store', headers: { Accept: 'application/json' } });
         const data = await response.json();
-        if (!response.ok) throw new Error(data.error || 'Could not load articles.');
-        if (!cancelled && Array.isArray(data.posts)) {
+        if (!response.ok || !Array.isArray(data.posts)) throw new Error(data.error || 'Could not load articles.');
+        if (!cancelled) {
           setPosts(data.posts);
           window.localStorage.setItem(BLOG_CACHE_KEY, JSON.stringify(data.posts));
           setOffline(false);
         }
-      })
-      .catch(() => { if (!cancelled) setOffline(true); })
-      .finally(() => { if (!cancelled) setLoading(false); });
+      } catch {
+        if (!cancelled) setOffline(true);
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    }
 
-    return () => { cancelled = true; };
+    try {
+      const cached = window.localStorage.getItem(BLOG_CACHE_KEY);
+      if (cached) {
+        const parsed = JSON.parse(cached);
+        if (Array.isArray(parsed)) {
+          setPosts(parsed);
+          setLoading(false);
+        }
+      }
+    } catch {}
+
+    refresh({ quiet: true });
+    const onOnline = () => refresh({ quiet: true });
+    const onFocus = () => { if (document.visibilityState !== 'hidden') refresh({ quiet: true }); };
+    window.addEventListener('online', onOnline);
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onFocus);
+    const timer = window.setInterval(() => refresh({ quiet: true }), 15 * 60 * 1000);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('online', onOnline);
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onFocus);
+      window.clearInterval(timer);
+    };
   }, []);
 
   return (
