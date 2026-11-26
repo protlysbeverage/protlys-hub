@@ -25,7 +25,7 @@ export default async function ChallengesPage({ searchParams }) {
     getBlockedUserIds(supabase, user.id),
     supabase.rpc('ensure_founding_250_member'),
     supabase.from('challenges')
-      .select('id,creator_id,name,description,step_target,challenge_type,target,scoring_mode,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id')
+      .select('id,creator_id,name,description,emoji,step_target,challenge_type,target,scoring_mode,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id')
       .order('created_at', { ascending: false }),
     supabase.from('groups')
       .select('id,name,emoji,image_url,privacy,invite_code,created_by,created_at')
@@ -38,7 +38,7 @@ export default async function ChallengesPage({ searchParams }) {
   if (challengeId && inviteToken && !challenges.some(c => String(c.id) === challengeId)) {
     const { data:invitedChallenge } = await supabase
       .from('challenges')
-      .select('id,creator_id,name,description,step_target,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id')
+      .select('id,creator_id,name,description,emoji,step_target,challenge_type,target,scoring_mode,start_date,end_date,visibility,allow_teams,invite_token,created_at,group_id')
       .eq('invite_token',inviteToken).eq('id',challengeId).maybeSingle();
     if (invitedChallenge) challenges = [invitedChallenge, ...challenges];
   }
@@ -60,7 +60,8 @@ export default async function ChallengesPage({ searchParams }) {
   const memberCounts = Object.fromEntries((counts || []).map(row => [Number(row.challenge_id), Number(row.member_count || 0)]));
   const previewUserIds = [...new Set((previewRows || []).map(row => row.user_id))];
   const groupUserIds = [...new Set((groupMemberRows || []).map(row => row.user_id))];
-  const allProfileIds = [...new Set([...previewUserIds, ...groupUserIds])];
+  const progressUserIds = [...new Set(progressResults.flatMap(([, rows]) => (rows || []).map(row => row.user_id)))];
+  const allProfileIds = [...new Set([...previewUserIds, ...groupUserIds, ...progressUserIds])];
 
   const [{ data: profiles }, { data: messageRows }] = await Promise.all([
     allProfileIds.length ? supabase.from('profiles').select('id,display_name,avatar_url,streak').in('id', allProfileIds) : Promise.resolve({ data: [] }),
@@ -68,6 +69,7 @@ export default async function ChallengesPage({ searchParams }) {
   ]);
   const profileMap = Object.fromEntries((profiles || []).map(profile => [profile.id, profile]));
   const groupProfileMap = profileMap;
+  const challengeLeaderboards = Object.fromEntries(progressResults.map(([id, rows]) => [id, (rows || []).map(row => ({...row, name:profileMap[row.user_id]?.display_name||'Protlys member', avatar:profileMap[row.user_id]?.avatar_url||null}))]));
   const memberPreviews = Object.fromEntries(ids.map(id => [Number(id), (previewRows || []).filter(row => Number(row.challenge_id) === Number(id)).slice(0, 5).map(row => ({ id: row.user_id, name: profileMap[row.user_id]?.display_name || 'Protlys member', avatar: profileMap[row.user_id]?.avatar_url || null }))]));
   const visibleGroupMemberRows=(groupMemberRows||[]).filter(r=>!blockedSet.has(String(r.user_id)));
   const groupMembersById=Object.fromEntries(groupIds.map(id=>[id,visibleGroupMemberRows.filter(r=>r.group_id===id).map(r=>({
@@ -81,6 +83,6 @@ export default async function ChallengesPage({ searchParams }) {
   const groupLastMessages=Object.fromEntries(groupIds.map(gid=>{const m=latestByGroup[gid];const p=m?groupProfileMap[m.sender_id]:null;return [gid,m?{...m,sender_name:p?.display_name||'Member'}:null]}));
   return <AppShell><ChallengesClient
     challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} memberPreviews={memberPreviews}
-    userId={user.id} progressByChallenge={progressByChallenge} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
+    userId={user.id} progressByChallenge={progressByChallenge} challengeLeaderboards={challengeLeaderboards} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
   /></AppShell>;
 }
