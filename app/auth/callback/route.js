@@ -35,8 +35,15 @@ export async function GET(request) {
   }
 
   const { data: { user } } = await supabase.auth.getUser();
-  const referralCode = request.cookies.get('protlys_referral_code')?.value || requestUrl.searchParams.get('ref');
-  if (user && referralCode) await supabase.rpc('apply_referral_code', { p_code: referralCode });
+  const referralCode = String(
+    request.cookies.get('protlys_referral_code')?.value ||
+    requestUrl.searchParams.get('ref') ||
+    user?.user_metadata?.referral_code ||
+    ''
+  ).trim().toUpperCase();
+  if (user && /^[A-Z0-9]{4,32}$/.test(referralCode)) {
+    await supabase.rpc('apply_referral_code', { p_code:referralCode });
+  }
   const termsVersion = user?.user_metadata?.terms_accepted ? (user.user_metadata?.terms_version || '2026-10-28') : null;
   if (user && termsVersion) await supabase.from('terms_acceptances').upsert({ user_id:user.id, version:termsVersion }, { onConflict:'user_id,version' });
   const referralCode = String(user?.user_metadata?.referral_code || '').trim().toUpperCase();
