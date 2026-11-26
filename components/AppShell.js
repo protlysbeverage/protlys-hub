@@ -290,24 +290,28 @@ export default function AppShell({ children }) {
       <div className="sidebar-spacer" />
     </aside>
 
-    {!chatMode&&<div className="app-header">
-      <ThemeToggle />
-      <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
-      <button type="button" className="menu-header-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="protlys-hub-menu" onClick={()=>setMenuOpen(true)}>
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
-      </button>
-    </div>}
-    {menuOpen&&!chatMode&&<div className="hub-menu-overlay" onClick={()=>setMenuOpen(false)}>
-      <aside id="protlys-hub-menu" className="hub-menu-drawer" role="dialog" aria-modal="true" aria-label="Protlys Hub menu" onClick={e=>e.stopPropagation()}>
-        <div className="hub-menu-head"><span>Menu</span><button type="button" className="hub-menu-close" aria-label="Close menu" onClick={()=>setMenuOpen(false)}>×</button></div>
-        <nav className="hub-menu-links" aria-label="More from Protlys Hub">
-          <Link className="hub-menu-link" href="/library" onClick={()=>setMenuOpen(false)}><span>Blog and learn</span><span>›</span></Link>
-          <Link className="hub-menu-link" href="/leaderboard" onClick={()=>setMenuOpen(false)}><span>Leaderboard and Hall of Fame</span><span>›</span></Link>
-          <Link className="hub-menu-link" href="/invite" onClick={()=>setMenuOpen(false)}><span>Invite friends</span><span>›</span></Link>
-          <Link className="hub-menu-link" href="/help" onClick={()=>setMenuOpen(false)}><span>Help and feedback</span><span>›</span></Link>
-        </nav>
-      </aside>
-    </div>}
+    {!chatMode ? (
+      <div className="app-header">
+        <ThemeToggle />
+        <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
+        <button type="button" className="menu-header-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="protlys-hub-menu" onClick={()=>setMenuOpen(true)}>
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+        </button>
+      </div>
+    ) : null}
+    {menuOpen && !chatMode ? (
+      <div className="hub-menu-overlay" onClick={()=>setMenuOpen(false)}>
+        <aside id="protlys-hub-menu" className="hub-menu-drawer" role="dialog" aria-modal="true" aria-label="Protlys Hub menu" onClick={e=>e.stopPropagation()}>
+          <div className="hub-menu-head"><span>Menu</span><button type="button" className="hub-menu-close" aria-label="Close menu" onClick={()=>setMenuOpen(false)}>×</button></div>
+          <nav className="hub-menu-links" aria-label="More from Protlys Hub">
+            <Link className="hub-menu-link" href="/library" onClick={()=>setMenuOpen(false)}><span>Blog and learn</span><span>›</span></Link>
+            <Link className="hub-menu-link" href="/leaderboard" onClick={()=>setMenuOpen(false)}><span>Leaderboard and Hall of Fame</span><span>›</span></Link>
+            <Link className="hub-menu-link" href="/invite" onClick={()=>setMenuOpen(false)}><span>Invite friends</span><span>›</span></Link>
+            <Link className="hub-menu-link" href="/help" onClick={()=>setMenuOpen(false)}><span>Help and feedback</span><span>›</span></Link>
+          </nav>
+        </aside>
+      </div>
+    ) : null}
 
     <section className="screen active">{children}</section>
 
