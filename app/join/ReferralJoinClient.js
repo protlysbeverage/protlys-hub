@@ -4,44 +4,57 @@ import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
+function getVisitorId() {
+  try {
+    const saved = window.localStorage.getItem('protlys_referral_visitor_id');
+    if (saved) return saved;
+    const created = window.crypto?.randomUUID?.() || `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+    window.localStorage.setItem('protlys_referral_visitor_id', created);
+    return created;
+  } catch {
+    return `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+  }
+}
+
 export default function ReferralJoinClient({ code = '' }) {
   const router = useRouter();
-  const message = 'Opening your Protlys invitation…';
 
   useEffect(() => {
     let cancelled = false;
     async function continueJoin() {
       const referralCode = String(code || '').trim().toUpperCase();
-      if (!/^[A-Z0-9]{8,16}$/.test(referralCode)) {
-        router.replace('/signup');
+      if (!/^[A-Z0-9]{4,32}$/.test(referralCode)) {
+        router.replace('/signup?next=/feed');
         return;
       }
+
+      // Keep the attribution on this device through signup and email confirmation.
+      window.localStorage.setItem('protlys_referral_code', referralCode);
+      document.cookie = `protlys_referral_code=${encodeURIComponent(referralCode)}; Path=/; Max-Age=2592000; SameSite=Lax; Secure`;
+
+      fetch('/api/referrals/click', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ code: referralCode, visitorId: getVisitorId() }),
+      }).catch(() => {});
+
       const supabase = createClient();
-      try {
-        let visitorKey = sessionStorage.getItem('protlys-referral-visitor');
-        if (!visitorKey) {
-          visitorKey = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : `v-${Date.now()}-${Math.random().toString(36).slice(2)}`;
-          sessionStorage.setItem('protlys-referral-visitor', visitorKey);
-        }
-        await supabase.rpc('record_referral_visit', { p_code: referralCode, p_visitor_key: visitorKey });
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.rpc('claim_referral_code', { p_code: referralCode });
-          if (!cancelled) router.replace('/feed');
-          return;
-        }
-        sessionStorage.setItem('protlys-referral-code', referralCode);
-        if (!cancelled) router.replace(`/signup?ref=${encodeURIComponent(referralCode)}`);
-      } catch {
-        if (!cancelled) {
-          sessionStorage.setItem('protlys-referral-code', referralCode);
-          router.replace(`/signup?ref=${encodeURIComponent(referralCode)}`);
-        }
+      const { data: { user } } = await supabase.auth.getUser();
+      if (cancelled) return;
+      if (user) {
+        await supabase.rpc('apply_referral_code', { p_code: referralCode });
+        window.localStorage.removeItem('protlys_referral_code');
+        document.cookie = 'protlys_referral_code=; Path=/; Max-Age=0; SameSite=Lax; Secure';
+        if (!cancelled) router.replace('/feed');
+        return;
       }
+      router.replace(`/signup?ref=${encodeURIComponent(referralCode)}&next=/feed`);
     }
-    continueJoin();
+    continueJoin().catch(() => {
+      if (!cancelled) router.replace(`/signup?ref=${encodeURIComponent(String(code || '').trim().toUpperCase())}&next=/feed`);
+    });
     return () => { cancelled = true; };
   }, [code, router]);
 
-  return <main style={{ minHeight: '100dvh', display: 'grid', placeItems: 'center', padding: 24, background: 'var(--paper)', color: 'var(--ink)' }}><p role="status" style={{ fontSize: 14, fontWeight: 750 }}>{message}</p></main>;
+  return <main style={{minHeight:'100dvh',display:'grid',placeItems:'center',padding:24,background:'var(--paper)',color:'var(--ink)'}}><p role="status" style={{fontSize:14,fontWeight:750}}>Opening your Protlys invitation…</p></main>;
 }
