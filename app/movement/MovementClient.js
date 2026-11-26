@@ -1,6 +1,9 @@
 'use client';
 
 import { useCallback, useEffect, useRef, useState } from 'react';
+import Link from 'next/link';
+import { createClient } from '@/lib/supabase/client';
+import { strictRank } from '@/lib/leaderboard-ranking';
 import dynamic from 'next/dynamic';
 import MovementActivity from '@/components/MovementActivity';
 import { ShareIconButton } from '@/components/ShareIcon';
@@ -55,6 +58,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const [stepGoal, setStepGoal] = useState(Number(currentGoal || 7500));
   const [displayName, setDisplayName] = useState('protlys');
   const [shareData, setShareData] = useState(null);
+  const [foundingLeaderboard, setFoundingLeaderboard] = useState(null);
   const refreshInFlight = useRef(null);
   const debounceTimer = useRef(null);
   const intervalRef = useRef(null);
@@ -288,6 +292,44 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     };
   }, [persist, todayKey]);
 
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    const supabase = createClient();
+    async function loadFoundingLeaderboard() {
+      await supabase.rpc('ensure_founding_250_member');
+      const { data: group } = await supabase.from('groups').select('id').eq('name', 'Founding 250').maybeSingle();
+      if (!group?.id) return;
+      const [{ data: rows, error }, { count }] = await Promise.all([
+        supabase.rpc('get_group_leaderboard', { p_group_id: group.id, p_period: 'this_week', p_limit: 1000, p_offset: 0 }),
+        supabase.from('group_members').select('user_id', { count: 'exact', head: true }).eq('group_id', group.id),
+      ]);
+      if (cancelled || error) return;
+      const ranked = strictRank(rows || []);
+      const me = ranked.find(row => row.user_id === userId);
+      const ahead = me ? ranked.find(row => Number(row.rank) === Number(me.rank) - 1) : null;
+      setFoundingLeaderboard({
+        rank: me?.rank || null,
+        total: count ?? ranked.length,
+        top: ranked.slice(0, 3),
+        behind: ahead ? Math.max(0, Number(ahead.steps || 0) - Number(me.steps || 0)) : null,
+        aheadRank: ahead?.rank || null,
+        tied: Boolean(ahead && Number(ahead.steps || 0) === Number(me?.steps || 0)),
+      });
+    }
+    loadFoundingLeaderboard();
+    const refresh = () => { if (document.visibilityState !== 'hidden') loadFoundingLeaderboard(); };
+    window.addEventListener('focus', refresh);
+    window.addEventListener('protlys:steps-updated', refresh);
+    document.addEventListener('visibilitychange', refresh);
+    return () => {
+      cancelled = true;
+      window.removeEventListener('focus', refresh);
+      window.removeEventListener('protlys:steps-updated', refresh);
+      document.removeEventListener('visibilitychange', refresh);
+    };
+  }, [userId]);
+
   const currentTodaySteps = todaySteps;
   const recentByDate = new Map(weekSteps.map(row => [row.step_date, Number(row.steps || 0)]));
   recentByDate.set(todayKey, Number(currentTodaySteps || 0));
@@ -333,7 +375,22 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:7,minHeight:16}}>Distance and calories are estimates from recorded steps.</div>
         </div>
 
-        <div className="hub-grid" style={{marginTop:10}}>
+        {foundingLeaderboard && <Link href="/leaderboard" style={{display:'block',marginTop:10,padding:'13px 14px',border:'1px solid rgba(79,159,53,.72)',borderRadius:15,background:'var(--white)',color:'var(--ink)',textDecoration:'none'}}>
+          <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8}}>
+            <strong style={{fontSize:12.5}}>Founding 250 · this week</strong>
+            <span style={{fontSize:12,fontWeight:900,color:'var(--green-dark)'}}>{foundingLeaderboard.rank ? `#${foundingLeaderboard.rank} of ${foundingLeaderboard.total}` : 'See your rank'}</span>
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:0,marginTop:9}}>
+            {foundingLeaderboard.top.map((member,index)=><span key={member.user_id} style={{width:25,height:25,marginLeft:index? -5:0,borderRadius:'50%',border:'2px solid var(--white)',background:'var(--green-soft)',display:'grid',placeItems:'center',overflow:'hidden',fontSize:9,fontWeight:900,color:'var(--green-dark)'}}>{member.avatar_url?<img src={member.avatar_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(member.username||'P').trim().charAt(0).toUpperCase()}</span>)}
+            <span style={{fontSize:10.5,color:'var(--ink-45)',marginLeft:9}}>Top 3</span>
+          </div>
+          <div style={{fontSize:11.5,color:'var(--ink-70)',marginTop:8}}>
+            {!foundingLeaderboard.rank ? 'Join the Founding 250 leaderboard' : foundingLeaderboard.rank===1 ? 'You are leading this week' : foundingLeaderboard.tied ? `Tied with #${foundingLeaderboard.aheadRank}` : `${Number(foundingLeaderboard.behind||0).toLocaleString()} steps behind #${foundingLeaderboard.aheadRank}`}
+            <span style={{fontWeight:850,color:'var(--green-dark)'}}> · See full leaderboard →</span>
+          </div>
+        </Link>}
+
+        <div className="hub-grid" style={{marginTop:10}}
           <div className="hub-card" style={{minWidth:0,minHeight:96}}>
             <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}><div className="t" style={{flex:1,minWidth:0}}>Days with movement</div>{hasMovement && <ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/>}</div>
             <div className="mono" style={{fontSize:23,fontWeight:800}}>{ready ? <AnimatedNumber value={recentActiveDays}/> : '—'}</div>
