@@ -41,6 +41,21 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const selectedGroupMembers=groupDetails?(groupMembers[groupDetails]||[]).filter(m=>!blockedIds.includes(String(m.id))):[];
   const currentGroupAdmin=selectedGroupMembers.some(m=>m.id===userId&&m.role==='admin') || selectedGroup?.created_by===userId;
 
+  const refreshGroupLastMessages=useCallback(async()=>{
+    const ids=groups.filter(g=>(groupMembers[g.id]||[]).some(m=>m.id===userId)).map(g=>g.id);
+    if(!ids.length)return;
+    const entries=await Promise.all(ids.map(async id=>{
+      const {data,error}=await supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at').eq('group_id',id).order('created_at',{ascending:false}).limit(1);
+      if(error||!data?.[0])return [id,null];
+      const row=data[0],sender=groupMembers[id]?.find(m=>m.id===row.sender_id);
+      return [id,{...row,sender_name:sender?.name||(row.sender_id===userId?'You':'Member')}];
+    }));
+    setLastMessages(current=>{
+      const next={...current};
+      entries.forEach(([id,row])=>{if(row)next[id]=row;});
+      return next;
+    });
+  },[groups,groupMembers,userId,supabase]);
   useEffect(()=>{getBlockedUserIds(supabase,userId).then(setBlockedIds).catch(()=>{});},[supabase,userId]);
   useEffect(()=>{
     if(tab!=='groups'||groupView!=='list')return;
@@ -60,21 +75,6 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   useEffect(()=>{setLastMessages({...groupLastMessages})},[groupLastMessages]);
   useEffect(()=>{const saved=window.localStorage.getItem('protlys-challenges-tab');if(saved==='groups'||saved==='challenges')setTab(saved);const toast=sessionStorage.getItem('protlys-toast');if(toast){setCopyToast(toast);sessionStorage.removeItem('protlys-toast')}},[]);
   function chooseTab(next){setTab(next);window.localStorage.setItem('protlys-challenges-tab',next)}
-  const refreshGroupLastMessages=useCallback(async()=>{
-    const ids=groups.filter(g=>(groupMembers[g.id]||[]).some(m=>m.id===userId)).map(g=>g.id);
-    if(!ids.length)return;
-    const entries=await Promise.all(ids.map(async id=>{
-      const {data,error}=await supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at').eq('group_id',id).order('created_at',{ascending:false}).limit(1);
-      if(error||!data?.[0])return [id,null];
-      const row=data[0],sender=groupMembers[id]?.find(m=>m.id===row.sender_id);
-      return [id,{...row,sender_name:sender?.name||(row.sender_id===userId?'You':'Member')}];
-    }));
-    setLastMessages(current=>{
-      const next={...current};
-      entries.forEach(([id,row])=>{if(row)next[id]=row;});
-      return next;
-    });
-  },[groups,groupMembers,userId,supabase]);
   function resetForm(){setForm({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});}
   function openCreate(groupId=null){router.push(groupId?'/challenges/new?group='+encodeURIComponent(groupId):'/challenges/new')}
   function openEdit(challenge){setDetails(null);setShowCreate(false);setEditing(Number(challenge.id));setForm({name:challenge.name||'',description:challenge.description||'',emoji:challenge.emoji||TYPE_META[challenge.challenge_type||'steps']?.icon||'👣',stepTarget:String(challenge.target||challenge.step_target||0),startDate:challenge.start_date||'',endDate:challenge.end_date||'',allowTeams:!!challenge.allow_teams,visibility:challenge.visibility||'public',groupId:challenge.group_id||null})}
