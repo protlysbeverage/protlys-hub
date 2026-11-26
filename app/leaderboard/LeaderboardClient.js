@@ -191,7 +191,7 @@ export default function LeaderboardClient({ viewerId, foundingGroupId = null }) 
       <div className="lb-group-context"><button type="button" aria-label="Back to Hub" onClick={()=>router.push('/feed')}>‹</button><div><strong>{groupName}</strong><span>{rows.length ? `${rows.length}${rows.length===PAGE_SIZE?'+' : ''} members ranked` : 'Group members'}</span></div></div>
       <div className="lb-period" role="tablist" aria-label="Leaderboard view"><button type="button" className={view==='leaderboard'?'active':''} onClick={()=>showLeaderboard()}>This week</button><button type="button" className={view==='hall'?'active':''} onClick={showHall}>Hall of Fame</button></div>
       {offline && rows.length > 0 && <div className="lb-notice">Offline · last updated {lastUpdated ? new Date(lastUpdated).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'previously'}</div>}
-      {view!=='hall'&&<div className="lb-meta"><span>Weekly steps · {monthLabel()}</span><span className="lb-ending">{ending}</span></div}
+      {view!=='hall'&&<div className="lb-meta"><span>Weekly steps · {monthLabel()}</span><span className="lb-ending">{ending}</span></div>}
       {view === 'hall' ? <HallOfFame rows={hall} loading={hallLoading} error={error} onOpen={openMember} onBack={()=>showLeaderboard({back:true})} /> : (loading ? <div className="lb-state">Loading leaderboard…</div> : error ? <div className="lb-state lb-error">{error}</div> : (
         <>
 
