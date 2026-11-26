@@ -55,7 +55,7 @@ export async function POST(request) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     await supabase.from('feedback_submissions').update({ status: 'email_not_configured' }).eq('id', saved.id);
-    return Response.json({ error: 'Your message was saved, but email delivery is not configured yet. Please use “Email us instead” for now.' }, { status: 503 });
+    return Response.json({ saved: true, sent: false, emailConfigured: false });
   }
 
   let emailResponse;
@@ -82,14 +82,14 @@ export async function POST(request) {
     });
   } catch {
     await supabase.from('feedback_submissions').update({ status: 'email_failed' }).eq('id', saved.id);
-    return Response.json({ error: 'Your message was saved, but the email service could not be reached. Please use “Email us instead” if urgent.' }, { status: 502 });
+    return Response.json({ saved: true, sent: false, emailFailed: true });
   }
 
   if (!emailResponse.ok) {
     await supabase.from('feedback_submissions').update({ status: 'email_failed' }).eq('id', saved.id);
-    return Response.json({ error: 'Your message was saved, but we could not send the notification. Please use “Email us instead” if urgent.' }, { status: 502 });
+    return Response.json({ saved: true, sent: false, emailFailed: true });
   }
 
   await supabase.from('feedback_submissions').update({ status: 'sent' }).eq('id', saved.id);
-  return Response.json({ sent: true });
+  return Response.json({ saved: true, sent: true });
 }
