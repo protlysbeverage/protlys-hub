@@ -55,10 +55,12 @@ export async function POST(request) {
   const apiKey = process.env.RESEND_API_KEY;
   if (!apiKey) {
     await supabase.from('feedback_submissions').update({ status: 'email_not_configured' }).eq('id', saved.id);
-    return Response.json({ saved: true, sent: false, emailConfigured: false });
+    return Response.json({ error: 'Your message was saved, but email delivery is not configured yet. Please use “Email us instead” for now.' }, { status: 503 });
   }
 
-  const emailResponse = await fetch('https://api.resend.com/emails', {
+  let emailResponse;
+  try {
+    emailResponse = await fetch('https://api.resend.com/emails', {
     method: 'POST',
     headers: { Authorization: `Bearer ${apiKey}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
@@ -77,13 +79,17 @@ export async function POST(request) {
         message,
       ].join('\\n'),
     }),
-  });
+    });
+  } catch {
+    await supabase.from('feedback_submissions').update({ status: 'email_failed' }).eq('id', saved.id);
+    return Response.json({ error: 'Your message was saved, but the email service could not be reached. Please use “Email us instead” if urgent.' }, { status: 502 });
+  }
 
   if (!emailResponse.ok) {
     await supabase.from('feedback_submissions').update({ status: 'email_failed' }).eq('id', saved.id);
-    return Response.json({ saved: true, sent: false, emailFailed: true });
+    return Response.json({ error: 'Your message was saved, but we could not send the notification. Please use “Email us instead” if urgent.' }, { status: 502 });
   }
 
   await supabase.from('feedback_submissions').update({ status: 'sent' }).eq('id', saved.id);
-  return Response.json({ saved: true, sent: true });
+  return Response.json({ sent: true });
 }
