@@ -21,6 +21,7 @@ export default function HelpClient({ initialEmail = '' }) {
   const [deviceModel, setDeviceModel] = useState('');
   const [sending, setSending] = useState(false);
   const [sent, setSent] = useState(false);
+  const [emailSent, setEmailSent] = useState(false);
   const [error, setError] = useState('');
 
   useEffect(() => { setDeviceModel(getDeviceModel()); }, []);
@@ -47,6 +48,7 @@ export default function HelpClient({ initialEmail = '' }) {
       const data = await response.json();
       if (!response.ok) throw new Error(data.error || 'Could not send your message.');
       setSent(true);
+      setEmailSent(Boolean(data.sent));
       setMessage('');
     } catch (sendError) {
       setError(sendError.message || 'Could not send your message. Please try again.');
@@ -83,7 +85,7 @@ export default function HelpClient({ initialEmail = '' }) {
         <textarea value={message} onChange={event=>setMessage(event.target.value)} required maxLength={5000} rows={6} placeholder="Tell us how we can help…" style={{width:'100%',boxSizing:'border-box',border:'1px solid var(--line)',borderRadius:11,padding:12,background:'var(--paper)',color:'var(--ink)',font:'inherit',fontSize:13,lineHeight:1.55,resize:'vertical'}}/>
 
         {error && <p role="alert" style={{fontSize:12,color:'#B3261E',margin:'10px 0 0'}}>{error}</p>}
-        {sent && <p role="status" style={{fontSize:13,fontWeight:800,color:'var(--green-dark)',margin:'12px 0 0'}}>Sent. We'll reply to your email.</p>}
+        {sent && <p role="status" style={{fontSize:13,fontWeight:800,color:'var(--green-dark)',margin:'12px 0 0'}}>{emailSent ? 'Sent. We’ll reply to your email.' : 'Saved. Email notification could not be sent yet; please use “Email us instead” if you need a reply.'}</p>}
 
         <button type="submit" disabled={sending || !message.trim() || !email.trim()} className="btn-primary" style={{width:'100%',height:46,minHeight:46,borderRadius:999,marginTop:15,opacity:(sending||!message.trim()||!email.trim()) ? .55 : 1}}>
           {sending ? 'Sending…' : 'Send message'}
