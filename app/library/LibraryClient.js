@@ -14,7 +14,7 @@ export default function LibraryClient() {
   useEffect(() => {
     let cancelled = false;
     async function refresh({ quiet = false } = {}) {
-      if (!quiet && !posts.length) setLoading(true);
+      if (!quiet) setLoading(true);
       try {
         const response = await fetch('/api/blog', { cache: 'no-store', headers: { Accept: 'application/json' } });
         const data = await response.json();
