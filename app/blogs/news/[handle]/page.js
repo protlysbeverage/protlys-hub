@@ -50,8 +50,8 @@ async function getArticle(handle) {
   const content = tag(entry, 'content') || tag(entry, 'summary');
   const text = plainText(content);
   if (!text) return null;
-  const image = entry.match(/<media:thumbnail\b[^>]*url=["']([^"']+)["']/i)["']/i)?.[1]
-    || content.match(/<img\b[^>]*src=["']([^"']+)["']/i)["']/i)?.[1]
+  const image = entry.match(/<media:thumbnail\b[^>]*url=["']([^"']+)["']/i)?.[1]
+    || content.match(/<img\b[^>]*src=["']([^"']+)["']/i)?.[1]
     || null;
   return {
     title: plainText(tag(entry, 'title')) || 'Protlys Journal',
