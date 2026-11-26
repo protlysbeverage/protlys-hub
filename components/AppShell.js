@@ -15,15 +15,8 @@ const NAV_ITEMS = [
   { href: '/account', label: 'Dashboard', icon: <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round"><rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/><rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/></svg> },
 ];
 
-function getShopUrl() { return 'https://protlys.com/collections/all'; }
-
-function CartIcon({ size = 19 }) {
-  return <svg viewBox="0 0 24 24" width={size} height={size} fill="none" stroke="currentColor" strokeWidth="1.9" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><circle cx="9" cy="20" r="1.4" /><circle cx="18" cy="20" r="1.4" /><path d="M3 4h2l2.1 10.1a2 2 0 0 0 2 1.6h7.7a2 2 0 0 0 1.9-1.4L21 8H7" /></svg>;
-}
-
 export default function AppShell({ children }) {
   const pathname = usePathname();
-  const shopUrl = getShopUrl();
   const handleNavClick = (item, event) => {
     if (item.href === '/feed' && pathname === '/feed') {
       event.preventDefault();
@@ -35,7 +28,10 @@ export default function AppShell({ children }) {
   const [darkTheme, setDarkTheme] = useState(false);
   const [chatMode,setChatMode]=useState(false);
   const [overlayOpen,setOverlayOpen]=useState(false);
+  const [menuOpen,setMenuOpen]=useState(false);
   useEffect(()=>{const onOverlay=e=>setOverlayOpen(Boolean(e.detail?.open));window.addEventListener('protlys:overlay',onOverlay);return()=>window.removeEventListener('protlys:overlay',onOverlay)},[]);
+  useEffect(()=>{setMenuOpen(false)},[pathname]);
+  useEffect(()=>{if(!menuOpen)return;const previous=document.body.style.overflow;document.body.style.overflow='hidden';const onKey=e=>{if(e.key==='Escape')setMenuOpen(false)};window.addEventListener('keydown',onKey);return()=>{document.body.style.overflow=previous;window.removeEventListener('keydown',onKey)}},[menuOpen]);
   useEffect(()=>{const sync=()=>setChatMode(pathname==='/challenges'&&window.location.hash.startsWith('#group='));sync();window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);const timer=window.setInterval(sync,250);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync);window.clearInterval(timer)}},[pathname]);
   useEffect(() => {
     const root = document.documentElement;
@@ -53,9 +49,18 @@ export default function AppShell({ children }) {
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
-    .protlys-app .shop-header-link { display:flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#fff;color:var(--ink);font-size:11.5px;font-weight:800;text-decoration:none;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
-    .protlys-app .shop-header-link:hover { background:var(--green-soft);border-color:var(--green); }
-    .protlys-app .shop-header-link:active { transform:scale(.98); }
+    .protlys-app .menu-header-button { width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--ink);cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
+    .protlys-app .menu-header-button:hover { background:var(--green-soft);border-color:var(--green); }
+    .protlys-app .menu-header-button:active { transform:scale(.96); }
+    .protlys-app .menu-header-button svg { width:21px;height:21px;display:block; }
+    .protlys-app .hub-menu-overlay { position:fixed;inset:0;z-index:12000;background:rgba(0,0,0,.46);display:flex;justify-content:flex-end; }
+    .protlys-app .hub-menu-drawer { width:min(340px,88vw);height:100%;box-sizing:border-box;padding:calc(18px + env(safe-area-inset-top)) 18px calc(18px + env(safe-area-inset-bottom));background:var(--white);color:var(--ink);box-shadow:-18px 0 48px rgba(0,0,0,.2);transform:translateX(0);animation:hub-menu-in .22s ease-out both; }
+    .protlys-app .hub-menu-head { display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:18px;border-bottom:1px solid var(--line);font-size:19px;font-weight:850; }
+    .protlys-app .hub-menu-close { width:44px;height:44px;border:1px solid var(--line);border-radius:50%;background:var(--paper);color:var(--ink);font-size:25px;line-height:1;cursor:pointer; }
+    .protlys-app .hub-menu-links { display:grid;gap:8px;padding-top:18px; }
+    .protlys-app .hub-menu-link { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);font-size:13px;font-weight:800;text-decoration:none; }
+    .protlys-app .hub-menu-link span:last-child { color:var(--green-dark);font-size:19px; }
+    @keyframes hub-menu-in { from { transform:translateX(24px);opacity:.7; } to { transform:translateX(0);opacity:1; } }
     .protlys-app .movement-setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:10px; }
     .protlys-app .movement-setting-head { display:flex;justify-content:space-between;gap:12px;align-items:flex-start; }
     .protlys-app .movement-setting-kicker { font-size:10px;letter-spacing:1.1px;text-transform:uppercase;color:var(--ink-45);font-weight:800; }
@@ -257,10 +262,10 @@ export default function AppShell({ children }) {
     .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
       .protlys-app .app-header .theme-toggle { width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important;margin:0!important;position:relative!important; }
       .protlys-app .app-header .brand-link { flex:0 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important; }
-      .protlys-app .app-header .shop-header-link { margin-left:auto!important;flex:0 0 auto!important; }
+      .protlys-app .app-header .menu-header-button { margin-left:auto!important;flex:0 0 auto!important; }
       .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
       .protlys-app .app-header > .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
-      .protlys-app .app-header > .shop-header-link { flex:0 0 auto!important;margin-left:auto!important; }
+      .protlys-app .app-header > .menu-header-button { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link .logo { height:54px!important; }
     }
     @media (max-width:899px) {
@@ -269,7 +274,7 @@ export default function AppShell({ children }) {
       .protlys-app .screen .screen-pad:first-of-type { padding-top:12px!important; }
       .protlys-app .app-header > .theme-toggle { grid-column:1!important;grid-row:1!important;justify-self:start!important;align-self:center!important; }
       .protlys-app .app-header > .brand-link { grid-column:2!important;grid-row:1!important;justify-self:center!important; }
-      .protlys-app .app-header > .shop-header-link { grid-column:3!important;grid-row:1!important;justify-self:end!important;margin-left:0!important; }
+      .protlys-app .app-header > .menu-header-button { grid-column:3!important;grid-row:1!important;justify-self:end!important;margin-left:0!important; }
       .protlys-app .brand-link .logo { height:50px!important; }
     }
   `}</style>
@@ -288,7 +293,20 @@ export default function AppShell({ children }) {
     {!chatMode&&<div className="app-header">
       <ThemeToggle />
       <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
-      <a className="shop-header-link" href={shopUrl} aria-label="Shop" title="Shop"><CartIcon size={18}/><span>Shop</span></a>
+      <button type="button" className="menu-header-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="protlys-hub-menu" onClick={()=>setMenuOpen(true)}>
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
+      </button>
+    </div>
+    {menuOpen&&!chatMode&&<div className="hub-menu-overlay" onClick={()=>setMenuOpen(false)}>
+      <aside id="protlys-hub-menu" className="hub-menu-drawer" role="dialog" aria-modal="true" aria-label="Protlys Hub menu" onClick={e=>e.stopPropagation()}>
+        <div className="hub-menu-head"><span>Menu</span><button type="button" className="hub-menu-close" aria-label="Close menu" onClick={()=>setMenuOpen(false)}>×</button></div>
+        <nav className="hub-menu-links" aria-label="More from Protlys Hub">
+          <Link className="hub-menu-link" href="/library" onClick={()=>setMenuOpen(false)}><span>Blog and learn</span><span>›</span></Link>
+          <Link className="hub-menu-link" href="/leaderboard" onClick={()=>setMenuOpen(false)}><span>Leaderboard and Hall of Fame</span><span>›</span></Link>
+          <Link className="hub-menu-link" href="/invite" onClick={()=>setMenuOpen(false)}><span>Invite friends</span><span>›</span></Link>
+          <Link className="hub-menu-link" href="/help" onClick={()=>setMenuOpen(false)}><span>Help and feedback</span><span>›</span></Link>
+        </nav>
+      </aside>
     </div>}
 
     <section className="screen active">{children}</section>
