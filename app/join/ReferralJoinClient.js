@@ -1,12 +1,12 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
 export default function ReferralJoinClient({ code = '' }) {
   const router = useRouter();
-  const [message, setMessage] = useState('Opening your Protlys invitation…');
+  const message = 'Opening your Protlys invitation…';
 
   useEffect(() => {
     let cancelled = false;
