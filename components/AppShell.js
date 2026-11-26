@@ -49,6 +49,7 @@ export default function AppShell({ children }) {
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
+    .protlys-app .screen:has(.account-screen-content) { padding-bottom:calc(67px + env(safe-area-inset-bottom,0px)) !important; }
     .protlys-app .menu-header-button { width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--ink);cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
     .protlys-app .menu-header-button:hover { background:var(--green-soft);border-color:var(--green); }
     .protlys-app .menu-header-button:active { transform:scale(.96); }
