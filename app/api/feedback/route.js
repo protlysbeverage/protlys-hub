@@ -4,8 +4,8 @@ const SUPPORT_EMAIL = process.env.PROTLYS_EMAIL || 'protlysbeverage@gmail.com';
 const FROM_EMAIL = process.env.RESEND_FROM_EMAIL || 'Protlys Hub <support@protlys.com>';
 
 function deviceFromUserAgent(userAgent = '') {
-  const android = userAgent.match(/Android[^;)]*;\\s*([^;)]+)/i);
-  if (android?.[1]) return android[1].replace(/\\s+Build\\/.*/i, '').trim().slice(0, 120);
+  const android = userAgent.match(/Android[^;)]*;\s*([^;)]+)/i);
+  if (android?.[1]) return android[1].replace(/\s+Build\/.*/i, '').trim().slice(0, 120);
   const apple = userAgent.match(/(iPhone|iPad|iPod)/i);
   return apple?.[1] || 'Unknown device';
 }
@@ -26,7 +26,7 @@ export async function POST(request) {
 
   if (!['Feedback', 'Help', 'Bug'].includes(type)) return Response.json({ error: 'Choose Feedback, Help or Bug.' }, { status: 400 });
   if (!message || message.length > 5000) return Response.json({ error: 'Please enter a message (up to 5,000 characters).' }, { status: 400 });
-  if (!/^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/.test(email) || email.length > 254) return Response.json({ error: 'Enter a valid email address.' }, { status: 400 });
+  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email) || email.length > 254) return Response.json({ error: 'Enter a valid email address.' }, { status: 400 });
 
   const since = new Date(Date.now() - 60 * 60 * 1000).toISOString();
   const { count, error: countError } = await supabase
