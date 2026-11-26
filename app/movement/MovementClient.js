@@ -390,7 +390,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           </div>
         </Link>}
 
-        <div className="hub-grid" style={{marginTop:10}}
+        <div className="hub-grid" style={{marginTop:10}}>
           <div className="hub-card" style={{minWidth:0,minHeight:96}}>
             <div style={{display:'flex',alignItems:'center',gap:8,minWidth:0}}><div className="t" style={{flex:1,minWidth:0}}>Days with movement</div>{hasMovement && <ShareIconButton label="Share active days" onClick={()=>openShare('movement_days')}/>}</div>
             <div className="mono" style={{fontSize:23,fontWeight:800}}>{ready ? <AnimatedNumber value={recentActiveDays}/> : '—'}</div>
