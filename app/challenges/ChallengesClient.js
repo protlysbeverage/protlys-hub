@@ -24,6 +24,7 @@ function GroupCard({group,members,userId,onOpen,lastMessage,unread=0,onJoin}){co
 
 export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={},memberPreviews={},progressByChallenge={},challengeLeaderboards={},userId,groups=[],groupMembers={},groupLastMessages={},unreadCounts={},activeToday=[],foundingCount=0}){
   const router=useRouter();
+  useEffect(()=>{const refresh=()=>router.refresh();window.addEventListener('protlys:steps-updated',refresh);window.addEventListener('focus',refresh);return()=>{window.removeEventListener('protlys:steps-updated',refresh);window.removeEventListener('focus',refresh)}},[router]);
   const [supabase]=useState(()=>createClient());
   const [tab,setTab]=useState('challenges'),[joined,setJoined]=useState(()=>new Set(joinedIds)),[counts,setCounts]=useState(()=>({...memberCounts}));
   const [lastMessages,setLastMessages]=useState(()=>({...groupLastMessages}));
