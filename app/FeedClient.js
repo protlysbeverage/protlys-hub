@@ -328,7 +328,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   const [nextOffset, setNextOffset] = useState(Number(initialNextOffset) || 0);
   const sentinelRef = useRef(null);
   const [liked, setLiked] = useState(new Set(likedIds || []));
-  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
+  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null); const [lightboxImage, setLightboxImage] = useState(null);
   const [moderationMenu, setModerationMenu] = useState(null); const [moderationSheet, setModerationSheet] = useState(null);
   const cacheKey = userId ? `protlys-feed-cache-v1:${userId}` : null;
 
@@ -500,7 +500,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
         {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); refreshFeed(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
           <div className="feed-card-body">
             {post.body && <p className="post-content-text" style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{post.body}</p>}
-            {post.image_url && <img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" />}
+            {post.image_url && <button type="button" onClick={()=>setLightboxImage(post.image_url)} aria-label="Open post photo full screen" style={{display:'block',width:'100%',maxWidth:'100%',marginTop:10,padding:0,border:0,borderRadius:12,background:'transparent',cursor:'zoom-in',overflow:'hidden'}}><img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" style={{display:'block',width:'100%',height:'auto',maxHeight:480,objectFit:'contain',objectPosition:'center',margin:'0 auto',borderRadius:12}} /></button>}
             {post.stats && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>{post.stats.steps && <StatChip label="Steps" value={post.stats.steps} />}{post.stats.distance && <StatChip label="Distance" value={`${post.stats.distance} km`} />}{post.stats.duration && <StatChip label="Duration" value={post.stats.duration} />}</div>}
           </div>
 
@@ -522,7 +522,8 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     </div>}
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
-    <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
+    {lightboxImage && <div role="dialog" aria-modal="true" aria-label="Full-size post photo" onClick={()=>setLightboxImage(null)} style={{position:'fixed',inset:0,zIndex:30000,background:'rgba(0,0,0,.96)',display:'flex',alignItems:'center',justifyContent:'center',padding:'calc(18px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom))',boxSizing:'border-box'}}><button type="button" aria-label="Close photo" onClick={()=>setLightboxImage(null)} style={{position:'absolute',top:'calc(12px + env(safe-area-inset-top))',right:14,width:44,height:44,border:0,borderRadius:'50%',background:'rgba(255,255,255,.16)',color:'#fff',fontSize:28,lineHeight:1,cursor:'pointer'}}>×</button><img src={lightboxImage} alt="Full-size post photo" onClick={e=>e.stopPropagation()} style={{display:'block',maxWidth:'100%',maxHeight:'100%',width:'auto',height:'auto',objectFit:'contain',borderRadius:4}} /></div>}
+     <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
     {moderationSheet && <ModerationSheet open={true} onClose={() => setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={() => { setModerationSheet(null); refreshFeed(); }} />}
   </div>;
 }
