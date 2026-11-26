@@ -23,7 +23,7 @@ const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').the
 
 const POST_TYPES = [
   { value: 'progress', label: 'Progress' },
-  { value: 'run', label: 'Run / Walk' },
+  { value: 'run', label: 'Run/Walk' },
   { value: 'workout', label: 'Workout' },
   { value: 'milestone', label: 'Milestone' },
   { value: 'general', label: 'Post' },
@@ -279,7 +279,7 @@ function ComposePost({ profile, onPosted }) {
     {preview && <div style={{ position: 'relative', marginBottom: 12 }}><img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} /><button onClick={() => { URL.revokeObjectURL(preview); setPreview(null); setImageData(null); if (fileRef.current) fileRef.current.value = ''; }} aria-label="Remove photo" style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="x" size={16} /></button></div>}
     {showStats && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>{[['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']].map(([key, label]) => <div key={key}><label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>{label.toUpperCase()}</label><input className="field-input" type="text" value={stats[key]} onChange={handleStatChange(key)} style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" /></div>)}</div>}
     {error && <div style={{ fontSize: 13, color: '#B3261E', marginBottom: 10 }}>{error}</div>}
-    <div className="feed-post-type-selector" role="group" aria-label="Post type" style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:6,marginBottom:10}}>
+    <div className="feed-post-type-grid" role="group" aria-label="Post type" style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:6,marginBottom:10}}>
       {POST_TYPES.map(type=><button type="button" key={type.value} onClick={()=>setPostType(type.value)} aria-pressed={postType===type.value} style={{minWidth:0,padding:'9px 2px',border:postType===type.value?'1.5px solid #4F9F35':'1.5px solid var(--line)',borderRadius:999,background:postType===type.value?'#6BCB45':'#fff',color:postType===type.value?'#111':'var(--ink-70)',fontSize:10,fontWeight:800,letterSpacing:'-.2px',whiteSpace:'nowrap',cursor:'pointer'}}>{type.label}</button>)}
     </div>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}>
