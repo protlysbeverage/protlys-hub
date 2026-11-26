@@ -7,7 +7,7 @@ export default async function LeaderboardPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/leaderboard');
-  await supabase.rpc('ensure_founding_250_member');
+  await supabase.rpc('ensure_founding_250_group_member');
   const { data: group } = await supabase
     .from('groups')
     .select('id')
