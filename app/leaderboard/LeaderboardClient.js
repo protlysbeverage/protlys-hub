@@ -127,9 +127,10 @@ export default function LeaderboardClient({ viewerId, foundingGroupId = null }) 
         return;
       }
       const blocked = new Set(blockedIds.map(String));
-      const visibleData = (data || []).filter(row => !blocked.has(String(row.user_id))).map((row,index)=>({...row,rank:index+1}));
+      const allRanked = strictRank((rank || data || []).filter(row => !blocked.has(String(row.user_id))));
+      const visibleData = allRanked.slice(0, PAGE_SIZE);
       setRows(visibleData);
-      const nextRank = visibleData.find(r => r.user_id === viewerId)?.rank || null;
+      const nextRank = allRanked.find(r => r.user_id === viewerId)?.rank || null;
       setMyRank(nextRank);
       setOffline(false);
       setLastUpdated(Date.now());
