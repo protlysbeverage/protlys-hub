@@ -4,7 +4,7 @@ import { ShareIconButton } from '@/components/ShareIcon';
 import { Bubble, BubbleContent } from '@/components/ui/bubble';
 
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 import ActiveToday from './ActiveToday';
@@ -26,6 +26,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const router=useRouter();
   const [supabase]=useState(()=>createClient());
   const [tab,setTab]=useState('challenges'),[joined,setJoined]=useState(()=>new Set(joinedIds)),[counts,setCounts]=useState(()=>({...memberCounts}));
+  const [lastMessages,setLastMessages]=useState(()=>({...groupLastMessages}));
   const [error,setError]=useState(''),[details,setDetails]=useState(null),[showCreate,setShowCreate]=useState(false),[creating,setCreating]=useState(false),[editing,setEditing]=useState(null),[saving,setSaving]=useState(false);
   const [groupView,setGroupView]=useState('list'),[groupDetails,setGroupDetails]=useState(null),[groupModal,setGroupModal]=useState(null),[groupName,setGroupName]=useState(''),[groupEmoji,setGroupEmoji]=useState(''),[groupPrivacy,setGroupPrivacy]=useState('public'),[groupImageUrl,setGroupImageUrl]=useState(''),[inviteCode,setInviteCode]=useState(''),[groupSaving,setGroupSaving]=useState(false);
   const [messages,setMessages]=useState([]),[messageText,setMessageText]=useState(''),[messageImageUrl,setMessageImageUrl]=useState(''),[messageUploading,setMessageUploading]=useState(false),[sending,setSending]=useState(false),[chatLoading,setChatLoading]=useState(false),[userStreak,setUserStreak]=useState(0),[showMembers,setShowMembers]=useState(false),[copyToast,setCopyToast]=useState('');
@@ -41,8 +42,39 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const currentGroupAdmin=selectedGroupMembers.some(m=>m.id===userId&&m.role==='admin') || selectedGroup?.created_by===userId;
 
   useEffect(()=>{getBlockedUserIds(supabase,userId).then(setBlockedIds).catch(()=>{});},[supabase,userId]);
+  useEffect(()=>{
+    if(tab!=='groups'||groupView!=='list')return;
+    refreshGroupLastMessages();
+    const refresh=()=>{if(document.visibilityState!=='hidden')refreshGroupLastMessages()};
+    window.addEventListener('focus',refresh);
+    document.addEventListener('visibilitychange',refresh);
+    const channel=supabase.channel('group-list-message-previews')
+      .on('postgres_changes',{event:'*',schema:'public',table:'messages'},()=>refreshGroupLastMessages())
+      .subscribe();
+    return()=>{
+      window.removeEventListener('focus',refresh);
+      document.removeEventListener('visibilitychange',refresh);
+      supabase.removeChannel(channel);
+    };
+  },[tab,groupView,refreshGroupLastMessages,supabase]);
+  useEffect(()=>{setLastMessages({...groupLastMessages})},[groupLastMessages]);
   useEffect(()=>{const saved=window.localStorage.getItem('protlys-challenges-tab');if(saved==='groups'||saved==='challenges')setTab(saved);const toast=sessionStorage.getItem('protlys-toast');if(toast){setCopyToast(toast);sessionStorage.removeItem('protlys-toast')}},[]);
   function chooseTab(next){setTab(next);window.localStorage.setItem('protlys-challenges-tab',next)}
+  const refreshGroupLastMessages=useCallback(async()=>{
+    const ids=groups.filter(g=>(groupMembers[g.id]||[]).some(m=>m.id===userId)).map(g=>g.id);
+    if(!ids.length)return;
+    const entries=await Promise.all(ids.map(async id=>{
+      const {data,error}=await supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at').eq('group_id',id).order('created_at',{ascending:false}).limit(1);
+      if(error||!data?.[0])return [id,null];
+      const row=data[0],sender=groupMembers[id]?.find(m=>m.id===row.sender_id);
+      return [id,{...row,sender_name:sender?.name||(row.sender_id===userId?'You':'Member')}];
+    }));
+    setLastMessages(current=>{
+      const next={...current};
+      entries.forEach(([id,row])=>{if(row)next[id]=row;});
+      return next;
+    });
+  },[groups,groupMembers,userId,supabase]);
   function resetForm(){setForm({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});}
   function openCreate(groupId=null){router.push(groupId?'/challenges/new?group='+encodeURIComponent(groupId):'/challenges/new')}
   function openEdit(challenge){setDetails(null);setShowCreate(false);setEditing(Number(challenge.id));setForm({name:challenge.name||'',description:challenge.description||'',emoji:challenge.emoji||TYPE_META[challenge.challenge_type||'steps']?.icon||'👣',stepTarget:String(challenge.target||challenge.step_target||0),startDate:challenge.start_date||'',endDate:challenge.end_date||'',allowTeams:!!challenge.allow_teams,visibility:challenge.visibility||'public',groupId:challenge.group_id||null})}
@@ -71,7 +103,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   async function joinPublicGroup(id){setError('');const {error:e}=await supabase.from('group_members').insert({group_id:id,user_id:userId,role:'member'});if(e&&e.code!=='23505'){setError(e.message||'We could not join that group.');return}router.refresh();window.setTimeout(()=>openGroup(id),300)}
   async function handleGroupImage(file){if(!file)return;setGroupSaving(true);setError('');const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=`${userId}/${groupDetails}-${Date.now()}.${ext}`;const {error:uploadError}=await supabase.storage.from('group-avatars').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(uploadError){setError(uploadError.message||'We could not upload that photo.');setGroupSaving(false);return}const {data}=supabase.storage.from('group-avatars').getPublicUrl(path);setGroupImageUrl(data.publicUrl);setGroupSaving(false)} async function saveGroup(){if(!groupDetails||!groupName.trim())return;setGroupSaving(true);setError('');const {error:saveGroupError}=await supabase.rpc('update_group_details',{p_group_id:groupDetails,p_name:groupName.trim(),p_emoji:groupEmoji.trim()||null,p_privacy:groupPrivacy,p_image_url:groupImageUrl||null});if(saveGroupError){setError(saveGroupError.message||'We could not update the group.');setGroupSaving(false);return}setGroupModal(null);setGroupSaving(false);router.refresh()} async function joinGroup(){const code=inviteCode.trim().toUpperCase();if(!code)return;setGroupSaving(true);setError('');const {data:joinedGroupId,error:joinGroupError}=await supabase.rpc('join_group_by_invite_code',{p_invite_code:code});if(joinGroupError){setError(joinGroupError.message||'That invite code is not valid.');setGroupSaving(false);return}const groupId=typeof joinedGroupId==='string'?joinedGroupId:joinedGroupId?.id;if(!groupId){setError('The group was joined, but we could not open it. Please try again from Groups.');setGroupSaving(false);return}setInviteCode('');setGroupSaving(false);setGroupModal(null);window.location.href=`/challenges?group=${encodeURIComponent(groupId)}`}
   useEffect(()=>{if(!copyToast)return;const timer=window.setTimeout(()=>setCopyToast(''),2500);return()=>window.clearTimeout(timer)},[copyToast])
-  function backToList(){setChatMenu(false);setGroupView('list');setGroupDetails(null);setMessages([]);setMessageText('');setMessageImageUrl('');setUserStreak(0);history.replaceState(null,'','/challenges');window.scrollTo(0,0)}
+  function backToList(){setChatMenu(false);setGroupView('list');setGroupDetails(null);setMessages([]);setMessageText('');setMessageImageUrl('');setUserStreak(0);history.replaceState(null,'','/challenges');window.scrollTo(0,0);refreshGroupLastMessages()}
   async function openGroup(id){setGroupDetails(id);setGroupView('detail');chooseTab('groups');history.pushState({group:id},'',`/challenges#group=${encodeURIComponent(id)}`);window.scrollTo(0,0);setChatLoading(true);await supabase.from('group_members').update({last_read_at:new Date().toISOString()}).eq('group_id',id).eq('user_id',userId);const [{data,error:openGroupError},{data:stepRows}]=await Promise.all([supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at,deleted_at').eq('group_id',id).order('created_at',{ascending:false}).limit(50),supabase.from('daily_steps').select('step_date,steps').eq('user_id',userId).order('step_date',{ascending:true})]);if(openGroupError)setError(openGroupError.message||'We could not load the group chat.');setMessages([...(data||[])].reverse());setHasOlder((data||[]).length===50);setUserStreak(calculateCurrentStepStreak(stepRows||[]));setChatLoading(false)}
   useEffect(()=>{const onPop=()=>{if(groupView==='detail')backToList()};window.addEventListener('popstate',onPop);return()=>window.removeEventListener('popstate',onPop)},[groupView]);
   useEffect(()=>{const hash=window.location.hash.match(/^#group=(.+)$/);if(hash&&groupView==='list'){const id=decodeURIComponent(hash[1]);if(groups.some(g=>String(g.id)===id))openGroup(id)}},[groups]);
@@ -84,7 +116,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   async function loadOlder(){if(loadingOlder||!hasOlder||!messages.length)return;setLoadingOlder(true);const el=chatScrollRef.current,oldHeight=el?.scrollHeight||0;const {data,error:e}=await supabase.from('messages').select('id,group_id,sender_id,text,image_url,created_at,deleted_at').eq('group_id',groupDetails).lt('created_at',messages[0].created_at).order('created_at',{ascending:false}).limit(50);if(!e){const older=[...(data||[])].reverse();setMessages(p=>[...older,...p]);setHasOlder((data||[]).length===50);requestAnimationFrame(()=>{if(el)el.scrollTop=el.scrollHeight-oldHeight})}setLoadingOlder(false)}
   async function leaveGroup(){if(!groupDetails)return;const {error:e}=await supabase.from('group_members').delete().eq('group_id',groupDetails).eq('user_id',userId);if(e){setError(e.message||'We could not leave the group.');return}backToList();router.refresh()}
   async function handleMessagePhoto(file){if(!file||!groupDetails)return;setMessageUploading(true);setError('');const ext=(file.name.split('.').pop()||'jpg').toLowerCase();const path=`${userId}/${groupDetails}-${Date.now()}.${ext}`;const {error:uploadError}=await supabase.storage.from('group-media').upload(path,file,{upsert:false,contentType:file.type||'image/jpeg'});if(uploadError){setError(uploadError.message||'We could not upload that photo.');setMessageUploading(false);return}const {data}=supabase.storage.from('group-media').getPublicUrl(path);setMessageImageUrl(data.publicUrl);setMessageUploading(false)}
-  async function sendMessage(e,retry=null){e?.preventDefault?.();const text=(retry?.text??messageText).trim(),imageUrl=retry?.image_url??messageImageUrl;if((!text&&!imageUrl)||sending||!groupDetails)return;setSending(true);setFailedMessage(null);const optimisticId='pending-'+Date.now(),optimistic={id:optimisticId,group_id:groupDetails,sender_id:userId,text:text||null,image_url:imageUrl||null,created_at:new Date().toISOString(),pending:true};setMessages(p=>[...p,optimistic]);setMessageText('');setMessageImageUrl('');requestAnimationFrame(()=>{const el=chatScrollRef.current;if(el)el.scrollTop=el.scrollHeight});const {data:sent,error:e1}=await supabase.from('messages').insert({group_id:groupDetails,sender_id:userId,text:text||null,image_url:imageUrl||null}).select('id,group_id,sender_id,text,image_url,created_at,deleted_at').single();if(e1){setMessages(p=>p.filter(m=>m.id!==optimisticId));setFailedMessage({text,image_url:imageUrl});setError('Message could not be sent.');}else setMessages(p=>p.map(m=>m.id===optimisticId?sent:m));setSending(false)}
+  async function sendMessage(e,retry=null){e?.preventDefault?.();const text=(retry?.text??messageText).trim(),imageUrl=retry?.image_url??messageImageUrl;if((!text&&!imageUrl)||sending||!groupDetails)return;setSending(true);setFailedMessage(null);const optimisticId='pending-'+Date.now(),optimistic={id:optimisticId,group_id:groupDetails,sender_id:userId,text:text||null,image_url:imageUrl||null,created_at:new Date().toISOString(),pending:true};setMessages(p=>[...p,optimistic]);setMessageText('');setMessageImageUrl('');requestAnimationFrame(()=>{const el=chatScrollRef.current;if(el)el.scrollTop=el.scrollHeight});const {data:sent,error:e1}=await supabase.from('messages').insert({group_id:groupDetails,sender_id:userId,text:text||null,image_url:imageUrl||null}).select('id,group_id,sender_id,text,image_url,created_at,deleted_at').single();if(e1){setMessages(p=>p.filter(m=>m.id!==optimisticId));setFailedMessage({text,image_url:imageUrl});setError('Message could not be sent.');}else{setMessages(p=>p.map(m=>m.id===optimisticId?sent:m));const sender=groupMembers[groupDetails]?.find(m=>m.id===userId);setLastMessages(p=>({...p,[groupDetails]:{...sent,sender_name:sender?.name||'You'}}));}setSending(false)}
   function openModeration(target){setModerationMenu(target)}
   function reportTarget(target){setModerationMenu(null);setModerationSheet({...target,mode:'report'})}
   function blockTarget(target){setModerationMenu(null);setModerationSheet({...target,mode:'block'})}
@@ -141,7 +173,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
               <button className="btn-secondary" onClick={()=>router.push('/challenges/join')} style={{width:'auto',margin:0}}>Join with code</button>
             </div>
             <div style={{marginTop:18}}>
-              {[...groups].sort((a,b)=>new Date(groupLastMessages[b.id]?.created_at||b.created_at)-new Date(groupLastMessages[a.id]?.created_at||a.created_at)).map(g => <div key={g.id} style={{position:'relative'}}><GroupCard group={g} members={(groupMembers[g.id]||[]).filter(m=>!blockedIds.includes(String(m.id)))} userId={userId} onOpen={openGroup} lastMessage={groupLastMessages[g.id]} unread={unreadCounts[g.id]||0} onJoin={joinPublicGroup}/>{g.created_by!==userId&&<><button type="button" aria-label="Group options" onClick={()=>openModeration({userId:g.created_by,username:g.name||'Group owner',contentType:'group',contentId:g.id,snapshot:{name:g.name,privacy:g.privacy}})} style={{position:'absolute',right:4,top:10,width:36,height:36,border:0,borderRadius:'50%',background:'transparent',color:'var(--ink-45)',fontSize:20}}>⋮</button>{moderationMenu?.contentId===g.id&&<div className="post-menu" style={{position:'absolute',right:2,top:48,zIndex:20}}><button onClick={()=>reportTarget(moderationMenu)}>Report</button><button onClick={()=>blockTarget(moderationMenu)} className="danger">Block</button></div>}</>}</div>)}
+              {[...groups].sort((a,b)=>new Date(groupLastMessages[b.id]?.created_at||b.created_at)-new Date(groupLastMessages[a.id]?.created_at||a.created_at)).map(g => <div key={g.id} style={{position:'relative'}}><GroupCard group={g} members={(groupMembers[g.id]||[]).filter(m=>!blockedIds.includes(String(m.id)))} userId={userId} onOpen={openGroup} lastMessage={lastMessages[g.id]} unread={unreadCounts[g.id]||0} onJoin={joinPublicGroup}/>{g.created_by!==userId&&<><button type="button" aria-label="Group options" onClick={()=>openModeration({userId:g.created_by,username:g.name||'Group owner',contentType:'group',contentId:g.id,snapshot:{name:g.name,privacy:g.privacy}})} style={{position:'absolute',right:4,top:10,width:36,height:36,border:0,borderRadius:'50%',background:'transparent',color:'var(--ink-45)',fontSize:20}}>⋮</button>{moderationMenu?.contentId===g.id&&<div className="post-menu" style={{position:'absolute',right:2,top:48,zIndex:20}}><button onClick={()=>reportTarget(moderationMenu)}>Report</button><button onClick={()=>blockTarget(moderationMenu)} className="danger">Block</button></div>}</>}</div>)}
             </div>
             {!groups.length && (
               <Card>
