@@ -20,7 +20,7 @@ export async function POST(request) {
   const type = String(body?.type || '').trim();
   const message = String(body?.message || '').trim();
   const email = String(body?.email || user.email || '').trim().toLowerCase();
-  const appVersion = String(body?.appVersion || process.env.NEXT_PUBLIC_APP_VERSION || '1.3.3').trim().slice(0, 80);
+  const appVersion = String(body?.appVersion || process.env.NEXT_PUBLIC_APP_VERSION || '1.3.2').trim().slice(0, 80);
   const userAgent = request.headers.get('user-agent') || '';
   const deviceModel = String(body?.deviceModel || deviceFromUserAgent(userAgent)).trim().slice(0, 120);
 
