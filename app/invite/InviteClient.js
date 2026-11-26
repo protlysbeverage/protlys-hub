@@ -32,8 +32,13 @@ export default function InviteClient() {
       setLoading(false);
     }
     load();
+    const refresh = () => { if (document.visibilityState !== 'hidden') load(); };
+    window.addEventListener('focus', refresh);
+    document.addEventListener('visibilitychange', refresh);
     return () => {
       cancelled = true;
+      window.removeEventListener('focus', refresh);
+      document.removeEventListener('visibilitychange', refresh);
       if (copyTimer.current) window.clearTimeout(copyTimer.current);
     };
   }, []);
