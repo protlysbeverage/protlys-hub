@@ -297,7 +297,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
     let cancelled = false;
     const supabase = createClient();
     async function loadFoundingLeaderboard() {
-      await supabase.rpc('ensure_founding_250_member');
+      await supabase.rpc('ensure_founding_250_group_member');
       const { data: group } = await supabase.from('groups').select('id').eq('name', 'Founding 250').maybeSingle();
       if (!group?.id) return;
       const [{ data: rows, error }, { count }] = await Promise.all([
