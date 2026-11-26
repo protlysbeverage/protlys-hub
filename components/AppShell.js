@@ -296,7 +296,7 @@ export default function AppShell({ children }) {
       <button type="button" className="menu-header-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="protlys-hub-menu" onClick={()=>setMenuOpen(true)}>
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
       </button>
-    </div>
+    </div>}
     {menuOpen&&!chatMode&&<div className="hub-menu-overlay" onClick={()=>setMenuOpen(false)}>
       <aside id="protlys-hub-menu" className="hub-menu-drawer" role="dialog" aria-modal="true" aria-label="Protlys Hub menu" onClick={e=>e.stopPropagation()}>
         <div className="hub-menu-head"><span>Menu</span><button type="button" className="hub-menu-close" aria-label="Close menu" onClick={()=>setMenuOpen(false)}>×</button></div>
