@@ -218,7 +218,56 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
       </>
     )}
 
-    {details&&selected&&<div onClick={()=>setDetails(null)} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}><div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:620,background:'var(--white)',borderRadius:22,padding:20}}><div style={{display:'flex',justifyContent:'space-between'}}><div><span className="eyebrow">Challenge details</span><h2 style={{fontSize:24,margin:'5px 0 0'}}>{selected.emoji||(selected.name==='Founding 250'?'🏆':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).icon)} {selected.name}</h2></div><button type="button" aria-label="Close" onClick={()=>setDetails(null)} style={{width:34,height:34,border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:20,lineHeight:1,cursor:'pointer'}}>×</button></div><p style={{fontSize:14,lineHeight:1.6,color:'var(--ink-70)',marginTop:14}}>{selected.description||'Join the community and take part together.'}</p><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:16}}><div style={{padding:13,borderRadius:14,background:'var(--paper)'}}><div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Dates</div><strong style={{display:'block',marginTop:4}}>{selected.start_date} → {selected.end_date}</strong></div><div style={{padding:13,borderRadius:14,background:'var(--paper)'}}><div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Target</div><strong style={{display:'block',marginTop:4}}>{selected.name==='Founding 250'?'Community membership':Number(selected.target||selected.step_target||0).toLocaleString()+' '+(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong></div></div><div style={{marginTop:16,fontSize:12,color:'var(--ink-60)'}}>{selected.name==='Founding 250'?'Members join the founding community.':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).label+' · '+(selected.scoring_mode==='days_hit'?'Days you hit the target':'Total over challenge')}</div><div style={{marginTop:14}}><div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--ink-45)'}}>Leaderboard</div>{(()=>{const rows=challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[];return <><div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:12,marginBottom:12}}>{rows.slice(0,3).map((row,index)=><div key={'podium-'+row.user_id} style={{minWidth:0,textAlign:'center',padding:'10px 5px',borderRadius:13,background:'var(--green-soft)',border:index===0?'1.5px solid var(--green)':'1px solid var(--line)'}}><div style={{fontSize:10,fontWeight:900,color:'var(--green-dark)'}}>#{row.rank}</div><div style={{display:'flex',justifyContent:'center',margin:'6px 0'}}><Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={36}/></div><div style={{fontSize:10,fontWeight:800,overflowWrap:'anywhere'}}>{row.user_id===userId?'You':row.name||'Protlys member'}</div><div style={{fontSize:10,color:'var(--ink-60)',marginTop:3}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</div></div>)}</div>{rows.map(row=><div key={row.user_id} style={{display:'flex',alignItems:'center',gap:9,padding:'9px 8px',borderBottom:'1px solid var(--line)',background:row.user_id===userId?'var(--green-soft)':'transparent',borderRadius:row.user_id===userId?10:0}}><span style={{width:24,fontWeight:900,fontSize:12}}>{row.rank}</span><Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={27}/><span style={{flex:1,fontSize:12,fontWeight:row.user_id===userId?850:500}}>{row.user_id===userId?'You':row.name||'Protlys member'}</span><strong style={{fontSize:12}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong></div>)}<Link href={`/challenges/leaderboard?id=${selected.id}`} onClick={e=>e.stopPropagation()} style={{display:'inline-flex',marginTop:10,fontSize:11.5,fontWeight:850,color:'var(--green-dark)',textDecoration:'none'}}>See full challenge leaderboard →</Link></>})()}</div></div><div style={{marginTop:16,display:'flex',gap:9}}><button className={joined.has(Number(selected.id))?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(Number(selected.id))} style={{flex:1,margin:0}}>{joined.has(Number(selected.id))?'Joined':'Join challenge'}</button><ShareIconButton label="Share challenge" onClick={()=>shareChallenge(selected)} /></div></div></div>}
+    {details&&selected&&(
+      <div onClick={()=>setDetails(null)} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}>
+        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:620,background:'var(--white)',borderRadius:22,padding:20,maxHeight:'90dvh',overflowY:'auto'}}>
+          <div style={{display:'flex',justifyContent:'space-between'}}>
+            <div>
+              <span className="eyebrow">Challenge details</span>
+              <h2 style={{fontSize:24,margin:'5px 0 0'}}>{selected.emoji||(selected.name==='Founding 250'?'🏆':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).icon)} {selected.name}</h2>
+            </div>
+            <button type="button" aria-label="Close" onClick={()=>setDetails(null)} style={{width:34,height:34,border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:20,lineHeight:1,cursor:'pointer'}}>×</button>
+          </div>
+          <p style={{fontSize:14,lineHeight:1.6,color:'var(--ink-70)',marginTop:14}}>{selected.description||'Join the community and take part together.'}</p>
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:16}}>
+            <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
+              <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Dates</div>
+              <strong style={{display:'block',marginTop:4}}>{selected.start_date} → {selected.end_date}</strong>
+            </div>
+            <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
+              <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Target</div>
+              <strong style={{display:'block',marginTop:4}}>{selected.name==='Founding 250'?'Community membership':Number(selected.target||selected.step_target||0).toLocaleString()+' '+(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
+            </div>
+          </div>
+          <div style={{marginTop:16,fontSize:12,color:'var(--ink-60)'}}>{selected.name==='Founding 250'?'Members join the founding community.':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).label+' · '+(selected.scoring_mode==='days_hit'?'Days you hit the target':'Total over challenge')}</div>
+          <div style={{marginTop:14}}>
+            <div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--ink-45)'}}>Leaderboard</div>
+            <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:12,marginBottom:12}}>
+              {(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]).slice(0,3).map((row,index)=>(
+                <div key={'podium-'+row.user_id} style={{minWidth:0,textAlign:'center',padding:'10px 5px',borderRadius:13,background:'var(--green-soft)',border:index===0?'1.5px solid var(--green)':'1px solid var(--line)'}}>
+                  <div style={{fontSize:10,fontWeight:900,color:'var(--green-dark)'}}>#{row.rank}</div>
+                  <div style={{display:'flex',justifyContent:'center',margin:'6px 0'}}><Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={36}/></div>
+                  <div style={{fontSize:10,fontWeight:800,overflowWrap:'anywhere'}}>{row.user_id===userId?'You':row.name||'Protlys member'}</div>
+                  <div style={{fontSize:10,color:'var(--ink-60)',marginTop:3}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</div>
+                </div>
+              ))}
+            </div>
+            {(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]).map(row=>(
+              <div key={row.user_id} style={{display:'flex',alignItems:'center',gap:9,padding:'9px 8px',borderBottom:'1px solid var(--line)',background:row.user_id===userId?'var(--green-soft)':'transparent',borderRadius:row.user_id===userId?10:0}}>
+                <span style={{width:24,fontWeight:900,fontSize:12}}>{row.rank}</span>
+                <Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={27}/>
+                <span style={{flex:1,fontSize:12,fontWeight:row.user_id===userId?850:500}}>{row.user_id===userId?'You':row.name||'Protlys member'}</span>
+                <strong style={{fontSize:12}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
+              </div>
+            ))}
+          </div>
+          <div style={{marginTop:16,display:'flex',gap:9}}>
+            <button className={joined.has(Number(selected.id))?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(Number(selected.id))} style={{flex:1,margin:0}}>{joined.has(Number(selected.id))?'Joined':'Join challenge'}</button>
+            <ShareIconButton label="Share challenge" onClick={()=>shareChallenge(selected)} />
+          </div>
+        </div>
+      </div>
+    )}
     {groupModal&&renderGroupModal()}
   </div>
 }
