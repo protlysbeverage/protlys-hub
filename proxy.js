@@ -2,6 +2,7 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function proxy(request) {
+  if (request.nextUrl.pathname === '/__protlys-proxy-check') return new Response('PROTLYS_PROXY_ACTIVE', { status: 200, headers: { 'content-type': 'text/plain' } });
   // The separate protlys.com Vercel project uses this flag to proxy the
   // marketing site and Shopify blog. The Hub project does not set the flag.
   if (process.env.PROTLYS_MARKETING_PROXY === '1') {
