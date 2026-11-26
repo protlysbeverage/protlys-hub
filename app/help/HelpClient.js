@@ -3,7 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
-const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '1.3.3';
+const APP_VERSION = process.env.NEXT_PUBLIC_APP_VERSION || '1.3.2';
 const SUPPORT_EMAIL = 'protlysbeverage@gmail.com';
 
 function getDeviceModel() {
