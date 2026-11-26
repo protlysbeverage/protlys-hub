@@ -7,5 +7,5 @@ export default async function HelpPage() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) redirect('/login?next=/help');
-  return <AppShell><HelpClient email={user.email || ''} /></AppShell>;
+  return <AppShell><HelpClient initialEmail={user.email || ''} /></AppShell>;
 }
