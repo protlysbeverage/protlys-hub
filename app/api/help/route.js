@@ -30,7 +30,7 @@ export async function POST(request) {
 
   let emailSent = false;
   const apiKey = process.env.RESEND_API_KEY;
-  const from = process.env.RESEND_FROM_EMAIL;
+  const from = process.env.RESEND_FROM_EMAIL || 'Protlys Hub <support@protlys.com>';
   if (apiKey && from) {
     try {
       const response = await fetch('https://api.resend.com/emails', {
