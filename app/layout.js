@@ -15,6 +15,7 @@ import '@fontsource/archivo/400.css';
 import '@fontsource/archivo/600.css';
 import '@fontsource/archivo/700.css';
 import '@fontsource/archivo/800.css';
+import ReferralAttribution from '@/components/ReferralAttribution';
 
 const EXACT_LOGO = '/protlys-logo-exact.png?v=2';
 const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BUILD_ID || 'local';
@@ -125,7 +126,7 @@ export default function RootLayout({ children }) {
           } catch {}
         })()` }} />
       </head>
-      <body data-build-id={BUILD_ID}>{children}</body>
+      <body data-build-id={BUILD_ID}><ReferralAttribution />{children}</body>
     </html>
   );
 }
