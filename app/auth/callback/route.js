@@ -37,5 +37,7 @@ export async function GET(request) {
   const { data: { user } } = await supabase.auth.getUser();
   const termsVersion = user?.user_metadata?.terms_accepted ? (user.user_metadata?.terms_version || '2026-10-28') : null;
   if (user && termsVersion) await supabase.from('terms_acceptances').upsert({ user_id:user.id, version:termsVersion }, { onConflict:'user_id,version' });
+  const referralCode = String(user?.user_metadata?.referral_code || '').trim().toUpperCase();
+  if (user && /^[A-Z0-9]{8,16}$/.test(referralCode)) await supabase.rpc('claim_referral_code', { p_code:referralCode });
   return NextResponse.redirect(new URL(next, requestUrl.origin));
 }
