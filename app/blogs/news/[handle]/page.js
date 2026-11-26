@@ -22,23 +22,21 @@ function tag(xml, name) {
 
 function plainText(html = '') {
   return decode(html)
-    .replace(/<script[\s\S]*?<\/script>/gi, ' ')
-    .replace(/<style[\s\S]*?<\/style>/gi, ' ')
-    .replace(/<br\s*\/?\s*>/gi, '\n')
-    .replace(/<\/(p|div|h[1-6]|li|blockquote)>/gi, '\n\n')
+    .replace(/<script[\\s\\S]*?<\\/script>/gi, ' ')
+    .replace(/<style[\\s\\S]*?<\\/style>/gi, ' ')
+    .replace(/<br\\s*\\/?\\s*>/gi, '\\n')
+    .replace(/<\\/(p|div|h[1-6]|li|blockquote)>/gi, '\\n\\n')
     .replace(/<[^>]+>/g, ' ')
-    .replace(/[ \t]+/g, ' ')
-    .replace(/\n[ \t]+/g, '\n')
-    .replace(/\n{3,}/g, '\n\n')
+    .replace(/[ \\t]+/g, ' ')
+    .replace(/\\n[ \\t]+/g, '\\n')
+    .replace(/\\n{3,}/g, '\\n\\n')
     .trim();
 }
-
 function getHandle(entry) {
-  const match = entry.match(/<link\b([^>]*)\/?\s*>/i);
+  const match = entry.match(/<link\\b([^>]*)\\/?\\s*>/i);
   const href = match?.[1]?.match(/href=["']([^"']+)["']/i)?.[1] || '';
   try { return new URL(href).pathname.split('/').filter(Boolean).pop() || ''; } catch { return ''; }
 }
-
 async function getArticle(handle) {
   const response = await fetch(STORE_URL + '/blogs/news.atom?limit=50', {
     headers: { Accept: 'application/atom+xml, application/xml, text/xml' },
