@@ -25,12 +25,6 @@ function GroupCard({group,members,userId,onOpen,lastMessage,unread=0,onJoin}){co
 export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={},memberPreviews={},progressByChallenge={},challengeLeaderboards={},userId,isAdmin=false,groups=[],groupMembers={},groupLastMessages={},unreadCounts={},activeToday=[],foundingCount=0}){
   const router=useRouter();
   useEffect(()=>{const refresh=()=>router.refresh();window.addEventListener('protlys:steps-updated',refresh);window.addEventListener('focus',refresh);return()=>{window.removeEventListener('protlys:steps-updated',refresh);window.removeEventListener('focus',refresh)}},[router]);
-  useEffect(()=>{
-    if(!details)return;
-    const previousOverflow=document.body.style.overflow;
-    document.body.style.overflow='hidden';
-    return()=>{document.body.style.overflow=previousOverflow};
-  },[details]);
   const [supabase]=useState(()=>createClient());
   const [tab,setTab]=useState('challenges'),[joined,setJoined]=useState(()=>new Set(joinedIds)),[counts,setCounts]=useState(()=>({...memberCounts}));
   const [lastMessages,setLastMessages]=useState(()=>({...groupLastMessages}));
@@ -43,6 +37,12 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const [blockedIds,setBlockedIds]=useState([]),[moderationMenu,setModerationMenu]=useState(null),[moderationSheet,setModerationSheet]=useState(null),[revealedBlockedMessages,setRevealedBlockedMessages]=useState(new Set());
   const longPressTimer=useRef(null);
   const [form,setForm]=useState({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});
+  useEffect(()=>{
+    if(!details)return;
+    const previousOverflow=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return()=>{document.body.style.overflow=previousOverflow};
+  },[details]);
   const selected=useMemo(()=>challenges.find(c=>Number(c.id)===details),[challenges,details]);
   const selectedLeaderboard=selected?(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]):[];
   const selectedPodium=selectedLeaderboard.length>1?selectedLeaderboard.slice(0,3):[];
