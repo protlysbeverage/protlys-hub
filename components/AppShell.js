@@ -98,9 +98,25 @@ export default function AppShell({ children }) {
     .protlys-app .profile-comments { margin-top:12px; }
     .protlys-app .profile-comment-input { position:relative; }
     .protlys-app .profile-comment-input .btn-secondary { flex:0 0 auto; }
-    .protlys-app .feed-post-type-selector { display:flex;gap:6px;overflow-x:auto;margin:0 0 12px;padding:0 0 2px;scrollbar-width:none; }
+    .protlys-app .feed-post-type-selector {
+      display:flex;flex-wrap:wrap;gap:8px;overflow:visible;
+      width:calc(100% + 28px);margin:0 0 12px -14px;padding:0 14px 2px;
+      box-sizing:border-box;scrollbar-width:none;
+    }
     .protlys-app .feed-post-type-selector::-webkit-scrollbar { display:none; }
-    .protlys-app .feed-post-type-selector button { flex:0 0 auto;border-radius:7px!important;padding:7px 12px!important;font-size:11.5px!important;line-height:18px; }
+    .protlys-app .feed-post-type-selector button {
+      box-sizing:border-box;min-width:0;min-height:40px;max-width:100%;
+      border-radius:999px!important;padding:10px 16px!important;font-size:14px!important;
+      line-height:1.15;white-space:normal!important;display:inline-flex;align-items:center;
+      justify-content:center;gap:5px;overflow-wrap:anywhere;
+    }
+    .protlys-app .feed-post-type-selector button:nth-child(-n+3) {
+      flex:0 0 calc((100% - 16px)/3);
+    }
+    .protlys-app .feed-post-type-selector button:nth-child(n+4) {
+      flex:0 0 calc((100% - 8px)/2);
+    }
+    .protlys-app .feed-post-type-selector button svg { flex:0 0 13px;width:13px;height:13px; }
     .protlys-app .profile-comment a:hover { text-decoration:underline!important; }
     .protlys-app .bottom-nav {
       align-items:stretch!important;
