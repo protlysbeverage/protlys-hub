@@ -353,7 +353,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         <span className="eyebrow">Movement</span>
         {isOffline && <div role="status" style={{padding:'8px 11px',margin:'8px 0',borderRadius:10,background:'var(--green-soft)',color:'var(--green-dark)',fontSize:11,fontWeight:700}}>Offline · last updated {offlineAt ? new Date(offlineAt).toLocaleTimeString('en-KE',{hour:'2-digit',minute:'2-digit'}) : 'saved activity'}</div>}
         <h1 style={{fontSize:22}}>Your movement</h1>
-        <p className="subhead">Your steps are tracked automatically.</p>
+        <p className="subhead">Your movement, day by day.</p>
       </div>
 
       <div className="screen-pad" style={{paddingTop:6}}>
@@ -361,7 +361,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
           <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',minHeight:32}}>
             <div className="t">Steps today</div>
             <div style={{display:'flex',alignItems:'center',gap:0,marginRight:-8,minHeight:32}}>
-              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : source === 'healthkit' ? 'Apple Health' : 'Health Connect'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
+              {lastSync && <span style={{fontSize:12,color:'var(--ink-45)',fontWeight:500,whiteSpace:'nowrap'}}>{source === 'manual' ? 'Manual' : 'Synced'} · {new Date(lastSync).toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'})}</span>}
               {hasMovement && <ShareIconButton label="Share steps today" onClick={()=>openShare('steps_today')}/>}
             </div>
           </div>

@@ -2,7 +2,7 @@ import Link from 'next/link';
 const siteUrl = 'https://hub.protlys.com';
 const faqs = [
   { question: 'What is Protlys Hub?', answer: 'Protlys Hub is a community app for adults who want to track daily movement, keep an eye on protein intake, take part in challenges and stay connected with other members.' },
-  { question: 'Can I track my steps with Protlys Hub?', answer: 'Yes. Protlys Hub includes movement tracking and step goals. Supported Android devices can record steps automatically after the required activity permission is granted.' },
+  { question: 'Can I track my steps with Protlys Hub?', answer: 'Yes. Protlys Hub includes movement tracking and step goals. Supported Android devices can record steps after you grant activity permission.' },
   { question: 'Can I track protein in Protlys Hub?', answer: 'Yes. The Hub includes protein goals and logging tools to help you keep track of your daily intake. It is a tracking tool, not medical or dietetic advice.' },
   { question: 'Can I join movement challenges?', answer: 'Yes. Members can take part in community challenges and follow progress over time.' },
   { question: 'Who can create an account?', answer: 'Protlys Hub accounts are for adults aged 18 and over. You can review the Terms and Conditions and Privacy Policy before signing up.' },
