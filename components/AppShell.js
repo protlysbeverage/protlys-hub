@@ -242,8 +242,8 @@ export default function AppShell({ children }) {
         height:auto!important;
         overflow-y:auto!important;
         overflow-x:hidden!important;
-        padding-bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 12px)!important;
-        scroll-padding-bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 12px)!important;
+        padding-bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 24px)!important;
+        scroll-padding-bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 24px)!important;
         -webkit-overflow-scrolling:touch!important;
       }
     }
