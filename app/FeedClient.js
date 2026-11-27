@@ -22,17 +22,21 @@ const PostShareSheet = dynamic(() => import('@/components/PostShareSheet'), { ss
 const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 
 const POST_TYPES = [
-  { value: 'progress', label: 'Progress' },
-  { value: 'run', label: 'Run/Walk' },
-  { value: 'workout', label: 'Workout' },
-  { value: 'milestone', label: 'Milestone' },
-  { value: 'general', label: 'Post' },
+  { value: 'progress', label: 'Progress', icon: 'chart' },
+  { value: 'run', label: 'Run/Walk', icon: 'run' },
+  { value: 'workout', label: 'Workout', icon: 'dumbbell' },
+  { value: 'milestone', label: 'Milestone', icon: 'flag' },
+  { value: 'general', label: 'Post', icon: 'message' },
 ];
 
 function Icon({ name, size = 18, strokeWidth = 1.8 }) {
   const paths = {
     image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M3 16l5-5 4 4 3-3 6 6" /></>,
     chart: <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
+    run: <><circle cx="15" cy="5" r="2" /><path d="m12 10 3-2 3 3 3 1M12 10l-2 4-4 2M10 14l3 2 1 5M13 16l4-2 3 2" /></>,
+    dumbbell: <><path d="M6 9v6M3 10v4M18 9v6M21 10v4M6 12h12" /></>,
+    flag: <><path d="M5 21V4" /><path d="M5 4c6-3 8 3 14 0v11c-6 3-8-3-14 0" /></>,
+    message: <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l1.8-3.3A7.5 7.5 0 1 1 20 11.5Z" /><path d="M9 11h6M9 14h4" /></>,
     share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
     more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
     edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></>,
@@ -250,7 +254,7 @@ function EditPost({ post, onDone, onCancel, onToast }) {
   }
   return <div style={{ marginTop: 12, padding: 14, border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)' }}>
     <textarea value={body} onChange={e => setBody(e.target.value)} className="field-input" style={{ width: '100%', minHeight: 86, resize: 'vertical', padding: 10, fontFamily: 'inherit', marginBottom: 10 }} placeholder="Edit your post…" />
-    <div className="feed-post-type-selector" style={{ marginBottom: 10 }}>{POST_TYPES.map(type => <button key={type.value} onClick={() => setPostType(type.value)} aria-pressed={postType === type.value} style={{ border: postType === type.value ? '1.5px solid var(--green)' : '1.5px solid var(--line)', background: postType === type.value ? 'var(--green-soft)' : '#fff', borderRadius: 11, padding: '7px 8px', fontSize: 11, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', color: postType === type.value ? 'var(--green-dark)' : 'var(--ink-70)' }}>{type.label}</button>)}</div>
+    <div className="feed-post-type-selector" role="group" aria-label="Post type" style={{ marginBottom: 10 }}>{POST_TYPES.map(type => <button type="button" key={type.value} onClick={() => setPostType(type.value)} aria-pressed={postType === type.value} style={{ border: postType === type.value ? '1.5px solid var(--green)' : '1.5px solid var(--line)', background: postType === type.value ? 'var(--green-soft)' : '#fff', borderRadius: 999, padding: '10px 16px', minHeight: 40, fontSize: 14, fontWeight: 700, cursor: 'pointer', whiteSpace: 'normal', lineHeight: 1.15, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', gap: 5, color: postType === type.value ? 'var(--green-dark)' : 'var(--ink-70)' }}><Icon name={type.icon} size={13}/><span>{type.label}</span></button>)}</div>
     {post.image_url && <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, marginBottom: 10, fontSize: 12 }}><span>Photo attached</span><button className="btn-secondary" onClick={() => setRemoveImage(v => !v)} style={{ width: 'auto', padding: '7px 10px', marginTop: 0 }}>{removeImage ? 'Keep photo' : 'Remove photo'}</button></div>}
     <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 10 }}>{[['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']].map(([key, label]) => <div key={key}><label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>{label.toUpperCase()}</label><input className="field-input" value={stats[key]} onChange={e => setStats(s => ({ ...s, [key]: e.target.value }))} style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" /></div>)}</div>
     {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
@@ -279,8 +283,8 @@ function ComposePost({ profile, onPosted }) {
     {preview && <div style={{ position: 'relative', marginBottom: 12 }}><img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} /><button onClick={() => { URL.revokeObjectURL(preview); setPreview(null); setImageData(null); if (fileRef.current) fileRef.current.value = ''; }} aria-label="Remove photo" style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="x" size={16} /></button></div>}
     {showStats && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>{[['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']].map(([key, label]) => <div key={key}><label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>{label.toUpperCase()}</label><input className="field-input" type="text" value={stats[key]} onChange={handleStatChange(key)} style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" /></div>)}</div>}
     {error && <div style={{ fontSize: 13, color: '#B3261E', marginBottom: 10 }}>{error}</div>}
-    <div className="feed-post-type-grid" role="group" aria-label="Post type" style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:6,marginBottom:10}}>
-      {POST_TYPES.map(type=><button type="button" key={type.value} onClick={()=>setPostType(type.value)} aria-pressed={postType===type.value} style={{minWidth:0,padding:'9px 2px',border:postType===type.value?'1.5px solid #4F9F35':'1.5px solid var(--line)',borderRadius:999,background:postType===type.value?'#6BCB45':'#fff',color:postType===type.value?'#111':'var(--ink-70)',fontSize:10,fontWeight:800,letterSpacing:'-.2px',whiteSpace:'nowrap',cursor:'pointer'}}>{type.label}</button>)}
+    <div className="feed-post-type-selector" role="group" aria-label="Post type" style={{marginBottom:10}}>
+      {POST_TYPES.map(type=><button type="button" key={type.value} onClick={()=>setPostType(type.value)} aria-pressed={postType===type.value} style={{minWidth:0,minHeight:40,padding:'10px 16px',border:postType===type.value?'1.5px solid #4F9F35':'1.5px solid var(--line)',borderRadius:999,background:postType===type.value?'#6BCB45':'#fff',color:postType===type.value?'#111':'var(--ink-70)',fontSize:14,fontWeight:800,whiteSpace:'normal',lineHeight:1.15,display:'inline-flex',alignItems:'center',justifyContent:'center',gap:5,cursor:'pointer'}}><Icon name={type.icon} size={13}/><span>{type.label}</span></button>)}
     </div>
     <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}>
       <div style={{display:'flex',alignItems:'center',gap:2,minWidth:0}}>
