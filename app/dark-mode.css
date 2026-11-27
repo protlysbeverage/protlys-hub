@@ -44,7 +44,6 @@ html.protlys-dark .protlys-app .data-chip,
 html.protlys-dark .protlys-app .field-input,
 html.protlys-dark .protlys-app .pill-opt,
 html.protlys-dark .protlys-app .qty-btn,
-html.protlys-dark .protlys-app .shop-header-link,
 html.protlys-dark .protlys-app .post-menu,
 html.protlys-dark .protlys-app .movement-setting-card,
 html.protlys-dark .protlys-app .your-hub-card,
@@ -82,7 +81,6 @@ html.protlys-dark .protlys-app .post-menu button:hover,
 html.protlys-dark .protlys-app .post-more-btn:hover { background:#202822!important; }
 html.protlys-dark .protlys-app .sidebar-nav .nav-btn:hover,
 html.protlys-dark .protlys-app .sidebar-nav .nav-btn.active { background:var(--green-soft)!important;color:var(--green-dark)!important; }
-html.protlys-dark .protlys-app .shop-header-link:hover { background:var(--green-soft)!important;border-color:var(--green)!important; }
 html.protlys-dark .protlys-app .btn-secondary { border-color:var(--ink)!important;color:var(--ink)!important; }
 html.protlys-dark .protlys-app .tag-next { border-color:var(--ink)!important;color:var(--ink)!important; }
 html.protlys-dark .protlys-app input,

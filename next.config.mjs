@@ -55,9 +55,21 @@ const nextConfig = {
     ];
   },
   async rewrites() {
-    return [
-      { source: '/logo.png', destination: '/protlys-logo-exact.png?v=2' },
-    ];
+    const logoRewrite = { source: '/logo.png', destination: '/protlys-logo-exact.png?v=2' };
+    if (process.env.PROTLYS_MARKETING_PROXY === '1') {
+      return {
+        beforeFiles: [
+          logoRewrite,
+          { source: '/blogs/news', destination: 'https://protlys.myshopify.com/blogs/news' },
+          { source: '/blogs/news/:path*', destination: 'https://protlys.myshopify.com/blogs/news/:path*' },
+          { source: '/', destination: 'https://protlys-website.vercel.app/' },
+          { source: '/:path*', destination: 'https://protlys-website.vercel.app/:path*' },
+        ],
+        afterFiles: [],
+        fallback: [],
+      };
+    }
+    return [logoRewrite];
   },
 };
 

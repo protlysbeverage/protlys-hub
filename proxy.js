@@ -2,6 +2,15 @@ import { createServerClient } from '@supabase/ssr';
 import { NextResponse } from 'next/server';
 
 export async function proxy(request) {
+  // The separate protlys.com Vercel project uses this flag to proxy the
+  // marketing site and Shopify blog. The Hub project does not set the flag.
+  if (process.env.PROTLYS_MARKETING_PROXY === '1') {
+    const pathname = request.nextUrl.pathname;
+    const isBlogPath = pathname === '/blogs/news' || pathname.startsWith('/blogs/news/');
+    const origin = isBlogPath ? 'https://protlys.myshopify.com' : 'https://protlys-website.vercel.app';
+    const destination = new URL(pathname + request.nextUrl.search, origin);
+    return NextResponse.rewrite(destination);
+  }
   // Let the OAuth callback handle the one-time PKCE code exchange directly.
   // Running auth session refresh before that exchange can interfere with the
   // verifier/state cookies needed by exchangeCodeForSession().

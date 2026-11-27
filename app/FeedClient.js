@@ -23,7 +23,7 @@ const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').the
 
 const POST_TYPES = [
   { value: 'progress', label: 'Progress' },
-  { value: 'run', label: 'Run / Walk' },
+  { value: 'run', label: 'Run/Walk' },
   { value: 'workout', label: 'Workout' },
   { value: 'milestone', label: 'Milestone' },
   { value: 'general', label: 'Post' },
@@ -94,6 +94,17 @@ function postDateTime(ts) {
 
 function postTypeLabel(value) {
   return POST_TYPES.find(type => type.value === value)?.label || 'Post';
+}
+
+function postPlaceholder(value) {
+  const placeholders = {
+    progress: 'Share your progress with the community…',
+    run: 'Tell us about your run or walk…',
+    workout: 'What workout did you complete?',
+    milestone: 'Celebrate a milestone with the community…',
+    general: 'What would you like to share?',
+  };
+  return placeholders[value] || placeholders.general;
 }
 
 function StatChip({ label, value }) {
@@ -263,12 +274,21 @@ function ComposePost({ profile, onPosted }) {
     if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted();
   }
   return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 16, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
-    <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}><Avatar name={profile?.display_name} url={profile?.avatar_url} /><textarea ref={bodyRef} placeholder="Share your progress with the community…" style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical', minHeight: 72, whiteSpace: 'pre-wrap', color: 'var(--ink)', background: 'transparent' }} /></div>
+    <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}><Avatar name={profile?.display_name} url={profile?.avatar_url} /><textarea ref={bodyRef} placeholder={postPlaceholder(postType)} style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical', minHeight: 72, whiteSpace: 'pre-wrap', color: 'var(--ink)', background: 'transparent' }} /></div>
     
     {preview && <div style={{ position: 'relative', marginBottom: 12 }}><img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} /><button onClick={() => { URL.revokeObjectURL(preview); setPreview(null); setImageData(null); if (fileRef.current) fileRef.current.value = ''; }} aria-label="Remove photo" style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="x" size={16} /></button></div>}
     {showStats && <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8, marginBottom: 12 }}>{[['steps', 'Steps'], ['distance', 'Distance (km)'], ['duration', 'Duration']].map(([key, label]) => <div key={key}><label style={{ fontSize: 10, fontWeight: 800, color: 'var(--ink-45)', display: 'block', marginBottom: 3 }}>{label.toUpperCase()}</label><input className="field-input" type="text" value={stats[key]} onChange={handleStatChange(key)} style={{ padding: '8px 10px', fontSize: 13 }} placeholder="—" /></div>)}</div>}
     {error && <div style={{ fontSize: 13, color: '#B3261E', marginBottom: 10 }}>{error}</div>}
-    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:8, minWidth:0 }}><div style={{display:'flex',alignItems:'center',gap:2,minWidth:0}}><button type="button" onClick={()=>fileRef.current?.click()} aria-label="Add photo" title="Add photo" style={{width:44,height:44,border:0,background:'transparent',borderRadius:11,color:'var(--ink-70)',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}}><Icon name="image" size={19}/></button><button type="button" onClick={()=>setShowStats(value=>!value)} aria-label="Add activity" title="Add activity" aria-pressed={showStats} style={{width:44,height:44,border:0,background:showStats?'var(--green-soft)':'transparent',borderRadius:11,color:showStats?'var(--green-dark)':'var(--ink-70)',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}}><Icon name="chart" size={19}/></button><div className="tag-picker"><select id="postCategory" className="tag-select" value={postType} onChange={e=>setPostType(e.target.value)} aria-label="Post category"><option value="progress">Progress</option><option value="run">Run / Walk</option><option value="workout">Workout</option><option value="milestone">Milestone</option><option value="general">Post</option></select></div></div><button className="btn-primary" onClick={handlePost} disabled={loading} style={{ width:'auto', minHeight:44, padding:'0 16px', marginTop:0, flexShrink:0 }}>{loading ? 'Posting…' : 'Post'}</button></div>
+    <div className="feed-post-type-grid" role="group" aria-label="Post type" style={{display:'grid',gridTemplateColumns:'repeat(5,minmax(0,1fr))',gap:6,marginBottom:10}}>
+      {POST_TYPES.map(type=><button type="button" key={type.value} onClick={()=>setPostType(type.value)} aria-pressed={postType===type.value} style={{minWidth:0,padding:'9px 2px',border:postType===type.value?'1.5px solid #4F9F35':'1.5px solid var(--line)',borderRadius:999,background:postType===type.value?'#6BCB45':'#fff',color:postType===type.value?'#111':'var(--ink-70)',fontSize:10,fontWeight:800,letterSpacing:'-.2px',whiteSpace:'nowrap',cursor:'pointer'}}>{type.label}</button>)}
+    </div>
+    <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:8,minWidth:0}}>
+      <div style={{display:'flex',alignItems:'center',gap:2,minWidth:0}}>
+        <button type="button" onClick={()=>fileRef.current?.click()} aria-label="Add photo" title="Add photo" style={{width:44,height:44,border:0,background:'transparent',borderRadius:11,color:'var(--ink-70)',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}}><Icon name="image" size={19}/></button>
+        <button type="button" onClick={()=>setShowStats(value=>!value)} aria-label="Add activity" title="Add activity" aria-pressed={showStats} style={{width:44,height:44,border:0,background:showStats?'var(--green-soft)':'transparent',borderRadius:11,color:showStats?'var(--green-dark)':'var(--ink-70)',display:'grid',placeItems:'center',cursor:'pointer',flexShrink:0}}><Icon name="chart" size={19}/></button>
+      </div>
+      <button className="btn-primary" onClick={handlePost} disabled={loading} style={{width:'auto',minHeight:44,padding:'0 16px',marginTop:0,flexShrink:0}}>{loading?'Posting…':'Post'}</button>
+    </div>
     <input ref={fileRef} type="file" accept="image/*" style={{ display: 'none' }} onChange={handleFile} />
   </div>;
 }
@@ -308,7 +328,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   const [nextOffset, setNextOffset] = useState(Number(initialNextOffset) || 0);
   const sentinelRef = useRef(null);
   const [liked, setLiked] = useState(new Set(likedIds || []));
-  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null);
+  const [editing, setEditing] = useState(null); const [menu, setMenu] = useState(null); const [toast, setToast] = useState(''); const [sharePost, setSharePost] = useState(null); const [lightboxImage, setLightboxImage] = useState(null);
   const [moderationMenu, setModerationMenu] = useState(null); const [moderationSheet, setModerationSheet] = useState(null);
   const cacheKey = userId ? `protlys-feed-cache-v1:${userId}` : null;
 
@@ -480,7 +500,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
         {editing === post.id ? <EditPost post={post} onDone={() => { setEditing(null); refreshFeed(); }} onCancel={() => setEditing(null)} onToast={showToast} /> : <>
           <div className="feed-card-body">
             {post.body && <p className="post-content-text" style={{ whiteSpace: 'pre-wrap', wordWrap: 'break-word', overflowWrap: 'break-word' }}>{post.body}</p>}
-            {post.image_url && <img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" />}
+            {post.image_url && <button type="button" onClick={()=>setLightboxImage(post.image_url)} aria-label="Open post photo full screen" style={{display:'block',width:'100%',maxWidth:'100%',marginTop:10,padding:0,border:0,borderRadius:12,background:'transparent',cursor:'zoom-in',overflow:'hidden'}}><img src={post.image_url} alt="Post photo" loading="lazy" decoding="async" style={{display:'block',width:'100%',height:'auto',maxHeight:480,objectFit:'contain',objectPosition:'center',margin:'0 auto',borderRadius:12}} /></button>}
             {post.stats && <div style={{ display: 'flex', flexWrap: 'wrap', gap: 7, marginTop: 12 }}>{post.stats.steps && <StatChip label="Steps" value={post.stats.steps} />}{post.stats.distance && <StatChip label="Distance" value={`${post.stats.distance} km`} />}{post.stats.duration && <StatChip label="Duration" value={post.stats.duration} />}</div>}
           </div>
 
@@ -502,7 +522,8 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     </div>}
 
     {toast && <div style={{ position: 'fixed', left: '50%', bottom: 84, transform: 'translateX(-50%)', zIndex: 100, background: 'var(--ink)', color: '#fff', borderRadius: 999, padding: '10px 16px', fontSize: 13, fontWeight: 700, boxShadow: '0 8px 24px rgba(0,0,0,.2)' }}>{toast}</div>}
-    <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
+    {lightboxImage && <div role="dialog" aria-modal="true" aria-label="Full-size post photo" onClick={()=>setLightboxImage(null)} style={{position:'fixed',inset:0,zIndex:30000,background:'rgba(0,0,0,.96)',display:'flex',alignItems:'center',justifyContent:'center',padding:'calc(18px + env(safe-area-inset-top)) 12px calc(18px + env(safe-area-inset-bottom))',boxSizing:'border-box'}}><button type="button" aria-label="Close photo" onClick={()=>setLightboxImage(null)} style={{position:'absolute',top:'calc(12px + env(safe-area-inset-top))',right:14,width:44,height:44,border:0,borderRadius:'50%',background:'rgba(255,255,255,.16)',color:'#fff',fontSize:28,lineHeight:1,cursor:'pointer'}}>×</button><img src={lightboxImage} alt="Full-size post photo" onClick={e=>e.stopPropagation()} style={{display:'block',maxWidth:'100%',maxHeight:'100%',width:'auto',height:'auto',objectFit:'contain',borderRadius:4}} /></div>}
+     <PostShareSheet open={Boolean(sharePost)} onClose={() => setSharePost(null)} post={sharePost} replies={[]} currentUserId={userId} />
     {moderationSheet && <ModerationSheet open={true} onClose={() => setModerationSheet(null)} mode={moderationSheet.mode} reportedUserId={moderationSheet.userId} reportedUsername={moderationSheet.username} contentType={moderationSheet.contentType} contentId={moderationSheet.contentId} contentSnapshot={moderationSheet.snapshot} onBlocked={() => { setModerationSheet(null); refreshFeed(); }} />}
   </div>;
 }

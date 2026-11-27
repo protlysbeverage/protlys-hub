@@ -99,7 +99,7 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], shopUrl, email }) {
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], email }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -201,7 +201,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const greetingText = localHour >= 5 && localHour < 12 ? 'Good morning' : localHour >= 12 && localHour < 18 ? 'Good afternoon' : 'Good evening';
   const greetingUsername = profile?.username?.trim();
   const avatarUrl = profile?.avatar_url;
-  const storeUrl = shopUrl || 'https://protlys.com/collections/all';
   const totalSteps = Number(profile?.total_steps || 0);
   const stepGoal = Number(profile?.step_goal || 0) || 8000;
   const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/member/${profile?.id}` : `/member/${profile?.id}`;
@@ -290,7 +289,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     { href:'/leaderboard', label:'Leaderboard', desc:'See how your steps compare this month.', icon:'leaderboard' },
     { href:'/challenges', label:'Challenges', desc:'Join challenges if they are useful to you.', icon:'challenge' },
     { href:'/', label:'Community', desc:'See the progress feed and share with the Hub.', icon:'community' },
-    { href:storeUrl, label:'Shop Protlys', desc:'Browse Protlys products and place an order.', icon:'box', external:true },
   ];
 
   return <>
@@ -334,7 +332,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       </section>
     </div>
 
-    <div className="screen-pad" style={{paddingTop:4,paddingBottom:'calc(112px + env(safe-area-inset-bottom))'}}>
+    <div className="screen-pad" style={{paddingTop:4,paddingBottom:0}}>
       <div className="hub-card" style={{padding:16,marginBottom:10}}>
         <div style={{display:'flex',justifyContent:'space-between',alignItems:'baseline',gap:10,marginBottom:14}}><div><div className="t" style={{fontSize:10}}>Today's movement</div><div style={{fontSize:20,fontWeight:800,marginTop:3}}>Steps + Distance</div></div><span style={{fontSize:11,color:'var(--ink-45)'}}>Recorded</span></div>
         <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Steps</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{Number(dashboardTodaySteps).toLocaleString()}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>steps recorded</div></div><div style={{background:'var(--green-soft)',borderRadius:14,padding:13}}><div className="t" style={{fontSize:9.5}}>Estimated distance</div><div className="mono" style={{fontSize:25,fontWeight:800,marginTop:4}}>{formatDistance(todayDistanceKm)}</div><div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:2}}>based on steps</div></div></div>
@@ -403,7 +401,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
-      <a href={storeUrl} target="_blank" rel="noopener noreferrer" className="btn-secondary" style={{textDecoration:'none',display:'flex',alignItems:'center',justifyContent:'center',marginTop:16}}>Shop Protlys products</a>
       <div style={{marginTop:20,textAlign:'center'}}><BuildStamp />
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
