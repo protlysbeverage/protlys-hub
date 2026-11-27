@@ -70,7 +70,9 @@ export default function InviteClient() {
     if (!inviteUrl) return;
     const message = `Join me on Protlys, track your steps and protein. ${inviteUrl}`;
     try {
-      if (navigator.share) await navigator.share({ title: 'Join me on Protlys', text: message, url: inviteUrl });
+      if (window.ProtlysNative?.shareText) {
+        if (!window.ProtlysNative.shareText('Join me on Protlys', message)) throw new Error('Native sharing is unavailable.');
+      } else if (navigator.share) await navigator.share({ title: 'Join me on Protlys', text: message, url: inviteUrl });
       else window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');
     } catch (shareError) {
       if (shareError?.name !== 'AbortError') window.open(`https://wa.me/?text=${encodeURIComponent(message)}`, '_blank', 'noopener,noreferrer');

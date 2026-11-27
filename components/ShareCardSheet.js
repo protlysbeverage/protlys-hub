@@ -146,20 +146,47 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     return()=>{cancelled=true;cancel?.()};
   },[open,mounted,selected,assets,shareData,username,avatarUrl]);
 
+  async function blobToBase64(blob) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || '');
+        const comma = value.indexOf(',');
+        resolve(comma >= 0 ? value.slice(comma + 1) : value);
+      };
+      reader.onerror = () => reject(reader.error || new Error('Could not prepare image.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
   async function share(){
     if(busy||!shareData.hasData)return;
     setBusy(true);setMessage('');
     try{
       const blob=await createExportBlob(selected);
-      const file=new File([blob],'protlys-share-card.png',{type:'image/png'});
-      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'My Protlys progress'})}
-      else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+      if(window.ProtlysNative?.shareImage){
+        const encoded=await blobToBase64(blob);
+        if(!window.ProtlysNative.shareImage(encoded,'image/png','My Protlys progress'))throw new Error('Native sharing is unavailable.');
+      }else{
+        const file=new File([blob],'protlys-share-card.png',{type:'image/png'});
+        if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]}))){await navigator.share({files:[file],title:'My Protlys progress'})}
+        else{const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000)}
+      }
     }catch(error){if(error?.name!=='AbortError'){console.error('[Protlys ShareSheet] share failed',error);setMessage('Could not share the card.')}}finally{setBusy(false)}
   }
   async function save(){
     if(busy||!shareData.hasData)return;
     setBusy(true);setMessage('');
-    try{const blob=await createExportBlob(selected);const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setMessage('Image saved.')}catch(error){console.error('[Protlys ShareSheet] save failed',error);setMessage('Could not save the share card.')}finally{setBusy(false)}
+    try{
+      const blob=await createExportBlob(selected);
+      if(window.ProtlysNative?.saveImage){
+        const encoded=await blobToBase64(blob);
+        if(!window.ProtlysNative.saveImage(encoded,'protlys-share-card.png','image/png'))throw new Error('Native image saving is unavailable.');
+        setMessage('Image saved to Pictures/Protlys.');
+      }else{
+        const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download='protlys-share-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(url),1000);setMessage('Image saved.');
+      }
+    }catch(error){console.error('[Protlys ShareSheet] save failed',error);setMessage('Could not save the share card.')}finally{setBusy(false)}
   }
   async function copyLink(){try{await navigator.clipboard.writeText(publicShareUrl(shareData.metric,shareData));setMessage('Link copied.')}catch(error){console.error('[Protlys ShareSheet] copy failed',error);setMessage('Could not copy the link.')}}
   function touchStart(e){touchStartRef.current=e.touches?.[0]?.clientY??null}
