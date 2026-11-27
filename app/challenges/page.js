@@ -21,6 +21,9 @@ export default async function ChallengesPage({ searchParams }) {
   }
   if (!user) return <AppShell><div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:28}}><span className="eyebrow">Challenges</span><h1 style={{fontSize:28,marginTop:6}}>Build the habit together.</h1><p className="subhead" style={{marginTop:8}}>Sign in to join Protlys community challenges.</p></div></AppShell>;
 
+  const { data: isAdminValue } = await supabase.rpc('is_current_user_admin');
+  const isAdmin = isAdminValue === true;
+
   const [blockedIds, , challengeResult, groupResult] = await Promise.all([
     getBlockedUserIds(supabase, user.id),
     supabase.rpc('ensure_founding_250_member'),
@@ -83,6 +86,6 @@ export default async function ChallengesPage({ searchParams }) {
   const groupLastMessages=Object.fromEntries(groupIds.map(gid=>{const m=latestByGroup[gid];const p=m?groupProfileMap[m.sender_id]:null;return [gid,m?{...m,sender_name:p?.display_name||'Member'}:null]}));
   return <AppShell><ChallengesClient
     challenges={challenges} joinedIds={joinedIds} memberCounts={memberCounts} memberPreviews={memberPreviews}
-    userId={user.id} progressByChallenge={progressByChallenge} challengeLeaderboards={challengeLeaderboards} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
+    userId={user.id} isAdmin={isAdmin} progressByChallenge={progressByChallenge} challengeLeaderboards={challengeLeaderboards} groups={groupRows} groupMembers={groupMembersById} groupLastMessages={groupLastMessages} unreadCounts={unreadCounts} foundingCount={foundingCount}
   /></AppShell>;
 }
