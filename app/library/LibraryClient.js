@@ -3,6 +3,7 @@
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 
+const BLOG_ENABLED = process.env.NEXT_PUBLIC_BLOG_ENABLED === 'true';
 const BLOG_CACHE_KEY = 'protlys-blog-posts-v1';
 const BLOG_HOME = 'https://protlys.com/blogs/news';
 
@@ -12,6 +13,8 @@ export default function LibraryClient() {
   const [offline, setOffline] = useState(false);
 
   useEffect(() => {
+    if (!BLOG_ENABLED) return undefined;
+
     let cancelled = false;
     async function refresh({ quiet = false } = {}) {
       if (!quiet) setLoading(true);
@@ -57,6 +60,29 @@ export default function LibraryClient() {
       window.clearInterval(timer);
     };
   }, []);
+
+  if (!BLOG_ENABLED) {
+    return (
+      <div className="hub-page" style={{maxWidth:760,minHeight:'calc(100dvh - 190px)',margin:'0 auto',padding:'28px 20px 34px',display:'flex',alignItems:'center',justifyContent:'center',boxSizing:'border-box',background:'var(--paper)'}}>
+        <div style={{width:'100%',maxWidth:430,display:'flex',flexDirection:'column',alignItems:'center',textAlign:'center',gap:0}}>
+          <div aria-hidden="true" style={{width:76,height:76,borderRadius:24,display:'grid',placeItems:'center',background:'var(--green-soft)',color:'var(--green-dark)',marginBottom:22}}>
+            <svg viewBox="0 0 48 48" width="38" height="38" fill="none" stroke="currentColor" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round">
+              <path d="M10 8.5h19a7 7 0 0 1 7 7v24H17a7 7 0 0 1-7-7z"/>
+              <path d="M10 32.5a7 7 0 0 1 7-7h19M18 16h11M18 21h8M29 8.5v7h7"/>
+            </svg>
+          </div>
+          <div className="eyebrow" style={{marginBottom:8}}>Protlys Journal</div>
+          <h1 style={{fontSize:28,lineHeight:1.15,letterSpacing:'-.035em',margin:'0 0 12px',color:'var(--ink)'}}>Blog and learn</h1>
+          <p style={{fontSize:14,lineHeight:1.7,color:'var(--ink-70)',margin:'0 0 25px',maxWidth:360}}>
+            Our journal is coming soon. Practical ideas on protein, movement and everyday wellbeing are on the way.
+          </p>
+          <Link href="/feed" className="btn-primary" style={{display:'inline-flex',alignItems:'center',justifyContent:'center',minHeight:48,minWidth:160,padding:'0 24px',borderRadius:999,textDecoration:'none',fontSize:14,fontWeight:800}}>
+            Back to feed
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="hub-page" style={{maxWidth:980,margin:'0 auto'}}>
