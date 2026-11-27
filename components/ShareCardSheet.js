@@ -22,10 +22,12 @@ function SaveGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill
 function LinkGlyph(){return <svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.07.07l2-2a5 5 0 0 0-7.07-7.07l-1.15 1.15"/><path d="M14 11a5 5 0 0 0-7.07-.07l-2 2A5 5 0 0 0 12 20l1.15-1.15"/></svg>}
 function assetDataUrl(path){return fetch(path,{cache:'force-cache'}).then(r=>{if(!r.ok)throw new Error('Unable to load '+path);return r.blob()}).then(blob=>new Promise((resolve,reject)=>{const f=new FileReader();f.onload=()=>resolve(f.result);f.onerror=reject;f.readAsDataURL(blob)}))}
 async function waitForImages(node){await Promise.all([...node.querySelectorAll('img')].map(async img=>{if(img.decode)try{await img.decode();return}catch{}if(img.complete)return;await new Promise(resolve=>{img.addEventListener('load',resolve,{once:true});img.addEventListener('error',resolve,{once:true})})}))}
-function computeScale(cardWidth=360,cardHeight=640,actionHeight=116){
+function computeScale(cardWidth=360,cardHeight=640,availableWidth,availableHeight){
   if(typeof window==='undefined')return 1;
-  const w=(window.innerWidth-32)/cardWidth;
-  const h=(window.innerHeight-56-42-actionHeight-72)/cardHeight;
+  const width=Number(availableWidth)||window.innerWidth-32;
+  const height=Number(availableHeight)||window.innerHeight-56-42-116-72;
+  const w=(width-8)/cardWidth;
+  const h=(height-20)/cardHeight;
   return Math.max(0.35,Math.min(1.2,w,h));
 }
 function idle(fn){if(typeof window==='undefined')return()=>{};if('requestIdleCallback'in window){const id=window.requestIdleCallback(fn,{timeout:500});return()=>window.cancelIdleCallback?.(id)}const id=window.setTimeout(fn,120);return()=>window.clearTimeout(id)}
@@ -63,6 +65,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
   const [message,setMessage]=useState('');
   const [scale,setScale]=useState(1);
   const cardHostRef=useRef(null);
+  const previewRef=useRef(null);
   const historyOpenRef=useRef(false);
   const touchStartRef=useRef(null);
   const cacheRef=useRef(new Map());
@@ -74,8 +77,16 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
     setSelected(isMeditation?'mist':'dark');
     setMessage('');
     setBusy(false);
-    setScale(computeScale(cardWidth,cardHeight,actionHeight));
-    const onResize=()=>setScale(computeScale(cardWidth,cardHeight,actionHeight));
+    const updateScale=()=>{
+      const node=previewRef.current;
+      const width=node?.clientWidth||window.innerWidth-32;
+      const height=node?.clientHeight||window.innerHeight-56-42-actionHeight-72;
+      setScale(computeScale(cardWidth,cardHeight,width,height));
+    };
+    updateScale();
+    const observer=typeof ResizeObserver!=='undefined'&&previewRef.current?new ResizeObserver(updateScale):null;
+    if(observer&&previewRef.current)observer.observe(previewRef.current);
+    const onResize=()=>updateScale();
     window.addEventListener('resize',onResize);
     window.addEventListener('orientationchange',onResize);
 
@@ -105,7 +116,7 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       }catch(error){console.error('[Protlys ShareSheet] asset load failed',error);setMessage('Some share assets could not be loaded.')}
     })();
 
-    return()=>{window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);window.removeEventListener('popstate',onPop);window.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;document.body.style.touchAction=previousTouch};
+    return()=>{observer?.disconnect();window.removeEventListener('resize',onResize);window.removeEventListener('orientationchange',onResize);window.removeEventListener('popstate',onPop);window.removeEventListener('keydown',onKey);document.body.style.overflow=previousOverflow;document.body.style.touchAction=previousTouch};
   },[open,shareData.metric,isMeditation,cardWidth,cardHeight,actionHeight]);
 
   function closeSheet(){
@@ -202,8 +213,8 @@ function ShareCardSheetInner({open,onClose,data=null,metric,value,unit,label,sub
       </div>
       {isMeditation ? (
         <div style={{display:'flex',flexDirection:'column',flex:'1 1 auto',minHeight:0,overflow:'hidden'}}>
-          <div style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 16px'}}>
-            {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:360*scale,height:640*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
+          <div ref={previewRef} style={{flex:'1 1 auto',minHeight:0,display:'flex',alignItems:'center',justifyContent:'center',overflow:'auto',padding:'4px 0 16px'}}> 
+            {shareData.hasData?<CardPreview data={shareData} type={shareData.type} look={selected} assets={assets} username={username} avatarUrl={avatarUrl} scale={scale} cardWidth={cardWidth} cardHeight={cardHeight}/>:<div style={{width:cardWidth*scale,height:cardHeight*scale,display:'grid',placeItems:'center',background:'#232924',color:'#FFFFFF',borderRadius:16,padding:24,boxSizing:'border-box',textAlign:'center'}}>No data to share yet.</div>}
           </div>
           <div style={{height:42,flex:'0 0 42px',display:'flex',justifyContent:'center',gap:8,alignItems:'center',marginTop:24,marginBottom:16}}>
             {lookOptions.map(look=><button key={look} type="button" aria-pressed={selected===look} onPointerUp={e=>{e.stopPropagation();setSelected(look)}} style={{height:42,minWidth:82,padding:'0 14px',border:'1px solid '+(selected===look?'#4F9F35':'#D7DDD8'),borderRadius:21,background:selected===look?(look==='light'?'#E9EFE7':'#323A33'):'#FFFFFF',color:selected===look?(look==='light'?'#111111':'#FFFFFF'):'#111111',fontSize:12,fontWeight:800}}>{labels[look]}</button>)}
