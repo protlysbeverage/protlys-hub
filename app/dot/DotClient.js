@@ -60,7 +60,7 @@ export default function PROTClient() {
   return (
     <>
       <style>{`
-        .protlys-prot-launch{position:fixed;right:16px;bottom:88px;z-index:10001;width:50px;height:50px;border:1px solid rgba(15,42,74,.12);border-radius:50%;background:var(--white,#fff);color:var(--green-dark,#1f7a45);box-shadow:0 8px 24px rgba(15,42,74,.16);display:grid;place-items:center;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
+        .protlys-prot-launch{position:relative;right:auto;bottom:auto;z-index:10001;width:44px;height:44px;flex:0 0 44px;margin:0;border:1px solid rgba(15,42,74,.12);border-radius:50%;background:var(--white,#fff);color:var(--green-dark,#1f7a45);box-shadow:0 8px 24px rgba(15,42,74,.16);display:grid;place-items:center;cursor:pointer;transition:transform .16s ease,box-shadow .16s ease}
         .protlys-prot-launch:hover{transform:translateY(-2px);box-shadow:0 11px 28px rgba(15,42,74,.2)}
         .protlys-prot-launch span{width:11px;height:11px;border-radius:50%;background:var(--green,#2e9e5b);box-shadow:0 0 0 5px var(--green-soft,#e4f3ea)}
         .protlys-prot-panel{position:fixed;right:16px;bottom:150px;z-index:10002;width:min(390px,calc(100vw - 24px));height:min(620px,calc(100dvh - 174px));display:flex;flex-direction:column;background:var(--card,#fff);color:var(--ink,#0f2a4a);border:1px solid var(--line,rgba(15,42,74,.12));border-radius:24px;box-shadow:0 24px 60px rgba(15,42,74,.2);overflow:hidden}
@@ -76,7 +76,7 @@ export default function PROTClient() {
         .protlys-dark .protlys-prot-panel{background:var(--card,#111820);color:var(--ink,#f2f5f7);border-color:rgba(255,255,255,.1);box-shadow:0 24px 60px rgba(0,0,0,.45)}
         .protlys-dark .protlys-prot-msg.user{background:var(--green,#2e9e5b);color:#07140c}
         .protlys-dark .protlys-prot-starters button{border-color:rgba(255,255,255,.12)}
-        @media(max-width:899px){.protlys-prot-launch{bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 16px);right:14px}.protlys-prot-panel{right:12px;bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 16px);width:calc(100vw - 24px);height:min(680px,calc(100dvh - 120px - var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px))));border-radius:22px}}
+        @media(max-width:899px){.protlys-prot-launch{bottom:auto;right:auto;justify-self:end}.protlys-prot-panel{right:12px;bottom:calc(88px + var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px)) + 16px);width:calc(100vw - 24px);height:min(680px,calc(100dvh - 120px - var(--protlys-system-bottom-inset, env(safe-area-inset-bottom, 0px))));border-radius:22px}}
         @media(prefers-reduced-motion:reduce){.protlys-prot-launch{transition:none}}
       `}</style>
       <button className="protlys-prot-launch" type="button" aria-label={open ? 'Close PROT' : 'Open PROT'} onClick={() => setOpen((value) => !value)}>

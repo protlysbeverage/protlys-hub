@@ -49,7 +49,9 @@ export default function AppShell({ children }) {
 
   return <div className="protlys-app"><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
-    .protlys-app .screen:has(.account-screen-content) { padding-bottom:calc(67px + env(safe-area-inset-bottom,0px)) !important; }
+    .protlys-app .screen,
+    .protlys-app .screen:has(.dashboard-mascot-wrap),
+    .protlys-app .screen:has(.account-screen-content) { padding-bottom:calc(68px + env(safe-area-inset-bottom,0px) + 24px) !important; }
     .protlys-app .menu-header-button { width:44px;height:44px;display:grid;place-items:center;border:1px solid var(--line);border-radius:50%;background:var(--white);color:var(--ink);cursor:pointer;transition:background .15s ease,border-color .15s ease,transform .15s ease; }
     .protlys-app .menu-header-button:hover { background:var(--green-soft);border-color:var(--green); }
     .protlys-app .menu-header-button:active { transform:scale(.96); }
@@ -287,11 +289,12 @@ export default function AppShell({ children }) {
     }
     @media (max-width:899px) {
       .protlys-app .desktop-sidebar { display:none!important; }
-      .protlys-app .app-header { display:grid!important;grid-template-columns:1fr auto 1fr!important;min-height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;padding:calc(9px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px))) 14px 9px!important;box-sizing:border-box!important; }
+      .protlys-app .app-header { display:grid!important;grid-template-columns:44px minmax(0,1fr) 44px 44px!important;min-height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;height:calc(72px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px)))!important;padding:calc(9px + var(--protlys-system-top-inset, env(safe-area-inset-top, 0px))) 14px 9px!important;box-sizing:border-box!important; }
       .protlys-app .screen .screen-pad:first-of-type { padding-top:12px!important; }
       .protlys-app .app-header > .theme-toggle { grid-column:1!important;grid-row:1!important;justify-self:start!important;align-self:center!important; }
       .protlys-app .app-header > .brand-link { grid-column:2!important;grid-row:1!important;justify-self:center!important; }
-      .protlys-app .app-header > .menu-header-button { grid-column:3!important;grid-row:1!important;justify-self:end!important;margin-left:0!important; }
+      .protlys-app .app-header > .protlys-prot-launch { grid-column:3!important;grid-row:1!important;justify-self:end!important; }
+      .protlys-app .app-header > .menu-header-button { grid-column:4!important;grid-row:1!important;justify-self:end!important;margin-left:0!important; }
       .protlys-app .brand-link .logo { height:50px!important; }
     }
   `}</style>
@@ -311,6 +314,7 @@ export default function AppShell({ children }) {
       <div className="app-header">
         <ThemeToggle />
         <Link className="brand-link" href="/" aria-label="Protlys Hub home"><img className="logo" src={darkTheme ? "/protlys-logo-dark.png" : logoSrc} alt="Protlys" width="2000" height="973" /></Link>
+        {!overlayOpen && <DotClient />}
         <button type="button" className="menu-header-button" aria-label="Open navigation menu" aria-expanded={menuOpen} aria-controls="protlys-hub-menu" onClick={()=>setMenuOpen(true)}>
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true"><path d="M4 6h16M4 12h16M4 18h16"/></svg>
         </button>
@@ -331,8 +335,6 @@ export default function AppShell({ children }) {
     ) : null}
 
     <section className="screen active">{children}</section>
-
-    {!chatMode&&!overlayOpen&&<DotClient />}
 
     {!chatMode&&!overlayOpen&&<nav className="bottom-nav" role="navigation" aria-label="Protlys Hub primary navigation" >
       {NAV_ITEMS.map(item=>{
