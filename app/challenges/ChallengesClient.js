@@ -39,9 +39,14 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const [form,setForm]=useState({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});
   useEffect(()=>{
     if(!details)return;
-    const previousOverflow=document.body.style.overflow;
+    const previousBodyOverflow=document.body.style.overflow;
+    const previousRootOverflow=document.documentElement.style.overflow;
     document.body.style.overflow='hidden';
-    return()=>{document.body.style.overflow=previousOverflow};
+    document.documentElement.style.overflow='hidden';
+    return()=>{
+      document.body.style.overflow=previousBodyOverflow;
+      document.documentElement.style.overflow=previousRootOverflow;
+    };
   },[details]);
   const selected=useMemo(()=>challenges.find(c=>Number(c.id)===details),[challenges,details]);
   const selectedLeaderboard=selected?(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]):[];
