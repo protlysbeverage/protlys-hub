@@ -1,6 +1,8 @@
 -- Challenge management: creators and explicitly listed admins may edit/delete.
 -- Founding 250 is intentionally locked, including for admins.
 
+create schema if not exists private;
+
 create table if not exists private.admin_users (
   user_id uuid primary key references auth.users(id) on delete cascade,
   created_at timestamptz not null default now()
