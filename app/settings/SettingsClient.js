@@ -35,12 +35,12 @@ export default function SettingsClient({name,bio,email,targetG,joinedAt,showGrou
         setMessage(error.message || 'Could not delete your account. No changes were made to your sign-in account.');
         return;
       }
-      try{localStorage.clear()}catch{}
+      try{window.ProtlysNative?.clearSyncToken?.();localStorage.clear()}catch{}
       await supabase.auth.signOut();
       window.location.href='/delete-account?deleted=1';
     });
   }
-  async function signOut(){const supabase=createClient();await supabase.auth.signOut();router.push('/login');router.refresh();}
+  async function signOut(){try{window.ProtlysNative?.clearSyncToken?.()}catch{}const supabase=createClient();await supabase.auth.signOut();router.push('/login');router.refresh();}
   const joined=joinedAt?new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'long',year:'numeric'}).format(new Date(joinedAt)):'—';
   return <div className="screen-pad" style={{maxWidth:600,margin:'0 auto',paddingTop:24}}>
     <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><span className="eyebrow">Account</span><h1 style={{fontSize:25,marginTop:4}}>Settings</h1></div><button className="link-btn" onClick={()=>router.push('/account')}>Back</button></div>

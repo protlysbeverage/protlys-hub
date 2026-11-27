@@ -1,11 +1,17 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
 export default function NativeStepTrackerBootstrap({ userId }) {
+  const previousUserId = useRef(null);
   useEffect(() => {
-    if (!userId) return undefined;
+    if (!userId) {
+      if (previousUserId.current) window.ProtlysNative?.clearSyncToken?.();
+      previousUserId.current = null;
+      return undefined;
+    }
+    previousUserId.current = String(userId);
     let cancelled = false;
     let connecting = false;
     const connectNative = async () => {
@@ -35,9 +41,11 @@ export default function NativeStepTrackerBootstrap({ userId }) {
     };
     connectNative();
     window.addEventListener('protlys:native-ready', connectNative);
+    window.addEventListener('online', connectNative);
     return () => {
       cancelled = true;
       window.removeEventListener('protlys:native-ready', connectNative);
+      window.removeEventListener('online', connectNative);
     };
   }, [userId]);
 
