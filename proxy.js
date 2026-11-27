@@ -57,8 +57,10 @@ export async function proxy(request) {
   } = await supabase.auth.getUser();
 
   const pathname = request.nextUrl.pathname;
-  const publicExactPaths = ['/', '/robots.txt', '/sitemap.xml', '/privacy', '/terms', '/delete-account'];
-  const publicPathPrefixes = ['/login', '/signup', '/reset-password', '/calculator', '/c', '/challenges'];
+  const publicExactPaths = ['/', '/robots.txt', '/sitemap.xml', '/privacy', '/terms', '/delete-account', '/api/blog'];
+  // The journal page and its future article routes are public; the feed API
+  // must return JSON to signed-out clients when BLOG_ENABLED is switched on.
+  const publicPathPrefixes = ['/login', '/signup', '/reset-password', '/calculator', '/c', '/challenges', '/library', '/api/blog/'];
   const isPublicPath = publicExactPaths.includes(pathname) || publicPathPrefixes.some((path) => pathname.startsWith(path));
 
   if (!user && !isPublicPath) {
