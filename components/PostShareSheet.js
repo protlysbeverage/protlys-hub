@@ -88,17 +88,45 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
       return blob;
     }finally{holder.remove()}
   }
+  async function blobToBase64(blob) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || '');
+        const comma = value.indexOf(',');
+        resolve(comma >= 0 ? value.slice(comma + 1) : value);
+      };
+      reader.onerror = () => reject(reader.error || new Error('Could not prepare image.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
   async function share(){
     if(busy)return;setBusy(true);setMessage('');
     try{
-      const blob=await exportBlob();const file=new File([blob],'protlys-post-card.png',{type:'image/png'});
-      if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({files:[file],title:'Protlys post'});
-      else{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='protlys-post-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+      const blob=await exportBlob();
+      if(window.ProtlysNative?.shareImage){
+        const encoded=await blobToBase64(blob);
+        if(!window.ProtlysNative.shareImage(encoded,'image/png','Protlys post'))throw new Error('Native sharing is unavailable.');
+      }else{
+        const file=new File([blob],'protlys-post-card.png',{type:'image/png'});
+        if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({files:[file],title:'Protlys post'});
+        else{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='protlys-post-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
+      }
     }catch(e){if(e?.name!=='AbortError')setMessage('Could not share the card.')}finally{setBusy(false)}
   }
   async function save(){
     if(busy)return;setBusy(true);setMessage('');
-    try{const blob=await exportBlob();const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='protlys-post-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setMessage('Image saved.')}catch{setMessage('Could not save the card.')}finally{setBusy(false)}
+    try{
+      const blob=await exportBlob();
+      if(window.ProtlysNative?.saveImage){
+        const encoded=await blobToBase64(blob);
+        if(!window.ProtlysNative.saveImage(encoded,'protlys-post-card.png','image/png'))throw new Error('Native image saving is unavailable.');
+        setMessage('Image saved to Pictures/Protlys.');
+      }else{
+        const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='protlys-post-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setMessage('Image saved.');
+      }
+    }catch{setMessage('Could not save the card.')}finally{setBusy(false)}
   }
   async function copyLink(){
     try{await navigator.clipboard.writeText(publicUrl(post.id));setMessage('Link copied.')}catch{setMessage('Could not copy the link.')}

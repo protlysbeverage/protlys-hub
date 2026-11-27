@@ -55,9 +55,32 @@ export default function MilestoneShareCard({milestone,profile,shareLabel='Share'
     catch(e){console.error(e);setPreviewError('Could not create preview.')}
     finally{setPreviewLoading(false)}
   }
+  async function blobToBase64(blob) {
+    return await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => {
+        const value = String(reader.result || '');
+        const comma = value.indexOf(',');
+        resolve(comma >= 0 ? value.slice(comma + 1) : value);
+      };
+      reader.onerror = () => reject(reader.error || new Error('Could not prepare image.'));
+      reader.readAsDataURL(blob);
+    });
+  }
+
   async function saveImage(){
     if(busy||previewLoading)return;
-    try{const canvas=await draw(),png=await new Promise(r=>canvas.toBlob(r,'image/png'));if(!png)throw Error('Could not create share image.');const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setMessage('Image saved.')}
+    try{
+      const canvas=await draw(),png=await new Promise(r=>canvas.toBlob(r,'image/png'));
+      if(!png)throw Error('Could not create share image.');
+      if(window.ProtlysNative?.saveImage){
+        const encoded=await blobToBase64(png);
+        if(!window.ProtlysNative.saveImage(encoded,'protlys-milestone.png','image/png'))throw Error('Native image saving is unavailable.');
+        setMessage('Image saved to Pictures/Protlys.');
+      }else{
+        const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);setMessage('Image saved.');
+      }
+    }
     catch(e){console.error(e);setMessage('Could not save the image.')}
   }
   async function copyLink(){
@@ -65,7 +88,7 @@ export default function MilestoneShareCard({milestone,profile,shareLabel='Share'
     catch(e){console.error(e);setMessage('Could not copy the link.')}
   }
   useEffect(()=>{if(open)renderPreview()},[open,showIdentity]);
-  async function share(){if(busy)return;setBusy(true);setMessage('');try{const c=await draw(),png=await new Promise(r=>c.toBlob(r,'image/png'));if(!png)throw Error('Could not create share image.');const file=new File([png],'protlys-milestone.png',{type:'image/png'});const name=showIdentity&&profile?.display_name?.trim()?profile.display_name.trim():'';if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:milestone.title,text:milestone.shareText(name),url:SHARE_URL});setMessage('Milestone shared.')}else{const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(SHARE_URL);setMessage('Image downloaded. Link copied.')}}catch(e){if(e?.name!=='AbortError'){console.error(e);setMessage('Could not create or share the milestone card. Please try again.')}}finally{setBusy(false)}}
+  async function share(){if(busy)return;setBusy(true);setMessage('');try{const c=await draw(),png=await new Promise(r=>c.toBlob(r,'image/png'));if(!png)throw Error('Could not create share image.');const name=showIdentity&&profile?.display_name?.trim()?profile.display_name.trim():'';if(window.ProtlysNative?.shareImage){const encoded=await blobToBase64(png);const text=milestone.shareText(name)+' '+SHARE_URL;if(!window.ProtlysNative.shareImage(encoded,'image/png',milestone.title,text))throw Error('Native sharing is unavailable.');setMessage('Milestone shared.')}else{const file=new File([png],'protlys-milestone.png',{type:'image/png'});if(navigator.share&&navigator.canShare?.({files:[file]})){await navigator.share({files:[file],title:milestone.title,text:milestone.shareText(name),url:SHARE_URL});setMessage('Milestone shared.')}else{const u=URL.createObjectURL(png),a=document.createElement('a');a.href=u;a.download='protlys-milestone.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000);if(navigator.clipboard?.writeText)await navigator.clipboard.writeText(SHARE_URL);setMessage('Image downloaded. Link copied.')}}}catch(e){if(e?.name!=='AbortError'){console.error(e);setMessage('Could not create or share the milestone card. Please try again.')}}finally{setBusy(false)}}
   return <>
     <button type="button" className="motion-tap" onClick={()=>setOpen(true)} disabled={busy}
       aria-label={shareLabel} style={{width:30,height:30,padding:0,border:'1px solid var(--line)',borderRadius:'50%',background:'var(--white)',color:'var(--ink)',display:'grid',placeItems:'center',cursor:busy?'default':'pointer',flexShrink:0}} title="Share">

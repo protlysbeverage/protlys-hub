@@ -30,10 +30,13 @@ function EventCard({ event, isGoing, onRsvp }) {
 
   function share() {
     const text = `${event.title} — ${event.event_date}${event.location ? ' at ' + event.location : ''}`;
-    if (navigator.share) {
-      navigator.share({ title: event.title, text, url: event.link_url || window.location.href });
+    const url = event.link_url || window.location.href;
+    if (window.ProtlysNative?.shareText) {
+      window.ProtlysNative.shareText(event.title, text + ' ' + url);
+    } else if (navigator.share) {
+      navigator.share({ title: event.title, text, url });
     } else {
-      navigator.clipboard.writeText(text);
+      navigator.clipboard.writeText(text + ' ' + url);
       alert('Event details copied!');
     }
   }
