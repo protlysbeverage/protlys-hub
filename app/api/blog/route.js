@@ -1,5 +1,8 @@
 export const revalidate = 900;
 
+// One switch controls the journal in both the app and API. Default off.
+const BLOG_ENABLED = process.env.NEXT_PUBLIC_BLOG_ENABLED === 'true';
+
 const STORE_URL = (process.env.NEXT_PUBLIC_SHOPIFY_STORE_URL || 'https://protlys.myshopify.com').replace(/\/+$/, '');
 const BLOG_FEED_URL = STORE_URL + '/blogs/news.atom?limit=30';
 
@@ -63,6 +66,12 @@ function parseEntry(entry) {
 }
 
 export async function GET() {
+  if (!BLOG_ENABLED) {
+    return Response.json({ enabled: false, posts: [] }, {
+      headers: { 'Cache-Control': 'no-store, max-age=0' },
+    });
+  }
+
   try {
     const response = await fetch(BLOG_FEED_URL, {
       headers: { Accept: 'application/atom+xml, application/xml, text/xml' },
