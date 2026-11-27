@@ -4,6 +4,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import dynamic from 'next/dynamic';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import BuildStamp from '@/components/BuildStamp';
 
 const MemberShareSheet = dynamic(() => import('@/components/MemberShareSheet'), { ssr: false });
 const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
@@ -403,6 +404,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       <div style={{marginTop:20,textAlign:'center'}}>
         {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
       </div>
+      <div style={{marginTop:10,textAlign:'center'}}><BuildStamp /></div>
     </div>
     <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Number(profile?.founding_member)===1 || Number(profile?.founding_member)===true || true} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
   </>;
