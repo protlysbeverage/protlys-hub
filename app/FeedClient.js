@@ -22,21 +22,24 @@ const PostShareSheet = dynamic(() => import('@/components/PostShareSheet'), { ss
 const ProtlysLoader = dynamic(() => import('@/app/calculator/ProtlysLoader').then(module => module.ProtlysLoader), { ssr: false });
 
 const POST_TYPES = [
-  { value: 'progress', label: 'Progress', icon: 'chart' },
-  { value: 'run', label: 'Run/Walk', icon: 'run' },
-  { value: 'workout', label: 'Workout', icon: 'dumbbell' },
+  { value: 'progress', label: 'Progress', icon: 'chart-bar' },
+  { value: 'run', label: 'Run', icon: 'run' },
+  { value: 'workout', label: 'Workout', icon: 'barbell' },
   { value: 'milestone', label: 'Milestone', icon: 'flag' },
-  { value: 'general', label: 'Post', icon: 'message' },
+  { value: 'general', label: 'Post', icon: 'message-circle' },
 ];
 
 function Icon({ name, size = 18, strokeWidth = 1.8 }) {
   const paths = {
     image: <><rect x="3" y="4" width="18" height="16" rx="2" /><circle cx="8.5" cy="9" r="1.5" /><path d="M3 16l5-5 4 4 3-3 6 6" /></>,
     chart: <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
+    'chart-bar': <><path d="M4 19V10" /><path d="M10 19V5" /><path d="M16 19v-7" /><path d="M22 19H2" /></>,
     run: <><circle cx="15" cy="5" r="2" /><path d="m12 10 3-2 3 3 3 1M12 10l-2 4-4 2M10 14l3 2 1 5M13 16l4-2 3 2" /></>,
     dumbbell: <><path d="M6 9v6M3 10v4M18 9v6M21 10v4M6 12h12" /></>,
+    barbell: <><path d="M4 8v8M8 6v12M16 6v12M20 8v8M8 12h8" /></>,
     flag: <><path d="M5 21V4" /><path d="M5 4c6-3 8 3 14 0v11c-6 3-8-3-14 0" /></>,
     message: <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l1.8-3.3A7.5 7.5 0 1 1 20 11.5Z" /><path d="M9 11h6M9 14h4" /></>,
+    'message-circle': <><path d="M20 11.5a7.5 7.5 0 0 1-7.5 7.5H5l1.8-3.3A7.5 7.5 0 1 1 20 11.5Z" /><path d="M9 11h6M9 14h4" /></>,
     share: <><circle cx="18" cy="5" r="2.5" /><circle cx="6" cy="12" r="2.5" /><circle cx="18" cy="19" r="2.5" /><path d="m8.2 10.9 7.6-4.5M8.2 13.1l7.6 4.5" /></>,
     more: <><circle cx="5" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="12" cy="12" r="1.2" fill="currentColor" stroke="none" /><circle cx="19" cy="12" r="1.2" fill="currentColor" stroke="none" /></>,
     edit: <><path d="M12 20h9" /><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L8 18l-4 1 1-4Z" /></>,
@@ -103,10 +106,10 @@ function postTypeLabel(value) {
 function postPlaceholder(value) {
   const placeholders = {
     progress: 'Share your progress with the community…',
-    run: 'Tell us about your run or walk…',
-    workout: 'What workout did you complete?',
-    milestone: 'Celebrate a milestone with the community…',
-    general: 'What would you like to share?',
+    run: 'Log your run or walk…',
+    workout: 'What workout did you do?',
+    milestone: 'Share a milestone…',
+    general: 'Write a post…',
   };
   return placeholders[value] || placeholders.general;
 }
@@ -277,7 +280,15 @@ function ComposePost({ profile, onPosted }) {
     setLoading(false); if (result?.error) { setError(result.error); return; }
     if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted();
   }
-  return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 16, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
+  return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 10, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
+    <style>{`
+      .protlys-app .feed-post-type-selector{display:grid!important;grid-template-columns:repeat(5,minmax(0,1fr))!important;gap:4px!important;width:100%!important;margin:0 0 10px!important;padding:0!important;overflow:hidden!important;}
+      .protlys-app .feed-post-type-selector button{box-sizing:border-box!important;width:100%!important;min-width:0!important;max-width:100%!important;height:58px!important;min-height:58px!important;max-height:58px!important;padding:4px 2px!important;border-radius:12px!important;display:flex!important;flex-direction:column!important;align-items:center!important;justify-content:center!important;gap:4px!important;font-size:9px!important;letter-spacing:0!important;line-height:1!important;white-space:nowrap!important;overflow:hidden!important;overflow-wrap:normal!important;text-overflow:ellipsis!important;}
+      .protlys-app .feed-post-type-selector button svg{width:20px!important;height:20px!important;flex:0 0 20px!important;}
+      .protlys-app .feed-post-type-selector button span{display:block;max-width:100%;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;}
+      .protlys-app .feed-post-type-selector button[aria-pressed="true"]{background:#2F9E55!important;border:1px solid #2F9E55!important;color:#fff!important;}
+      .protlys-app .feed-post-type-selector button[aria-pressed="false"]{background:#F7F8F6!important;border:1px solid #E3E8E4!important;color:#111!important;}
+    `}</style>
     <div style={{ display: 'flex', gap: 10, marginBottom: 12 }}><Avatar name={profile?.display_name} url={profile?.avatar_url} /><textarea ref={bodyRef} placeholder={postPlaceholder(postType)} style={{ flex: 1, border: 'none', outline: 'none', fontSize: 14, lineHeight: 1.5, fontFamily: 'inherit', resize: 'vertical', minHeight: 72, whiteSpace: 'pre-wrap', color: 'var(--ink)', background: 'transparent' }} /></div>
     
     {preview && <div style={{ position: 'relative', marginBottom: 12 }}><img src={preview} alt="Selected photo" style={{ width: '100%', borderRadius: 12, maxHeight: 280, objectFit: 'cover' }} /><button onClick={() => { URL.revokeObjectURL(preview); setPreview(null); setImageData(null); if (fileRef.current) fileRef.current.value = ''; }} aria-label="Remove photo" style={{ position: 'absolute', top: 8, right: 8, width: 32, height: 32, borderRadius: '50%', border: 'none', background: 'rgba(0,0,0,.65)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Icon name="x" size={16} /></button></div>}
