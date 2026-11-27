@@ -22,9 +22,15 @@ function calculateCurrentStepStreak(rows){const keys=[...new Set((rows||[]).filt
 function milestoneText(count,cap){if(!cap)return count===0?'Be one of the first to join.':`${count} ${count===1?'person is':'people are'} already in.`;if(count>=cap)return 'The founding 250 is full.';const milestones=[10,25,50,100,150,200,250],next=milestones.find(n=>n>count)||cap,left=next-count;if(count===0)return `Be one of the first ${next} members.`;return `${left} more ${left===1?'member':'members'} to reach ${next}.`}
 function GroupCard({group,members,userId,onOpen,lastMessage,unread=0,onJoin}){const mine=members.some(m=>m.id===userId),count=members.length;const time=lastMessage?messageTime(lastMessage.created_at):'';return <div onClick={()=>mine&&onOpen(group.id)} style={{display:'flex',alignItems:'center',gap:11,minHeight:68,padding:'9px 2px',borderBottom:'1px solid var(--line)',cursor:mine?'pointer':'default'}}><div style={{width:48,height:48,borderRadius:'50%',background:'var(--green-soft)',display:'grid',placeItems:'center',fontSize:22,overflow:'hidden',flexShrink:0}}>{group.image_url?<img src={group.image_url} alt="" style={{width:'100%',height:'100%',objectFit:'cover'}}/>:(group.emoji||group.name?.charAt(0)||'G')}</div><div style={{flex:1,minWidth:0}}><div style={{display:'flex',alignItems:'baseline',justifyContent:'space-between',gap:8}}><strong style={{fontSize:14,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{group.name}</strong>{mine&&<span style={{fontSize:9.5,color:'var(--ink-45)',flexShrink:0}}>{time}</span>}</div>{mine?<div style={{display:'flex',alignItems:'center',gap:7,marginTop:4}}><span style={{flex:1,minWidth:0,fontSize:11.5,color:'var(--ink-45)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{lastMessage?`${lastMessage.sender_name}: ${lastMessage.text||'Photo'}`:'No messages yet'}</span>{unread>0&&<span style={{minWidth:20,height:20,padding:'0 6px',borderRadius:999,background:'var(--green)',color:'#fff',fontSize:10,fontWeight:900,display:'grid',placeItems:'center'}}>{unread>99?'99+':unread}</span>}</div>:<div style={{fontSize:11,color:'var(--ink-45)',marginTop:4}}>{count} {count===1?'member':'members'} · public</div>}</div>{!mine&&group.privacy==='public'&&<button type="button" onClick={e=>{e.stopPropagation();onJoin(group.id)}} className="btn-primary" style={{width:'auto',minHeight:44,margin:0,padding:'0 14px',borderRadius:999}}>Join</button>}</div>}
 
-export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={},memberPreviews={},progressByChallenge={},challengeLeaderboards={},userId,groups=[],groupMembers={},groupLastMessages={},unreadCounts={},activeToday=[],foundingCount=0}){
+export default function ChallengesClient({challenges=[],joinedIds=[],memberCounts={},memberPreviews={},progressByChallenge={},challengeLeaderboards={},userId,isAdmin=false,groups=[],groupMembers={},groupLastMessages={},unreadCounts={},activeToday=[],foundingCount=0}){
   const router=useRouter();
   useEffect(()=>{const refresh=()=>router.refresh();window.addEventListener('protlys:steps-updated',refresh);window.addEventListener('focus',refresh);return()=>{window.removeEventListener('protlys:steps-updated',refresh);window.removeEventListener('focus',refresh)}},[router]);
+  useEffect(()=>{
+    if(!details)return;
+    const previousOverflow=document.body.style.overflow;
+    document.body.style.overflow='hidden';
+    return()=>{document.body.style.overflow=previousOverflow};
+  },[details]);
   const [supabase]=useState(()=>createClient());
   const [tab,setTab]=useState('challenges'),[joined,setJoined]=useState(()=>new Set(joinedIds)),[counts,setCounts]=useState(()=>({...memberCounts}));
   const [lastMessages,setLastMessages]=useState(()=>({...groupLastMessages}));
@@ -38,6 +44,9 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const longPressTimer=useRef(null);
   const [form,setForm]=useState({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});
   const selected=useMemo(()=>challenges.find(c=>Number(c.id)===details),[challenges,details]);
+  const selectedLeaderboard=selected?(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]):[];
+  const selectedPodium=selectedLeaderboard.length>1?selectedLeaderboard.slice(0,3):[];
+  const canManageSelected=!!selected&&selected.name?.trim().toLowerCase()!=='founding 250'&&(isAdmin||selected.creator_id===userId);
   const selectedGroup=useMemo(()=>groups.find(g=>g.id===groupDetails),[groups,groupDetails]);
   const selectedGroupMembers=groupDetails?(groupMembers[groupDetails]||[]).filter(m=>!blockedIds.includes(String(m.id))):[];
   const currentGroupAdmin=selectedGroupMembers.some(m=>m.id===userId&&m.role==='admin') || selectedGroup?.created_by===userId;
@@ -78,11 +87,41 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   function chooseTab(next){setTab(next);window.localStorage.setItem('protlys-challenges-tab',next)}
   function resetForm(){setForm({name:'',description:'',emoji:'👣',stepTarget:'10000',startDate:'',endDate:'',allowTeams:false,visibility:'public',groupId:null});}
   function openCreate(groupId=null){router.push(groupId?'/challenges/new?group='+encodeURIComponent(groupId):'/challenges/new')}
-  function openEdit(challenge){setDetails(null);setShowCreate(false);setEditing(Number(challenge.id));setForm({name:challenge.name||'',description:challenge.description||'',emoji:challenge.emoji||TYPE_META[challenge.challenge_type||'steps']?.icon||'👣',stepTarget:String(challenge.target||challenge.step_target||0),startDate:challenge.start_date||'',endDate:challenge.end_date||'',allowTeams:!!challenge.allow_teams,visibility:challenge.visibility||'public',groupId:challenge.group_id||null})}
+  function canManageChallenge(challenge){
+    return !!challenge&&challenge.name?.trim().toLowerCase()!=='founding 250'&&(isAdmin||challenge.creator_id===userId);
+  }
+  function openEdit(challenge){
+    if(!canManageChallenge(challenge)){setError('Founding 250 is locked.');return;}
+    setDetails(null);setShowCreate(false);setEditing(Number(challenge.id));
+    setForm({name:challenge.name||'',description:challenge.description||'',emoji:challenge.emoji||TYPE_META[challenge.challenge_type||'steps']?.icon||'👣',stepTarget:String(challenge.target||challenge.step_target||0),startDate:challenge.start_date||'',endDate:challenge.end_date||'',allowTeams:!!challenge.allow_teams,visibility:challenge.visibility||'public',groupId:challenge.group_id||null});
+  }
   async function joinChallenge(id){const leaving=joined.has(id);setError('');const before=new Set(joined);const old=Number(counts[id]||0);setJoined(p=>{const n=new Set(p);leaving?n.delete(id):n.add(id);return n});setCounts(p=>({...p,[id]:Math.max(0,old+(leaving?-1:1))}));const {data:{user}}=await supabase.auth.getUser();if(!user){setError('Please sign in to join a challenge.');return}const {error:joinError}=leaving?await supabase.from('challenge_members').delete().eq('challenge_id',id).eq('user_id',user.id):await supabase.from('challenge_members').insert({challenge_id:id,user_id:user.id});if(joinError&&joinError.code!=='23505'){setJoined(before);setCounts(p=>({...p,[id]:old}));setError('We could not update your challenge membership. Please try again.');return}router.refresh()}
   async function createChallenge(ev){ev.preventDefault();setError('');setCreating(true);const start=form.startDate||new Date().toISOString().slice(0,10),end=form.endDate||start;const payload={creator_id:userId,name:form.name.trim(),description:form.description.trim()||null,step_target:Math.max(0,Number(form.stepTarget)||0),start_date:start,end_date:end,visibility:form.groupId?'private':form.visibility,allow_teams:form.allowTeams,group_id:form.groupId||null};const {data:created,error:createError}=await supabase.from('challenges').insert(payload).select('id').single();if(createError){setError(createError.message||'We could not create that challenge.');setCreating(false);return}await supabase.from('challenge_members').insert({challenge_id:created.id,user_id:userId});setShowCreate(false);setCreating(false);resetForm();router.refresh()}
-  async function deleteChallenge(){if(!editing)return;const challengeId=Number(editing);const challengeName=challenges.find(c=>Number(c.id)===challengeId)?.name||'this challenge';if(!window.confirm(`Delete “${challengeName}”? This will remove the challenge and its memberships.`))return;setError('');setSaving(true);const {error:deleteChallengeError}=await supabase.from('challenges').delete().eq('id',challengeId).eq('creator_id',userId);if(deleteChallengeError){setError(deleteChallengeError.message||'We could not delete that challenge.');setSaving(false);return}setEditing(null);setDetails(null);setSaving(false);resetForm();router.refresh()}
-  async function updateChallenge(ev){ev.preventDefault();setError('');setSaving(true);const start=form.startDate||new Date().toISOString().slice(0,10),end=form.endDate||start;const {error:updateError}=await supabase.from('challenges').update({name:form.name.trim(),description:form.description.trim()||null,emoji:form.emoji.trim()||null,step_target:Math.max(0,Number(form.stepTarget)||0),target:Math.max(1,Number(form.stepTarget)||1),start_date:start,end_date:end,visibility:form.groupId?'private':form.visibility,allow_teams:form.allowTeams}).eq('id',editing).eq('creator_id',userId);if(updateError){setError(updateError.message||'We could not update that challenge.');setSaving(false);return}setEditing(null);setSaving(false);resetForm();router.refresh()}
+  async function deleteChallenge(challengeId=editing){
+    if(!challengeId)return;
+    const challenge=challenges.find(c=>Number(c.id)===Number(challengeId));
+    if(!canManageChallenge(challenge)){setError('You do not have permission to delete this challenge.');return;}
+    const challengeName=challenge?.name||'this challenge';
+    if(!window.confirm(`Delete “${challengeName}”? This will remove the challenge and its memberships.`))return;
+    setError('');setSaving(true);
+    const {error:deleteChallengeError}=await supabase.from('challenges').delete().eq('id',Number(challengeId));
+    if(deleteChallengeError){setError(deleteChallengeError.message||'We could not delete that challenge.');setSaving(false);return;}
+    setEditing(null);setDetails(null);setSaving(false);resetForm();router.refresh();
+  }
+  async function updateChallenge(ev){
+    ev.preventDefault();
+    const challenge=challenges.find(c=>Number(c.id)===Number(editing));
+    if(!canManageChallenge(challenge)){setError('You do not have permission to edit this challenge.');return;}
+    setError('');setSaving(true);
+    const start=form.startDate||new Date().toISOString().slice(0,10),end=form.endDate||start;
+    const {error:updateError}=await supabase.from('challenges').update({
+      name:form.name.trim(),description:form.description.trim()||null,emoji:form.emoji.trim()||null,
+      step_target:Math.max(0,Number(form.stepTarget)||0),target:Math.max(1,Number(form.stepTarget)||1),
+      start_date:start,end_date:end,visibility:form.groupId?'private':form.visibility,allow_teams:form.allowTeams
+    }).eq('id',Number(editing));
+    if(updateError){setError(updateError.message||'We could not update that challenge.');setSaving(false);return;}
+    setEditing(null);setSaving(false);resetForm();router.refresh();
+  }
   async function shareChallenge(c){
     const url=`${window.location.origin}/hub/challenges?challenge=${encodeURIComponent(c.id)}${c.visibility==='private'&&c.invite_token?`&invite=${encodeURIComponent(c.invite_token)}`:''}`;
     try {
@@ -123,7 +162,28 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   function blockTarget(target){setModerationMenu(null);setModerationSheet({...target,mode:'block'})}
   async function deleteMessage(id){const {error:deleteError}=await supabase.from('messages').update({deleted_at:new Date().toISOString()}).eq('id',id);if(deleteError)setError(deleteError.message||'Only group admins can moderate messages.')}
   async function removeMember(memberId){if(!currentGroupAdmin||memberId===userId)return;const {error:removeError}=await supabase.from('group_members').delete().eq('group_id',groupDetails).eq('user_id',memberId);if(removeError)setError(removeError.message||'We could not remove that member.');else router.refresh()}
-  function renderChallengeForm(){if(!editing)return null;return <div onClick={()=>setEditing(null)} style={{position:'fixed',inset:0,zIndex:70,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}><form onClick={e=>e.stopPropagation()} onSubmit={updateChallenge} style={{width:'100%',maxWidth:620,maxHeight:'88dvh',overflowY:'auto',background:'var(--white)',borderRadius:22,padding:20}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><h2 style={{fontSize:22,margin:0}}>Edit challenge</h2><button type="button" aria-label="Close" onClick={()=>setEditing(null)} style={{width:44,height:44,border:0,borderRadius:'50%',background:'var(--paper)',fontSize:20}}>×</button></div><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:16}}>Challenge name<input required maxLength={50} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:'100%',marginTop:6}}/></label><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Emoji<input type="text" maxLength={8} value={form.emoji} onChange={e=>setForm({...form,emoji:e.target.value})} placeholder="👣" style={{width:'100%',marginTop:6}}/></label><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>What is it about?<textarea maxLength={200} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:'100%',marginTop:6}}/></label><div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginTop:12}}><label style={{fontSize:11}}>Start<input type="date" value={form.startDate} onChange={e=>setForm({...form,startDate:e.target.value})} style={{width:'100%',marginTop:5}}/></label><label style={{fontSize:11}}>End<input type="date" value={form.endDate} onChange={e=>setForm({...form,endDate:e.target.value})} style={{width:'100%',marginTop:5}}/></label></div><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Privacy<select value={form.visibility} disabled={!!form.groupId} onChange={e=>setForm({...form,visibility:e.target.value})} style={{display:'block',width:'100%',marginTop:6,minHeight:44,border:'1px solid var(--line)',borderRadius:10,padding:'0 10px',background:'var(--white)',color:'var(--ink)'}}><option value="public">Public</option><option value="private">Private</option></select></label><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Target<input type="number" min="1" value={form.stepTarget} onChange={e=>setForm({...form,stepTarget:e.target.value})} style={{width:'100%',marginTop:6}}/></label>{error&&<div role="alert" style={{marginTop:10,color:'#a33',fontSize:12}}>{error}</div>}<button type="button" onClick={deleteChallenge} disabled={saving} style={{width:'100%',height:46,minHeight:46,marginTop:14,border:'1px solid #D94B4B',borderRadius:999,background:'#FFF1F0',color:'#B3261E',fontWeight:850,cursor:'pointer'}}>Delete challenge</button><button className="btn-primary" disabled={saving} style={{width:'100%',height:48,minHeight:48,marginTop:16}}>{saving?'Saving…':'Save changes'}</button></form></div>}
+  function renderChallengeForm(){
+    if(!editing)return null;
+    return <div onClick={()=>setEditing(null)} style={{position:'fixed',inset:0,zIndex:12001,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}>
+      <form onClick={e=>e.stopPropagation()} onSubmit={updateChallenge} style={{width:'100%',maxWidth:620,maxHeight:'90dvh',overflowY:'auto',overscrollBehavior:'contain',background:'var(--white)',borderRadius:22,padding:20,paddingBottom:'calc(20px + env(safe-area-inset-bottom,0px))'}}>
+        <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:-20,background:'var(--white)',zIndex:2,padding:'4px 0 10px'}}>
+          <h2 style={{fontSize:22,margin:0}}>Edit challenge</h2>
+          <button type="button" aria-label="Close" onClick={()=>setEditing(null)} style={{width:44,height:44,border:0,borderRadius:'50%',background:'var(--paper)',fontSize:20}}>×</button>
+        </div>
+        <label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Challenge name<input required maxLength={50} value={form.name} onChange={e=>setForm({...form,name:e.target.value})} style={{width:'100%',marginTop:6}}/></label>
+        <label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Emoji<input type="text" maxLength={8} value={form.emoji} onChange={e=>setForm({...form,emoji:e.target.value})} placeholder="👣" style={{width:'100%',marginTop:6}}/></label>
+        <label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>What is it about?<textarea maxLength={200} value={form.description} onChange={e=>setForm({...form,description:e.target.value})} style={{width:'100%',marginTop:6}}/></label>
+        <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:9,marginTop:12}}>
+          <label style={{fontSize:11}}>Start<input type="date" value={form.startDate} onChange={e=>setForm({...form,startDate:e.target.value})} style={{width:'100%',marginTop:5}}/></label>
+          <label style={{fontSize:11}}>End<input type="date" value={form.endDate} onChange={e=>setForm({...form,endDate:e.target.value})} style={{width:'100%',marginTop:5}}/></label>
+        </div>
+        <label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Privacy<select value={form.visibility} disabled={!!form.groupId} onChange={e=>setForm({...form,visibility:e.target.value})} style={{display:'block',width:'100%',marginTop:6,minHeight:44,border:'1px solid var(--line)',borderRadius:10,padding:'0 10px',background:'var(--white)',color:'var(--ink)'}}><option value="public">Public</option><option value="private">Private</option></select></label>
+        <label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Target<input type="number" min="1" value={form.stepTarget} onChange={e=>setForm({...form,stepTarget:e.target.value})} style={{width:'100%',marginTop:6}}/></label>
+        {error&&<div role="alert" style={{marginTop:10,color:'#a33',fontSize:12}}>{error}</div>}
+        <button className="btn-primary" disabled={saving} style={{width:'100%',height:48,minHeight:48,marginTop:16}}>{saving?'Saving…':'Save changes'}</button>
+      </form>
+    </div>;
+  }
   function renderGroupModal(){if(groupModal!=='edit')return null;return <div onClick={()=>setGroupModal(null)} style={{position:'fixed',inset:0,zIndex:10000,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}><div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:620,maxHeight:'calc(100dvh - 24px)',overflowY:'auto',background:'var(--white)',borderRadius:22,padding:20}}><form onSubmit={e=>{e.preventDefault();saveGroup()}}><div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><span className="eyebrow">Groups</span><h2 style={{fontSize:23,margin:'5px 0 0'}}>Edit group</h2></div><button type="button" aria-label="Close" onClick={()=>setGroupModal(null)} style={{width:44,height:44,border:0,borderRadius:'50%',background:'var(--paper)',fontSize:20}}>×</button></div><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:16}}>Group name<input required maxLength={80} value={groupName} onChange={e=>setGroupName(e.target.value)} style={{width:'100%',marginTop:6}}/></label><label style={{display:'block',fontSize:12,fontWeight:800,marginTop:12}}>Emoji<input maxLength={8} value={groupEmoji} onChange={e=>setGroupEmoji(e.target.value)} style={{width:'100%',marginTop:6}}/></label><button type="submit" className="btn-primary" disabled={groupSaving} style={{width:'100%',height:48,minHeight:48,marginTop:18}}>{groupSaving?'Saving…':'Save changes'}</button></form></div></div>}
   function renderGroupDetail(){
     if(!selectedGroup)return null;
@@ -220,52 +280,60 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
     )}
 
     {details&&selected&&(
-      <div onClick={()=>setDetails(null)} style={{position:'fixed',inset:0,zIndex:50,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:12}}>
-        <div onClick={e=>e.stopPropagation()} style={{width:'100%',maxWidth:620,background:'var(--white)',borderRadius:22,padding:20,maxHeight:'90dvh',overflowY:'auto'}}>
-          <div style={{display:'flex',justifyContent:'space-between'}}>
-            <div>
+      <div onClick={()=>setDetails(null)} style={{position:'fixed',inset:0,zIndex:12000,background:'rgba(15,20,18,.48)',display:'flex',alignItems:'flex-end',justifyContent:'center',padding:0,overscrollBehavior:'contain'}}>
+        <div onClick={e=>e.stopPropagation()} role="dialog" aria-modal="true" aria-label={selected.name+' challenge details'} style={{width:'100%',maxWidth:620,maxHeight:'90dvh',height:'90dvh',background:'var(--white)',borderRadius:'22px 22px 0 0',display:'flex',flexDirection:'column',overflow:'hidden',overscrollBehavior:'contain'}}>
+          <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',position:'sticky',top:0,zIndex:3,flex:'0 0 auto',padding:'18px 20px 14px',background:'var(--white)',borderBottom:'1px solid var(--line)'}}>
+            <div style={{minWidth:0}}>
               <span className="eyebrow">Challenge details</span>
-              <h2 style={{fontSize:24,margin:'5px 0 0'}}>{selected.emoji||(selected.name==='Founding 250'?'🏆':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).icon)} {selected.name}</h2>
+              <h2 style={{fontSize:24,margin:'5px 0 0',overflowWrap:'anywhere'}}>{selected.emoji||(selected.name==='Founding 250'?'🏆':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).icon)} {selected.name}</h2>
             </div>
-            <button type="button" aria-label="Close" onClick={()=>setDetails(null)} style={{width:34,height:34,border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:20,lineHeight:1,cursor:'pointer'}}>×</button>
+            <button type="button" aria-label="Close" onClick={()=>setDetails(null)} style={{width:40,height:40,flex:'0 0 40px',border:0,borderRadius:'50%',background:'var(--paper)',color:'var(--ink-70)',display:'inline-flex',alignItems:'center',justifyContent:'center',fontSize:22,lineHeight:1,cursor:'pointer'}}>×</button>
           </div>
-          <p style={{fontSize:14,lineHeight:1.6,color:'var(--ink-70)',marginTop:14}}>{selected.description||'Join the community and take part together.'}</p>
-          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:16}}>
-            <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
-              <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Dates</div>
-              <strong style={{display:'block',marginTop:4}}>{selected.start_date} → {selected.end_date}</strong>
+          <div style={{flex:'1 1 auto',minHeight:0,overflowY:'auto',overflowX:'hidden',overscrollBehavior:'contain',WebkitOverflowScrolling:'touch',padding:'0 20px calc(88px + env(safe-area-inset-bottom,0px))'}}>
+            <p style={{fontSize:14,lineHeight:1.6,color:'var(--ink-70)',marginTop:14}}>{selected.description||'Join the community and take part together.'}</p>
+            <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:10,marginTop:16}}>
+              <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
+                <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Dates</div>
+                <strong style={{display:'block',marginTop:4}}>{selected.start_date} → {selected.end_date}</strong>
+              </div>
+              <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
+                <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Target</div>
+                <strong style={{display:'block',marginTop:4}}>{selected.name==='Founding 250'?'Community membership':Number(selected.target||selected.step_target||0).toLocaleString()+' '+(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
+              </div>
             </div>
-            <div style={{padding:13,borderRadius:14,background:'var(--paper)'}}>
-              <div style={{fontSize:10,textTransform:'uppercase',fontWeight:800,color:'var(--ink-45)'}}>Target</div>
-              <strong style={{display:'block',marginTop:4}}>{selected.name==='Founding 250'?'Community membership':Number(selected.target||selected.step_target||0).toLocaleString()+' '+(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
-            </div>
-          </div>
-          <div style={{marginTop:16,fontSize:12,color:'var(--ink-60)'}}>{selected.name==='Founding 250'?'Members join the founding community.':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).label+' · '+(selected.scoring_mode==='days_hit'?'Days you hit the target':'Total over challenge')}</div>
-          <div style={{marginTop:14}}>
-            <div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--ink-45)'}}>Leaderboard</div>
-            <div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:12,marginBottom:12}}>
-              {(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]).slice(0,3).map((row,index)=>(
-                <div key={'podium-'+row.user_id} style={{minWidth:0,textAlign:'center',padding:'10px 5px',borderRadius:13,background:'var(--green-soft)',border:index===0?'1.5px solid var(--green)':'1px solid var(--line)'}}>
-                  <div style={{fontSize:10,fontWeight:900,color:'var(--green-dark)'}}>#{row.rank}</div>
-                  <div style={{display:'flex',justifyContent:'center',margin:'6px 0'}}><Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={36}/></div>
-                  <div style={{fontSize:10,fontWeight:800,overflowWrap:'anywhere'}}>{row.user_id===userId?'You':row.name||'Protlys member'}</div>
-                  <div style={{fontSize:10,color:'var(--ink-60)',marginTop:3}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</div>
+            <div style={{marginTop:16,fontSize:12,color:'var(--ink-60)'}}>{selected.name==='Founding 250'?'Members join the founding community.':(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).label+' · '+(selected.scoring_mode==='days_hit'?'Days you hit the target':'Total over challenge')}</div>
+            <div style={{marginTop:14}}>
+              <div style={{fontSize:11,fontWeight:800,textTransform:'uppercase',letterSpacing:'.08em',color:'var(--ink-45)'}}>Leaderboard</div>
+              {selectedPodium.length>0&&<div style={{display:'grid',gridTemplateColumns:'repeat(3,minmax(0,1fr))',gap:7,marginTop:12,marginBottom:12}}>
+                {selectedPodium.map((row,index)=>(
+                  <div key={'podium-'+row.user_id} style={{minWidth:0,textAlign:'center',padding:'10px 5px',borderRadius:13,background:'var(--green-soft)',border:index===0?'1.5px solid var(--green)':'1px solid var(--line)'}}>
+                    <div style={{fontSize:10,fontWeight:900,color:'var(--green-dark)'}}>#{row.rank}</div>
+                    <div style={{display:'flex',justifyContent:'center',margin:'6px 0'}}><Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={36}/></div>
+                    <div style={{fontSize:10,fontWeight:800,overflowWrap:'anywhere'}}>{row.user_id===userId?'You':row.name||'Protlys member'}</div>
+                    <div style={{fontSize:10,color:'var(--ink-60)',marginTop:3}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</div>
+                  </div>
+                ))}
+              </div>}
+              {selectedLeaderboard.map(row=>(
+                <div key={row.user_id} style={{display:'flex',alignItems:'center',gap:9,padding:'9px 8px',borderBottom:'1px solid var(--line)',background:row.user_id===userId?'var(--green-soft)':'transparent',borderRadius:row.user_id===userId?10:0}}>
+                  <span style={{width:24,fontWeight:900,fontSize:12}}>{row.rank}</span>
+                  <Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={27}/>
+                  <span style={{flex:1,fontSize:12,fontWeight:row.user_id===userId?850:500}}>{row.user_id===userId?'You':row.name||'Protlys member'}</span>
+                  <strong style={{fontSize:12}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
                 </div>
               ))}
+              {!selectedLeaderboard.length&&<p style={{fontSize:12,color:'var(--ink-45)',marginTop:10}}>No participants yet.</p>}
             </div>
-            {(challengeLeaderboards[Number(selected.id)]||progressByChallenge[Number(selected.id)]||[]).map(row=>(
-              <div key={row.user_id} style={{display:'flex',alignItems:'center',gap:9,padding:'9px 8px',borderBottom:'1px solid var(--line)',background:row.user_id===userId?'var(--green-soft)':'transparent',borderRadius:row.user_id===userId?10:0}}>
-                <span style={{width:24,fontWeight:900,fontSize:12}}>{row.rank}</span>
-                <Avatar member={{name:row.name||'Protlys member',avatar:row.avatar||null}} size={27}/>
-                <span style={{flex:1,fontSize:12,fontWeight:row.user_id===userId?850:500}}>{row.user_id===userId?'You':row.name||'Protlys member'}</span>
-                <strong style={{fontSize:12}}>{Number(row.progress||0).toLocaleString()} {(TYPE_META[selected.challenge_type||'steps']||TYPE_META.steps).unit}</strong>
-              </div>
-            ))}
+            <div style={{marginTop:16,display:'flex',gap:9}}>
+              <button className={joined.has(Number(selected.id))?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(Number(selected.id))} style={{flex:1,margin:0}}>{joined.has(Number(selected.id))?'Joined':'Join challenge'}</button>
+              <ShareIconButton label="Share challenge" onClick={()=>shareChallenge(selected)} />
+            </div>
+            {error&&<div role="alert" style={{marginTop:12,color:'#B3261E',fontSize:12}}>{error}</div>}
           </div>
-          <div style={{marginTop:16,display:'flex',gap:9}}>
-            <button className={joined.has(Number(selected.id))?'btn-secondary':'btn-primary'} onClick={()=>joinChallenge(Number(selected.id))} style={{flex:1,margin:0}}>{joined.has(Number(selected.id))?'Joined':'Join challenge'}</button>
-            <ShareIconButton label="Share challenge" onClick={()=>shareChallenge(selected)} />
-          </div>
+          {canManageSelected&&<div style={{position:'sticky',bottom:0,zIndex:3,flex:'0 0 auto',display:'flex',gap:10,padding:'12px 20px calc(12px + env(safe-area-inset-bottom,0px))',background:'var(--white)',borderTop:'1px solid var(--line)',boxShadow:'0 -6px 18px rgba(15,42,74,.06)'}}>
+            <button type="button" onClick={()=>openEdit(selected)} disabled={saving} className="btn-primary" style={{flex:1,minHeight:46,margin:0}}>Edit</button>
+            <button type="button" onClick={()=>deleteChallenge(Number(selected.id))} disabled={saving} style={{flex:1,minHeight:46,margin:0,border:'1px solid #D94B4B',borderRadius:999,background:'#FFF1F0',color:'#B3261E',fontWeight:850,cursor:'pointer'}}>Delete</button>
+          </div>}
         </div>
       </div>
     )}
