@@ -3,6 +3,8 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
 import dynamic from 'next/dynamic';
 import ThemeToggle from '@/components/ThemeToggle';
 import FeedVisualPatch from '@/components/FeedVisualPatch';
@@ -18,6 +20,7 @@ const NAV_ITEMS = [
 
 export default function AppShell({ children }) {
   const pathname = usePathname();
+  const router = useRouter();
   const handleNavClick = (item, event) => {
     if (item.href === '/feed' && pathname === '/feed') {
       event.preventDefault();
@@ -30,8 +33,24 @@ export default function AppShell({ children }) {
   const [chatMode,setChatMode]=useState(false);
   const [overlayOpen,setOverlayOpen]=useState(false);
   const [menuOpen,setMenuOpen]=useState(false);
+  const [signOutConfirm,setSignOutConfirm]=useState(false);
+  const [signingOut,setSigningOut]=useState(false);
+  const [signOutError,setSignOutError]=useState('');
   useEffect(()=>{const onOverlay=e=>setOverlayOpen(Boolean(e.detail?.open));window.addEventListener('protlys:overlay',onOverlay);return()=>window.removeEventListener('protlys:overlay',onOverlay)},[]);
-  useEffect(()=>{setMenuOpen(false)},[pathname]);
+  useEffect(()=>{setMenuOpen(false);setSignOutConfirm(false);setSignOutError('')},[pathname]);
+  async function handleMenuSignOut(){
+    if(!signOutConfirm){setSignOutConfirm(true);setSignOutError('');return;}
+    setSigningOut(true);setSignOutError('');
+    try{
+      const supabase=createClient();
+      const {error}=await supabase.auth.signOut();
+      if(error)throw error;
+      try{window.ProtlysNative?.clearSyncToken?.()}catch{}
+      setMenuOpen(false);
+      router.replace('/login');
+      router.refresh();
+    }catch(error){setSignOutError(error?.message||'Could not sign out. Please try again.');setSigningOut(false)}
+  }
   useEffect(()=>{if(!menuOpen)return;const previous=document.body.style.overflow;document.body.style.overflow='hidden';const onKey=e=>{if(e.key==='Escape')setMenuOpen(false)};window.addEventListener('keydown',onKey);return()=>{document.body.style.overflow=previous;window.removeEventListener('keydown',onKey)}},[menuOpen]);
   useEffect(()=>{const sync=()=>setChatMode(pathname==='/challenges'&&window.location.hash.startsWith('#group='));sync();window.addEventListener('hashchange',sync);window.addEventListener('popstate',sync);const timer=window.setInterval(sync,250);return()=>{window.removeEventListener('hashchange',sync);window.removeEventListener('popstate',sync);window.clearInterval(timer)}},[pathname]);
   useEffect(() => {
@@ -64,6 +83,14 @@ export default function AppShell({ children }) {
     .protlys-app .hub-menu-links { display:grid;gap:8px;padding-top:18px; }
     .protlys-app .hub-menu-link { display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:58px;padding:0 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper);color:var(--ink);font-size:13px;font-weight:800;text-decoration:none; }
     .protlys-app .hub-menu-link span:last-child { color:var(--green-dark);font-size:19px; }
+    .protlys-app button.hub-menu-link { width:100%;font-family:inherit;text-align:left;cursor:pointer; }
+    .protlys-app .hub-menu-signout { margin-top:14px;padding-top:14px;border-top:1px solid var(--line); }
+    .protlys-app .hub-menu-confirm { padding:12px 14px;border:1px solid var(--line);border-radius:14px;background:var(--paper); }
+    .protlys-app .hub-menu-confirm-actions { display:flex;gap:8px;margin-top:10px; }
+    .protlys-app .hub-menu-confirm-actions button { flex:1;min-height:42px;border-radius:999px;font:inherit;font-size:12px;font-weight:800;cursor:pointer; }
+    .protlys-app .hub-menu-cancel { border:1px solid var(--line);background:var(--white);color:var(--ink); }
+    .protlys-app .hub-menu-confirm-signout { border:0;background:var(--green);color:#fff; }
+    .protlys-app .hub-menu-error { margin-top:8px;color:#B3261E;font-size:12px;line-height:1.4; }
     @keyframes hub-menu-in { from { transform:translateX(24px);opacity:.7; } to { transform:translateX(0);opacity:1; } }
     .protlys-app .movement-setting-card { background:#fff;border:1px solid var(--line);border-radius:16px;padding:15px;margin-top:10px; }
     .protlys-app .movement-setting-head { display:flex;justify-content:space-between;gap:12px;align-items:flex-start; }
@@ -262,7 +289,7 @@ export default function AppShell({ children }) {
     .protlys-app .disclaimer { display:none!important; }
     .protlys-app .desktop-sidebar { display:none; }
     .protlys-app .brand-link { display:flex;align-items:center;justify-content:center;text-decoration:none; }
-    .protlys-app .brand-link { position:relative; }
+    .protlys-app .brand-link { position:absolute!important;left:50%!important;top:50%!important;transform:translate(-50%,-50%)!important;z-index:2!important;width:max-content!important;max-width:calc(100% - 180px)!important; }
     .protlys-app .brand-link .logo { height:50px;width:auto;object-fit:contain;display:block; }
     @media (min-width:900px) {
       .protlys-app { min-height:100vh!important;background:#E4E3D6!important;display:flex!important;justify-content:center!important;align-items:flex-start!important;padding:28px!important; }
@@ -279,12 +306,12 @@ export default function AppShell({ children }) {
       .protlys-app .logo-dark { display:none!important; }
     html.protlys-dark .protlys-app .logo-light { display:none!important; }
     html.protlys-dark .protlys-app .logo-dark { display:block!important; }
-    .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
+     .protlys-app .app-header { grid-column:2;grid-row:1;position:sticky!important;top:0!important;height:76px!important;padding:12px 28px!important;background:var(--paper)!important;display:flex!important;align-items:center!important;gap:14px!important;border-bottom:1px solid var(--line)!important;box-sizing:border-box!important; }
       .protlys-app .app-header .theme-toggle { width:44px!important;height:44px!important;min-width:44px!important;min-height:44px!important;flex:0 0 44px!important;margin:0!important;position:relative!important; }
       .protlys-app .app-header .brand-link { flex:0 1 auto!important;min-width:0!important;display:flex!important;align-items:center!important;justify-content:center!important;margin:0!important; }
       .protlys-app .app-header .menu-header-button { margin-left:auto!important;flex:0 0 auto!important; }
       .protlys-app .app-header > .theme-toggle { flex:0 0 44px!important; }
-      .protlys-app .app-header > .brand-link { flex:1 1 auto!important;min-width:0!important;justify-content:center!important; }
+      .protlys-app .app-header > .brand-link { flex:0 0 auto!important;min-width:0!important;justify-content:center!important; }
       .protlys-app .app-header > .menu-header-button { flex:0 0 auto!important;margin-left:auto!important; }
       .protlys-app .brand-link .logo { height:54px!important; }
     }
@@ -331,6 +358,9 @@ export default function AppShell({ children }) {
             <Link className="hub-menu-link" href="/invite" onClick={()=>setMenuOpen(false)}><span>Invite friends</span><span>›</span></Link>
             <Link className="hub-menu-link" href="/help" onClick={()=>setMenuOpen(false)}><span>Help and feedback</span><span>›</span></Link>
           </nav>
+          <div className="hub-menu-signout">
+            {!signOutConfirm ? <button type="button" className="hub-menu-link" onClick={handleMenuSignOut}><span>Sign out</span><span>↗</span></button> : <div className="hub-menu-confirm"><div style={{fontSize:13,fontWeight:800}}>Sign out of Protlys Hub?</div><div className="hub-menu-confirm-actions"><button type="button" className="hub-menu-cancel" onClick={()=>{setSignOutConfirm(false);setSignOutError('')}} disabled={signingOut}>Cancel</button><button type="button" className="hub-menu-confirm-signout" onClick={handleMenuSignOut} disabled={signingOut}>{signingOut?'Signing out…':'Sign out'}</button></div>{signOutError&&<div className="hub-menu-error" role="alert">{signOutError}</div>}</div>}
+          </div>
         </aside>
       </div>
     ) : null}
