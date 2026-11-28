@@ -171,7 +171,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       });
       if (!response.ok) { weekLoadedRef.current = false; return; }
       const data = await response.json();
-      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => row.source !== 'health_connect' && !row.is_flagged && !row.is_flagged);
+      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => row.source !== 'health_connect' && !row.is_flagged);
       const normalized = [
         ...rows.filter(row => row.step_date !== todayKey),
         { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
@@ -208,18 +208,18 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (cached) {
         setOfflineAt(cached.cachedAt || null);
         setIsOffline(!navigator.onLine);
-        if (cached.date === todayKey && Number.isFinite(Number(cached.todaySteps)) && cached.source !== 'health_connect') {
+        if (cached.date === todayKey && Number.isFinite(Number(cached.todaySteps)) && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged') {
           displayedTodayRef.current = Number(cached.todaySteps);
           setTodaySteps(Number(cached.todaySteps));
-        } else if (cached.source === 'health_connect') {
+        } else if (!cached.source || cached.source === 'health_connect' || cached.source === 'flagged') {
           displayedTodayRef.current = 0; setTodaySteps(0);
         }
         if (cached.lastSync) setLastSync(cached.lastSync);
-        if (cached.source && cached.source !== 'health_connect') setSource(cached.source);
+        if (cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged') setSource(cached.source);
         if (Array.isArray(cached.weekSteps)) {
           const cachedRows = [
-            ...cached.weekSteps.filter(row => row.source !== 'health_connect'),
-            { step_date: todayKey, steps: cached.date === todayKey && cached.source !== 'health_connect' ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey && cached.source !== 'health_connect' ? cached.source || null : null },
+            ...cached.weekSteps.filter(row => row.source !== 'health_connect' && !row.is_flagged),
+            { step_date: todayKey, steps: cached.date === todayKey && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged' ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged' ? cached.source || null : null },
           ].sort((a, b) => a.step_date.localeCompare(b.step_date));
           weekStepsRef.current = cachedRows;
           setWeekSteps(cachedRows);
