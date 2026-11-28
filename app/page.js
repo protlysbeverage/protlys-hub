@@ -1,9 +1,9 @@
 import Link from 'next/link';
 const siteUrl = 'https://hub.protlys.com';
 const faqs = [
-  { question: 'What is Protlys Hub?', answer: 'Protlys Hub is a community app for adults who want to track daily movement, keep an eye on protein intake, take part in challenges and stay connected with other members.' },
+  { question: 'What is Protlys Hub?', answer: 'Protlys Hub is a community app for adults who want to track daily movement, set a practical daily protein target, take part in challenges and stay connected with other members.' },
   { question: 'Can I track my steps with Protlys Hub?', answer: 'Yes. Protlys Hub includes movement tracking and step goals. Supported Android devices can record steps after you grant activity permission.' },
-  { question: 'Can I track protein in Protlys Hub?', answer: 'Yes. The Hub includes protein goals and logging tools to help you keep track of your daily intake. It is a tracking tool, not medical or dietetic advice.' },
+  { question: 'Can I set a protein goal in Protlys Hub?', answer: 'Yes. The Hub includes a protein calculator to help you set a practical daily target. It is not medical or dietetic advice.' },
   { question: 'Can I join movement challenges?', answer: 'Yes. Members can take part in community challenges and follow progress over time.' },
   { question: 'Who can create an account?', answer: 'Protlys Hub accounts are for adults aged 18 and over. You can review the Terms and Conditions and Privacy Policy before signing up.' },
 ];
@@ -44,7 +44,7 @@ const jsonLd = [
 
 export const metadata = {
   title: 'Protlys Hub | Step Tracking, Protein Goals & Fitness Challenges in Kenya',
-  description: 'Track your steps, set protein goals and join community fitness challenges with Protlys Hub. A practical movement and nutrition community built in Kenya.',
+  description: 'Track your steps, set a protein goal and join community fitness challenges with Protlys Hub. A practical movement and nutrition community built in Kenya.',
   alternates: { canonical: '/' },
   openGraph: {
     title: 'Protlys Hub | Move More. Fuel Better.',
@@ -89,7 +89,7 @@ export default function HomePage() {
         <div>
           <p style={{ margin: '0 0 14px', color: '#367D28', fontWeight: 800, letterSpacing: 1.6, fontSize: 12, textTransform: 'uppercase' }}>Movement · Protein · Community</p>
           <h1 style={{ fontSize: 'clamp(40px,7vw,68px)', lineHeight: 1.04, letterSpacing: '-2.8px', margin: '0 0 22px', maxWidth: 720 }}>Move more. Fuel better. Keep going.</h1>
-          <p style={{ fontSize: 18, lineHeight: 1.7, color: '#526052', maxWidth: 650, margin: '0 0 28px' }}>Protlys Hub brings your daily movement, protein goals and community challenges into one place. Set a target, see your progress and build habits alongside other people.</p>
+          <p style={{ fontSize: 18, lineHeight: 1.7, color: '#526052', maxWidth: 650, margin: '0 0 28px' }}>Protlys Hub brings your daily movement, protein targets and community challenges into one place. Set a target, see your progress and build habits alongside other people.</p>
           <div style={{ display: 'flex', gap: 12, flexWrap: 'wrap' }}>
             <Link href="/signup" style={{ background: '#6BCB45', color: '#10200F', borderRadius: 999, padding: '15px 23px', fontWeight: 800, textDecoration: 'none' }}>Create your account</Link>
             <Link href="/login" style={{ border: '1px solid #C9D3C6', color: '#172019', borderRadius: 999, padding: '15px 23px', fontWeight: 800, textDecoration: 'none' }}>Log in</Link>
@@ -100,7 +100,7 @@ export default function HomePage() {
           <p style={{ margin: '0 0 22px', color: '#9BD782', fontSize: 12, fontWeight: 800, letterSpacing: 1.5, textTransform: 'uppercase' }}>Your progress, together</p>
           {[
             ['01', 'Track movement', 'Keep an eye on your steps and daily movement goals.'],
-            ['02', 'Log protein', 'Record your intake and work towards a daily protein goal.'],
+            ['02', 'Set a protein goal', 'Use the protein calculator to set a daily target.'],
             ['03', 'Join challenges', 'Take part in shared goals and follow your progress.'],
             ['04', 'Find your people', 'Share updates and connect with the Protlys community.'],
           ].map(([n, title, body]) => <div key={n} style={{ display: 'grid', gridTemplateColumns: '34px 1fr', gap: 12, padding: '15px 0', borderTop: '1px solid #2B392B' }}>
@@ -138,7 +138,7 @@ export default function HomePage() {
 
       <section style={{ background: '#101810', color: '#F7F8F6', padding: '48px 24px', textAlign: 'center' }}>
         <h2 style={{ margin: '0 0 12px', fontSize: 'clamp(26px,4vw,38px)' }}>Make your next good day easier to repeat.</h2>
-        <p style={{ margin: '0 auto 22px', maxWidth: 600, color: '#B7C3B4', lineHeight: 1.7 }}>Start with a movement goal, keep track of your protein and find a challenge that keeps you moving.</p>
+        <p style={{ margin: '0 auto 22px', maxWidth: 600, color: '#B7C3B4', lineHeight: 1.7 }}>Start with a movement goal, set a protein goal and find a challenge that keeps you moving.</p>
         <Link href="/signup" style={{ display: 'inline-block', background: '#6BCB45', color: '#10200F', borderRadius: 999, padding: '14px 22px', fontWeight: 800, textDecoration: 'none' }}>Join Protlys Hub</Link>
       </section>
 
