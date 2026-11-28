@@ -175,7 +175,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.movementDays)) {
           const safeDays = cached.movementDays.filter(row => row.source !== 'health_connect');
-          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect'));
+          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => row.source !== 'health_connect');
           setDashboardMovementDays(safeDays);
           setDashboardWeekSteps(safeWeek);
           setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === localDateStr())?.steps || 0));
