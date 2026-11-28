@@ -931,3 +931,36 @@ html.protlys-dark .protlys-fullscreen .challenge-preview{background:var(--fs-pre
   .protlys-fullscreen .code-box{height:44px;font-size:15px;}
 }
 @media (prefers-reduced-motion:reduce){.protlys-fullscreen .fullscreen-spinner,.protlys-fullscreen .toggle,.protlys-fullscreen .toggle i{animation:none;transition:none;}}
+
+
+/* Shared interface-quality pass: preserve visible focus and usable mobile hit areas. */
+.protlys-app :is(button,a,[role="button"],summary,input,textarea,select):focus-visible {
+  outline:2px solid var(--green)!important;
+  outline-offset:3px!important;
+}
+.protlys-app .pill-opt {
+  min-height:44px;
+}
+.protlys-app .pill-opt:focus-visible {
+  outline:2px solid var(--green)!important;
+  outline-offset:3px!important;
+  box-shadow:none!important;
+}
+.protlys-app .icon-btn,
+.protlys-app .back-btn,
+.protlys-app .qty-btn {
+  min-width:44px;
+  min-height:44px;
+}
+.protlys-app .link-btn {
+  min-height:44px;
+  display:inline-flex;
+  align-items:center;
+  justify-content:center;
+}
+.protlys-app :is(h1,h2,h3) {
+  text-wrap:balance;
+}
+.protlys-app p {
+  text-wrap:pretty;
+}
