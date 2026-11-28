@@ -2,13 +2,13 @@ import { NextResponse } from 'next/server';
 import { createClient } from '@/lib/supabase/server';
 
 function getSafeNext(value) {
-  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/';
+  return value && value.startsWith('/') && !value.startsWith('//') ? value : '/hub';
 }
 
 export async function GET(request) {
   const requestUrl = new URL(request.url);
   const tokenHash = requestUrl.searchParams.get('token_hash');
-  const type = requestUrl.searchParams.get('type') || 'email';
+  const type = 'email';
   const next = getSafeNext(requestUrl.searchParams.get('next'));
 
   if (!tokenHash) {
