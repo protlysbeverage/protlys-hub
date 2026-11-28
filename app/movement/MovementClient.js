@@ -45,7 +45,7 @@ function AnimatedNumber({ value, formatter = n => Math.round(n).toLocaleString()
 
 export default function MovementClient({ userId = null, currentGoal = 7500 }) {
   const todayKey = localDateStr();
-  const cacheKey = `protlys_movement_cache_v2_${userId || 'unknown'}`;
+  const cacheKey = `protlys_movement_cache_v3_${userId || 'unknown'}`;
   const [ready, setReady] = useState(false);
   const [offlineAt, setOfflineAt] = useState(null);
   const [isOffline, setIsOffline] = useState(false);
@@ -171,7 +171,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       });
       if (!response.ok) { weekLoadedRef.current = false; return; }
       const data = await response.json();
-      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => !(row.step_date === todayKey && row.source === 'health_connect'));
+      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => !(row.step_date === todayKey && row.source === 'health_connect')).map(row => row.is_flagged ? { ...row, steps:0, source:null, synced_at:null } : row);
       const normalized = [
         ...rows.filter(row => row.step_date !== todayKey),
         { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
@@ -218,7 +218,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         if (cached.source && cached.source !== 'health_connect') setSource(cached.source);
         if (Array.isArray(cached.weekSteps)) {
           const cachedRows = [
-            ...cached.weekSteps.filter(row => row.step_date !== todayKey || row.source !== 'health_connect'),
+            ...cached.weekSteps.filter(row => row.step_date !== todayKey || row.source !== 'health_connect').map(row => row.is_flagged ? { ...row, steps:0, source:null, synced_at:null } : row),
             { step_date: todayKey, steps: cached.date === todayKey && cached.source !== 'health_connect' ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey && cached.source !== 'health_connect' ? cached.source || null : null },
           ].sort((a, b) => a.step_date.localeCompare(b.step_date));
           weekStepsRef.current = cachedRows;
