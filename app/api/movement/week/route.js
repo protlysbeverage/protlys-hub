@@ -24,9 +24,9 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error:'Unable to load movement history' }, { status:500 });
 
-  // Historical Health Connect backfill is retained; today's total must come from the phone sensor.
+  // Health Connect rows are excluded; Movement uses the phone sensor and other supported historical sources only.
   const rows = (data || []).map(row =>
-    row.step_date === today && row.source === 'health_connect'
+    row.source === 'health_connect'
       ? { ...row, steps:0, source:null, synced_at:null }
       : { ...row, steps:Number(row.steps || 0) }
   );
