@@ -111,10 +111,11 @@ Deno.serve(async (req) => {
     .in("step_date", dates);
   if (existingError) return json({ error: existingError.message }, 500);
 
-  const existingByDate = new Map<string, { steps: number; source: string }>(
+  const existingByDate = new Map<string, { steps: number; source: string; is_flagged: boolean }>(
     (existingRows || []).map((row: any) => [String(row.step_date), {
       steps: Number(row.steps || 0),
       source: String(row.source || "health_connect"),
+      is_flagged: Boolean(row.is_flagged),
     }]),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
