@@ -111,7 +111,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardOffline, setDashboardOffline] = useState(false);
   const [dashboardCachedAt, setDashboardCachedAt] = useState(null);
-  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v2:${profile.id}` : null;
+  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v3:${profile.id}` : null;
   const dashboardRefreshInFlight = useRef(false);
 
   const refreshDashboard = useCallback(async () => {
@@ -127,7 +127,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
-        .select('step_date,steps,source')
+        .select('step_date,steps,source,is_flagged')
         .eq('user_id', profile.id)
         .gte('step_date', oldest)
         .lte('step_date', today)
@@ -135,7 +135,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         .limit(365);
       if (error) throw error;
 
-      const rows = (data || []).filter(row => !(row.step_date === today && row.source === 'health_connect'));
+      const rows = (data || []).filter(row => !(row.step_date === today && row.source === 'health_connect')).map(row => row.is_flagged ? { ...row, steps:0, source:null } : row);
       const weekAgoDate = new Date(today + 'T12:00:00+03:00');
       weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
       const weekAgo = localDateStr(weekAgoDate);
@@ -174,8 +174,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       if (raw) {
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.movementDays)) {
-          const safeDays = cached.movementDays.filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect'));
-          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect'));
+          const safeDays = cached.movementDays.filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect')).map(row => row.is_flagged ? { ...row, steps:0, source:null } : row);
+          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect')).map(row => row.is_flagged ? { ...row, steps:0, source:null } : row);
           setDashboardMovementDays(safeDays);
           setDashboardWeekSteps(safeWeek);
           setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === localDateStr())?.steps || 0));
