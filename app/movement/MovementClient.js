@@ -171,7 +171,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       });
       if (!response.ok) { weekLoadedRef.current = false; return; }
       const data = await response.json();
-      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => row.source !== 'health_connect');
+      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => row.source !== 'health_connect' && !row.is_flagged && !row.is_flagged);
       const normalized = [
         ...rows.filter(row => row.step_date !== todayKey),
         { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
