@@ -70,6 +70,7 @@ export async function updateFeedPostAction({ postId, body, postType, stats, remo
 
   const rawBody = typeof body === 'string' ? body.trim() : '';
   if (rawBody.length > 2000) return { error:'Keep your caption under 2,000 characters.' };
+  if (!rawBody && (!post.image_url || removeImage)) return { error:'Add a caption or keep a photo on the post.' };
   const allowedTypes = new Set(['progress','run','workout','milestone','general']);
   const safePostType = allowedTypes.has(postType) ? postType : 'general';
   let imageUrl = post.image_url;
