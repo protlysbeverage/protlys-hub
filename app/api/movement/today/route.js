@@ -24,13 +24,13 @@ export async function GET() {
       .single(),
     supabase
       .from('daily_steps')
-      .select('steps, source, synced_at')
+      .select('steps, source, synced_at, is_flagged')
       .eq('user_id', user.id)
       .eq('step_date', today)
       .maybeSingle(),
   ]);
 
-  const todayFromSensorOnly = todayRow?.source !== 'health_connect';
+  const todayFromSensorOnly = todayRow?.source !== 'health_connect' && !todayRow?.is_flagged;
   return NextResponse.json({
     date: today,
     steps: todayFromSensorOnly ? Number(todayRow?.steps || 0) : 0,
