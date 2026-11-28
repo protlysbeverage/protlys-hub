@@ -28,7 +28,7 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   const [supabase]=useState(()=>createClient());
   const [tab,setTab]=useState('challenges'),[joined,setJoined]=useState(()=>new Set(joinedIds)),[counts,setCounts]=useState(()=>({...memberCounts}));
   const [lastMessages,setLastMessages]=useState(()=>({...groupLastMessages}));
-  const [error,setError]=useState(''),[details,setDetails]=useState(null),[showCreate,setShowCreate]=useState(false),[creating,setCreating]=useState(false),[editing,setEditing]=useState(null),[saving,setSaving]=useState(false);
+  const [error,setError]=useState(''),[details,setDetails]=useState(null),[editing,setEditing]=useState(null),[saving,setSaving]=useState(false);
   const [groupView,setGroupView]=useState('list'),[groupDetails,setGroupDetails]=useState(null),[groupModal,setGroupModal]=useState(null),[groupName,setGroupName]=useState(''),[groupEmoji,setGroupEmoji]=useState(''),[groupPrivacy,setGroupPrivacy]=useState('public'),[groupImageUrl,setGroupImageUrl]=useState(''),[inviteCode,setInviteCode]=useState(''),[groupSaving,setGroupSaving]=useState(false);
   const [messages,setMessages]=useState([]),[messageText,setMessageText]=useState(''),[messageImageUrl,setMessageImageUrl]=useState(''),[messageUploading,setMessageUploading]=useState(false),[sending,setSending]=useState(false),[chatLoading,setChatLoading]=useState(false),[userStreak,setUserStreak]=useState(0),[showMembers,setShowMembers]=useState(false),[copyToast,setCopyToast]=useState('');
   const chatScrollRef=useRef(null),composerRef=useRef(null);
@@ -97,26 +97,28 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
   }
   function openEdit(challenge){
     if(!canManageChallenge(challenge)){setError('Founding 250 is locked.');return;}
-    setDetails(null);setShowCreate(false);setEditing(Number(challenge.id));
+    setDetails(null);setEditing(Number(challenge.id));
     setForm({name:challenge.name||'',description:challenge.description||'',emoji:challenge.emoji||TYPE_META[challenge.challenge_type||'steps']?.icon||'👣',stepTarget:String(challenge.target||challenge.step_target||0),startDate:challenge.start_date||'',endDate:challenge.end_date||'',allowTeams:!!challenge.allow_teams,visibility:challenge.visibility||'public',groupId:challenge.group_id||null});
   }
   async function joinChallenge(id){
     const leaving=joined.has(id),before=new Set(joined),old=Number(counts[id]||0);
+    const rollback=()=>{setJoined(before);setCounts(p=>({...p,[id]:old}));};
     setError('');setJoined(p=>{const n=new Set(p);leaving?n.delete(id):n.add(id);return n});
     setCounts(p=>({...p,[id]:Math.max(0,old+(leaving?-1:1))}));
-    const {data:{user}}=await supabase.auth.getUser();
-    if(!user){setJoined(before);setCounts(p=>({...p,[id]:old}));setError('Please sign in to join a challenge.');return}
-    const result=leaving
-      ? await supabase.from('challenge_members').delete().eq('challenge_id',id).eq('user_id',user.id).select('id').maybeSingle()
-      : await supabase.from('challenge_members').insert({challenge_id:id,user_id:user.id}).select('id').maybeSingle();
-    if(result.error){
-      if(!leaving&&result.error.code==='23505'){setJoined(p=>new Set([...p,id]));setCounts(p=>({...p,[id]:old}));router.refresh();return}
-      setJoined(before);setCounts(p=>({...p,[id]:old}));setError('We could not update your challenge membership. Please try again.');return;
-    }
-    if(leaving&&!result.data){setJoined(before);setCounts(p=>({...p,[id]:old}));router.refresh();return}
-    router.refresh();
+    try{
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if(authError||!user)throw new Error('Please sign in to join a challenge.');
+      const result=leaving
+        ? await supabase.from('challenge_members').delete().eq('challenge_id',id).eq('user_id',user.id).select('id').maybeSingle()
+        : await supabase.from('challenge_members').insert({challenge_id:id,user_id:user.id}).select('id').maybeSingle();
+      if(result.error){
+        if(!leaving&&result.error.code==='23505'){setJoined(p=>new Set([...p,id]));setCounts(p=>({...p,[id]:old}));router.refresh();return;}
+        throw result.error;
+      }
+      if(leaving&&!result.data){rollback();router.refresh();return;}
+      router.refresh();
+    }catch(err){rollback();setError(err?.message||'We could not update your challenge membership. Please try again.');}
   }
-  async function createChallenge(ev){ev.preventDefault();setError('');setCreating(true);const start=form.startDate||new Date().toISOString().slice(0,10),end=form.endDate||start;const payload={creator_id:userId,name:form.name.trim(),description:form.description.trim()||null,step_target:Math.max(0,Number(form.stepTarget)||0),start_date:start,end_date:end,visibility:form.groupId?'private':form.visibility,allow_teams:form.allowTeams,group_id:form.groupId||null};const {data:created,error:createError}=await supabase.from('challenges').insert(payload).select('id').single();if(createError){setError(createError.message||'We could not create that challenge.');setCreating(false);return}await supabase.from('challenge_members').insert({challenge_id:created.id,user_id:userId});setShowCreate(false);setCreating(false);resetForm();router.refresh()}
   async function deleteChallenge(challengeId=editing){
     if(!challengeId)return;
     const challenge=challenges.find(c=>Number(c.id)===Number(challengeId));
@@ -158,7 +160,17 @@ export default function ChallengesClient({challenges=[],joinedIds=[],memberCount
     } catch (error) {
       if (error?.name === 'AbortError') return;
       try {
-        await navigator.clipboard.writeText(url);
+        if (window.ProtlysNative?.copyText) {
+          window.ProtlysNative.copyText(url);
+        } else if (navigator.clipboard?.writeText) {
+          await navigator.clipboard.writeText(url);
+        } else {
+          const field=document.createElement('textarea');
+          field.value=url;field.setAttribute('readonly','');field.style.position='fixed';field.style.opacity='0';
+          document.body.appendChild(field);field.select();
+          const copied=document.execCommand('copy');document.body.removeChild(field);
+          if(!copied)throw new Error('Clipboard unavailable');
+        }
         setCopyToast('Link copied');
       } catch {
         setError('We could not copy the challenge link. Please try again.');
