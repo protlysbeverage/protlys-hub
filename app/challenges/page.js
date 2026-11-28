@@ -1,4 +1,5 @@
 import { createClient } from '@/lib/supabase/server';
+import { redirect } from 'next/navigation';
 import AppShell from '@/components/AppShell';
 import ChallengesClient from './ChallengesClient';
 import { getBlockedUserIds } from '@/lib/blocks';
@@ -10,19 +11,12 @@ export default async function ChallengesPage({ searchParams }) {
   const joinCode = typeof params?.join === 'string' ? params.join : '';
   if (challengeId) {
     const invitePath = '/hub/challenges?challenge=' + encodeURIComponent(challengeId) + (inviteToken ? '&invite=' + encodeURIComponent(inviteToken) : '');
-    const { redirect } = await import('next/navigation');
     redirect(invitePath);
   }
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
   if (!user && joinCode) {
-    const { redirect } = await import('next/navigation');
     redirect(`/login?next=${encodeURIComponent(`/challenges?join=${joinCode}`)}`);
-  }
-  if (!user && challengeId) {
-    const next = `/hub/challenges?challenge=${encodeURIComponent(challengeId)}${inviteToken ? `&invite=${encodeURIComponent(inviteToken)}` : ''}`;
-    const { redirect } = await import('next/navigation');
-    redirect(next);
   }
   if (!user) return <AppShell><div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:28}}><span className="eyebrow">Challenges</span><h1 style={{fontSize:28,marginTop:6}}>Build the habit together.</h1><p className="subhead" style={{marginTop:8}}>Sign in to join Protlys community challenges.</p></div></AppShell>;
 
