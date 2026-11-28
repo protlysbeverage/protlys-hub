@@ -106,15 +106,16 @@ Deno.serve(async (req) => {
   const dates = [...byDate.keys()];
   const { data: existingRows, error: existingError } = await admin
     .from("daily_steps")
-    .select("step_date,steps,source")
+    .select("step_date,steps,source,is_flagged")
     .eq("user_id", connection.user_id)
     .in("step_date", dates);
   if (existingError) return json({ error: existingError.message }, 500);
 
-  const existingByDate = new Map<string, { steps: number; source: string }>(
+  const existingByDate = new Map<string, { steps: number; source: string; is_flagged: boolean }>(
     (existingRows || []).map((row: any) => [String(row.step_date), {
       steps: Number(row.steps || 0),
       source: String(row.source || "health_connect"),
+      is_flagged: Boolean(row.is_flagged),
     }]),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
@@ -123,7 +124,7 @@ Deno.serve(async (req) => {
     const incomingSteps = byDate.get(date) ?? 0;
     const stored = existingByDate.get(date);
     // Discard a legacy Health Connect value for today when the sensor takes over.
-    const existing = date === today && stored?.source === "health_connect" ? undefined : stored;
+    const existing = (date === today && stored?.source === "health_connect") || (source === "android_sensor" && stored?.is_flagged) ? undefined : stored;
     const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
     return {
       step_date: date,
@@ -139,6 +140,7 @@ Deno.serve(async (req) => {
       steps: row.steps,
       source: row.source,
       synced_at: new Date().toISOString(),
+      ...(row.source === "android_sensor" ? { is_flagged:false, flag_reason:null } : {}),
     })),
     { onConflict: "user_id,step_date" },
   );
@@ -146,7 +148,7 @@ Deno.serve(async (req) => {
 
   const { data: allSteps, error: allStepsError } = await admin
     .from("daily_steps")
-    .select("step_date,steps,source")
+    .select("step_date,steps,source,is_flagged")
     .eq("user_id", connection.user_id)
     .gt("steps", 0)
     .order("step_date", { ascending: true });
@@ -154,7 +156,7 @@ Deno.serve(async (req) => {
   if (allStepsError) return json({ error: allStepsError.message }, 500);
 
   const validSteps = (allSteps || []).filter((row: any) =>
-    !(row.step_date === today && row.source === "health_connect")
+    !row.is_flagged && !(row.step_date === today && row.source === "health_connect")
   );
   const totalSteps = validSteps.reduce((sum: number, row: any) => sum + Number(row.steps || 0), 0);
   const stepStreak = calculateStreak(validSteps);
