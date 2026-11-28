@@ -1,14 +1,16 @@
 'use client';
 
+import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-function initials(name){return String(name||'Founding 250').trim().split(/\s+/).map(function(p){return p[0];}).join('').slice(0,2).toUpperCase();}
+function initials(name){return String(name||'Founding 250').trim().split(/\\s+/).map(function(p){return p[0];}).join('').slice(0,2).toUpperCase();}
 
-export default function GroupsClient() {
+export default function GroupsClient({ initialGroups = [] }) {
   const [group,setGroup]=useState(null);
   const [memberCount,setMemberCount]=useState(0);
   const [loading,setLoading]=useState(true);
+  const personalGroups=(initialGroups||[]).filter(g=>g&&g.id&&g.name!=='Founding 250');
 
   useEffect(function(){
     let cancelled=false;
@@ -44,6 +46,26 @@ export default function GroupsClient() {
         <span aria-hidden="true" style={{fontSize:25,color:'var(--ink-45)'}}>›</span>
       </div> :
       <div style={{fontSize:13,fontWeight:700}}>Founding 250 is being prepared.</div>}
+    </section>
+
+    <section style={{marginTop:22}}>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',gap:12,marginBottom:10}}>
+        <h2 style={{fontSize:17,margin:0}}>Your groups</h2>
+        <Link href="/challenges" style={{fontSize:11.5,fontWeight:850,color:'var(--green-dark)',textDecoration:'none'}}>Explore groups →</Link>
+      </div>
+      {personalGroups.length ? <div style={{display:'grid',gap:9}}>
+        {personalGroups.map(g=><Link key={g.id} href={'/challenges#group='+encodeURIComponent(g.id)} className="hub-card" style={{display:'flex',alignItems:'center',gap:12,padding:14,textDecoration:'none',color:'var(--ink)'}}>
+          <div style={{width:42,height:42,borderRadius:13,display:'grid',placeItems:'center',background:'var(--green-soft)',color:'var(--green-dark)',fontWeight:900,flex:'0 0 42px'}}>{initials(g.name)}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div style={{fontSize:13,fontWeight:850,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{g.name||'Protlys group'}</div>
+            <div style={{fontSize:10.5,color:'var(--ink-45)',marginTop:3}}>{g.privacy==='private'?'Private group':'Community group'} · Open chat</div>
+          </div>
+          <span aria-hidden="true" style={{fontSize:22,color:'var(--ink-45)'}}>›</span>
+        </Link>)}
+      </div> : <div className="hub-card" style={{padding:15}}>
+        <div style={{fontSize:12,fontWeight:750}}>You haven’t joined another group yet.</div>
+        <p style={{fontSize:11.5,color:'var(--ink-45)',lineHeight:1.5,margin:'5px 0 0'}}>Explore the Groups tab in Challenges to create a group or join one with an invite code.</p>
+      </div>}
     </section>
   </div>;
 }
