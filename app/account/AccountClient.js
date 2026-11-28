@@ -286,6 +286,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const links = [
     { href:`/member/${profile?.id}`, label:'Profile', desc:'View your public profile, stats and recent posts.', icon:'profile' },
     { href:'/movement', label:'Movement & steps', desc:'Record movement and see your activity history.', icon:'steps' },
+    { href:'/protein', label:'Protein tracker', desc:'Log today’s intake and review your daily target.', icon:'box' },
     { href:'/leaderboard', label:'Leaderboard', desc:'See how your steps compare this month.', icon:'leaderboard' },
     { href:'/challenges', label:'Challenges', desc:'Join challenges if they are useful to you.', icon:'challenge' },
     { href:'/', label:'Community', desc:'See the progress feed and share with the Hub.', icon:'community' },
