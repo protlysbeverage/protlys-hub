@@ -117,7 +117,7 @@ export default function HomePage() {
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(220px,1fr))', gap: 16 }}>
             {[
               ['Movement tracking', 'Set a realistic step goal and check how your daily activity is adding up.'],
-              ['Protein goals', 'Keep a simple record of the protein you eat and see how it compares with your target.'],
+              ['Protein goals', 'Use the protein calculator to estimate a practical daily target.'],
               ['Community challenges', 'Take on a shared challenge, follow the leaderboard and encourage other members.'],
             ].map(([title, body]) => <article key={title} style={{ background: '#FFFFFF', border: '1px solid #DCE6D8', borderRadius: 18, padding: 22 }}>
               <h3 style={{ margin: '0 0 9px', fontSize: 18 }}>{title}</h3>
@@ -148,7 +148,7 @@ export default function HomePage() {
           <Link href="/privacy">Privacy</Link><Link href="/terms">Terms</Link><Link href="/delete-account">Delete account</Link><Link href="/login">Log in</Link>
         </nav>
       </footer>
-      <style>{'@media(max-width:700px){header{flex-wrap:wrap}header nav a[href="#how-it-works"],header nav a[href="#faqs"]{display:none}main section:first-of-type{grid-template-columns:1fr!important;padding-top:48px!important}main section:first-of-type aside{max-width:520px}}'}</style>
+      <style>{'header nav{flex-wrap:wrap;justify-content:flex-end;gap:8px 14px}main a:focus-visible,main summary:focus-visible{outline:3px solid #4F9F35;outline-offset:3px;border-radius:8px}main summary{min-height:44px;display:flex;align-items:center}@media(max-width:700px){header{flex-wrap:wrap}header nav{width:100%;justify-content:space-between;font-size:13px!important}header nav a[href="#how-it-works"],header nav a[href="#faqs"]{display:none}main section:first-of-type{grid-template-columns:1fr!important;padding-top:48px!important}main section:first-of-type aside{max-width:520px}}'}</style>
     </main>
   );
 }

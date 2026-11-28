@@ -23,7 +23,7 @@ const BUILD_ID = process.env.VERCEL_GIT_COMMIT_SHA || process.env.NEXT_PUBLIC_BU
 export const metadata = {
   metadataBase: new URL('https://hub.protlys.com'),
   title: 'Protlys Hub',
-  description: 'Your home for movement, protein tracking, challenges and the Protlys community.',
+  description: 'Your home for movement, protein goals, challenges and the Protlys community.',
   manifest: '/manifest.webmanifest',
   icons: {
     icon: '/protlys-logo-exact.png?v=3',
