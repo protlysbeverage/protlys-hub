@@ -42,9 +42,8 @@ export async function logProteinAction({ productId = 'custom', productLabel = 'P
   if (logError) return { error: logError.message };
 
   const { error: profileError } = await supabase.from('profiles').update({ onboarding_complete:true }).eq('id', user.id);
-  if (profileError) return { error: 'Your protein was logged, but your profile could not be refreshed. Please reload.' };
   revalidateProteinViews(user.id);
-  return { ok:true, log };
+  return { ok:true, log, warning:profileError ? 'Protein was logged, but your profile status could not be refreshed.' : null };
 }
 
 export async function updateProteinLogAction({ logId, productLabel, grams }) {
@@ -136,7 +135,7 @@ export async function completeOnboardingAction() {
     const { error:historyError } = await supabase.from('protein_target_history').insert({
       user_id:user.id, target_g:Number(profile.target_g), source:'custom', effective_from:nairobiDateStr()
     });
-    if (historyError) return { error:historyError.message };
+    if (historyError) { revalidateProteinViews(user.id); return { ok:true, warning:'Onboarding is complete, but target history could not be saved.' }; }
   }
   revalidateProteinViews(user.id);
   return { ok:true };
