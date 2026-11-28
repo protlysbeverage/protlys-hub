@@ -7,6 +7,7 @@ export default async function GroupsPage() {
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+  await supabase.rpc('ensure_founding_250_group_member');
   const { data: memberships } = await supabase
     .from('group_members')
     .select('group_id, groups(id, name, privacy)')
