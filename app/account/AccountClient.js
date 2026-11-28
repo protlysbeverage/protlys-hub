@@ -111,10 +111,12 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardOffline, setDashboardOffline] = useState(false);
   const [dashboardCachedAt, setDashboardCachedAt] = useState(null);
-  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v1:${profile.id}` : null;
+  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v2:${profile.id}` : null;
+  const dashboardRefreshInFlight = useRef(false);
 
   const refreshDashboard = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || dashboardRefreshInFlight.current) return;
+    dashboardRefreshInFlight.current = true;
     setDashboardRefreshing(true);
     setDashboardError('');
     try {
@@ -125,7 +127,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
-        .select('step_date,steps')
+        .select('step_date,steps,source')
         .eq('user_id', profile.id)
         .gte('step_date', oldest)
         .lte('step_date', today)
@@ -133,7 +135,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         .limit(365);
       if (error) throw error;
 
-      const rows = data || [];
+      const rows = (data || []).filter(row => row.source !== 'health_connect');
       const weekAgoDate = new Date(today + 'T12:00:00+03:00');
       weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
       const weekAgo = localDateStr(weekAgoDate);
@@ -161,6 +163,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       setDashboardOffline(true);
       setDashboardError('Could not refresh movement history. Saved activity remains visible when available.');
     } finally {
+      dashboardRefreshInFlight.current = false;
       setDashboardRefreshing(false);
     }
   }, [profile?.id, dashboardCacheKey]);
@@ -171,16 +174,26 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       if (raw) {
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.movementDays)) {
-          setDashboardMovementDays(cached.movementDays);
-          setDashboardWeekSteps(Array.isArray(cached.weekSteps) ? cached.weekSteps : []);
-          setDashboardTodaySteps(Number(cached.todaySteps || 0));
+          const safeDays = cached.movementDays.filter(row => row.source !== 'health_connect');
+          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => row.source !== 'health_connect');
+          setDashboardMovementDays(safeDays);
+          setDashboardWeekSteps(safeWeek);
+          setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === todayKey)?.steps || 0));
           setDashboardCachedAt(cached.cachedAt || null);
           setDashboardOffline(!navigator.onLine);
         }
       }
     } catch {}
     refreshDashboard();
-  }, [dashboardCacheKey, refreshDashboard]);
+    const onOnline = () => refreshDashboard();
+    const onVisible = () => { if (document.visibilityState === 'visible' && navigator.onLine) refreshDashboard(); };
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [dashboardCacheKey, refreshDashboard, todayKey]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
