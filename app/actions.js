@@ -7,16 +7,79 @@ function nairobiDateStr(date = new Date()) {
   return new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi', year:'numeric', month:'2-digit', day:'2-digit' }).format(date);
 }
 
+function cleanProteinLabel(value) {
+  return String(value || 'Protein').trim().slice(0, 80) || 'Protein';
+}
+
+function validProteinGrams(value) {
+  const grams = Math.round(Number(value));
+  return Number.isFinite(grams) && grams >= 1 && grams <= 300 ? grams : null;
+}
+
+function revalidateProteinViews(userId) {
+  revalidatePath('/protein');
+  revalidatePath('/hub');
+  revalidatePath('/hub/week');
+  revalidatePath('/account');
+  revalidatePath('/challenges');
+  if (userId) revalidatePath('/member/' + userId);
+}
+
 export async function logProteinAction({ productId = 'custom', productLabel = 'Protein', grams }) {
   const supabase = await createClient();
   const { data: { user }, error: authError } = await supabase.auth.getUser();
   if (authError || !user) return { error: 'Not signed in' };
-  const value = Math.round(Number(grams));
-  if (!Number.isFinite(value) || value <= 0 || value > 300) return { error: 'Enter protein between 1g and 300g.' };
-  const { error: logError } = await supabase.from('protein_logs').insert({ user_id:user.id, product_id:productId, product_label:productLabel || 'Protein', grams:value, log_date:nairobiDateStr() });
+  const value = validProteinGrams(grams);
+  if (!value) return { error: 'Enter protein between 1g and 300g.' };
+
+  const safeProductId = String(productId || 'custom').trim().slice(0, 80) || 'custom';
+  const safeLabel = cleanProteinLabel(productLabel);
+  const { data: log, error: logError } = await supabase
+    .from('protein_logs')
+    .insert({ user_id:user.id, product_id:safeProductId, product_label:safeLabel, grams:value, log_date:nairobiDateStr() })
+    .select('id,product_id,product_label,grams,log_date,logged_at')
+    .single();
   if (logError) return { error: logError.message };
-  await supabase.from('profiles').update({ onboarding_complete:true }).eq('id', user.id);
-  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/hub/week');
+
+  const { error: profileError } = await supabase.from('profiles').update({ onboarding_complete:true }).eq('id', user.id);
+  if (profileError) return { error: 'Your protein was logged, but your profile could not be refreshed. Please reload.' };
+  revalidateProteinViews(user.id);
+  return { ok:true, log };
+}
+
+export async function updateProteinLogAction({ logId, productLabel, grams }) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { error:'Not signed in' };
+  const value = validProteinGrams(grams);
+  if (!value) return { error:'Enter protein between 1g and 300g.' };
+  const id = String(logId || '').trim();
+  if (!id || id.length > 80) return { error:'Protein entry not found.' };
+
+  const { data: log, error } = await supabase.from('protein_logs')
+    .update({ product_label:cleanProteinLabel(productLabel), grams:value })
+    .eq('id', id).eq('user_id', user.id)
+    .select('id,product_id,product_label,grams,log_date,logged_at')
+    .maybeSingle();
+  if (error) return { error:error.message };
+  if (!log) return { error:'This protein entry could not be found. Refresh and try again.' };
+  revalidateProteinViews(user.id);
+  return { ok:true, log };
+}
+
+export async function deleteProteinLogAction({ logId }) {
+  const supabase = await createClient();
+  const { data: { user }, error: authError } = await supabase.auth.getUser();
+  if (authError || !user) return { error:'Not signed in' };
+  const id = String(logId || '').trim();
+  if (!id || id.length > 80) return { error:'Protein entry not found.' };
+
+  const { data: deleted, error } = await supabase.from('protein_logs')
+    .delete().eq('id', id).eq('user_id', user.id)
+    .select('id').maybeSingle();
+  if (error) return { error:error.message };
+  if (!deleted) return { error:'This protein entry could not be found. Refresh and try again.' };
+  revalidateProteinViews(user.id);
   return { ok:true };
 }
 
@@ -29,15 +92,17 @@ export async function saveTargetAction({ targetG, source = 'custom', effectiveDa
   const effectiveFrom = effectiveDate || nairobiDateStr();
   const safeSource = source === 'calculator' ? 'calculator' : 'custom';
 
-  // Keep the current profile target for the rest of the app, while also recording
-  // the effective date so historical week views remain accurate after edits.
-  const { error } = await supabase.from('profiles').update({ target_g:target, ...(safeSource === 'calculator' ? { onboarding_complete:true } : {}) }).eq('id', user.id);
+  const { error } = await supabase.rpc('save_protein_target', {
+    p_target_g:target,
+    p_source:safeSource,
+    p_effective_from:effectiveFrom,
+  });
   if (error) return { error:error.message };
-  const { error: historyError } = await supabase.from('protein_target_history').insert({ user_id:user.id, target_g:target, source:safeSource, effective_from:effectiveFrom });
-  if (historyError && !/protein_target_history|relation .* does not exist/i.test(historyError.message || '')) return { error:historyError.message };
 
-  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/hub/week'); revalidatePath('/hub/goal'); revalidatePath('/calculator'); revalidatePath('/account');
-  return { ok:true, historySaved:!historyError };
+  revalidateProteinViews(user.id);
+  revalidatePath('/hub/goal');
+  revalidatePath('/calculator');
+  return { ok:true, historySaved:true };
 }
 
 export async function confirmCalculatorTargetAction({ targetG }) {
@@ -47,17 +112,15 @@ export async function confirmCalculatorTargetAction({ targetG }) {
   const target = Math.round(Number(targetG));
   if (!Number.isFinite(target) || target < 20 || target > 500) return { error:'Target must be between 20g and 500g.' };
 
-  const { error } = await supabase.from('profiles').update({ target_g:target, onboarding_complete:true }).eq('id', user.id);
+  const { error } = await supabase.rpc('save_protein_target', {
+    p_target_g:target,
+    p_source:'calculator',
+    p_effective_from:nairobiDateStr(),
+  });
   if (error) return { error:error.message };
 
-  const { error: historyError } = await supabase
-    .from('protein_target_history')
-    .insert({ user_id:user.id, target_g:target, source:'calculator', effective_from:nairobiDateStr() });
-  if (historyError && !/protein_target_history|relation .* does not exist/i.test(historyError.message || '')) {
-    return { error:historyError.message };
-  }
-
-  revalidatePath('/'); revalidatePath('/hub'); revalidatePath('/account'); revalidatePath('/calculator');
+  revalidateProteinViews(user.id);
+  revalidatePath('/calculator');
   return { ok:true };
 }
 
@@ -65,9 +128,16 @@ export async function completeOnboardingAction() {
   const supabase = await createClient();
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return { error:'Not signed in' };
-  const { data: profile } = await supabase.from('profiles').select('target_g').eq('id', user.id).maybeSingle();
-  await supabase.from('profiles').update({ onboarding_complete:true }).eq('id', user.id);
-  if (profile?.target_g) await supabase.from('protein_target_history').insert({ user_id:user.id, target_g:Number(profile.target_g), source:'custom', effective_from:nairobiDateStr() });
-  revalidatePath('/hub');
+  const { data: profile, error:profileError } = await supabase.from('profiles').select('target_g').eq('id', user.id).maybeSingle();
+  if (profileError || !profile) return { error:profileError?.message || 'Profile not found.' };
+  const { error } = await supabase.from('profiles').update({ onboarding_complete:true }).eq('id', user.id);
+  if (error) return { error:error.message };
+  if (profile.target_g) {
+    const { error:historyError } = await supabase.from('protein_target_history').insert({
+      user_id:user.id, target_g:Number(profile.target_g), source:'custom', effective_from:nairobiDateStr()
+    });
+    if (historyError) return { error:historyError.message };
+  }
+  revalidateProteinViews(user.id);
   return { ok:true };
 }
