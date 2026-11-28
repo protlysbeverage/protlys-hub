@@ -195,10 +195,10 @@ export default function CalculatorClient({ savedTarget, profile }) {
           });
         }} disabled={isPending||saved}>{saved?<span style={{display:'inline-flex',alignItems:'center',justifyContent:'center',gap:7}}><svg viewBox="0 0 24 24" width="17" height="17" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true"><path d="m5 12 4 4L19 6"/></svg>Saved</span>:isPending?'Saving…':'Save my protein target'}</button>
         {saveMessage&&<p className="subhead" style={{marginTop:9,color:saveMessage==='Saved!'?'var(--green-dark)':'var(--ink-70)',fontWeight:saveMessage==='Saved!'?700:600}}>{saveMessage}</p>}
-        {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Start logging protein →</button>}
+        {saved&&<button className="btn-secondary" style={{marginTop:10}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button>}
       </div>}
     </div>
-    {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Start logging protein →</button></section>}
+    {saved&&!result&&<section className="section-card" style={{marginTop:20,border:'2px solid var(--green)'}}><span className="eyebrow">Saved!</span><p className="subhead" style={{marginTop:6}}>Your protein target has been saved to your Hub.</p><button className="btn-secondary" style={{marginTop:12}} onClick={()=>router.push('/account')}>Open Hub dashboard →</button></section>}
     {savedTarget&&!result&&!saved&&<p className="disclaimer" style={{marginTop:14}}>Your current saved target: <strong className="mono">{savedTarget}g / day</strong></p>}
   </div>;
 }
