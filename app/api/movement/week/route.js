@@ -25,10 +25,6 @@ export async function GET() {
   if (error) return NextResponse.json({ error:'Unable to load movement history' }, { status:500 });
 
   // Health Connect rows are excluded; Movement uses the phone sensor and other supported historical sources only.
-  const rows = (data || []).map(row =>
-    row.source === 'health_connect'
-      ? { ...row, steps:0, source:null, synced_at:null }
-      : { ...row, steps:Number(row.steps || 0) }
-  );
+  const rows = (data || []).filter(row => row.source !== 'health_connect').map(row => ({ ...row, steps:Number(row.steps || 0) }));
   return NextResponse.json({ rows }, { headers:{ 'Cache-Control':'private, no-store' } });
 }
