@@ -17,10 +17,14 @@ export default function GoalClient({ targetG, history=[] }) {
     if (!Number.isFinite(next)||next<20||next>500) return setMessage('Choose a target between 20g and 500g.');
     const effectiveDate=applyToday?null:new Intl.DateTimeFormat('en-CA',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).format(new Date(Date.now()+86400000));
     startTransition(async()=>{
-      const result=await saveTargetAction({targetG:next,source:'custom',effectiveDate});
-      if(result?.error) return setMessage(result.error);
-      setMessage(applyToday?`Target updated to ${next} g.`:`Target set to ${next} g from tomorrow.`);
-      router.refresh();
+      try {
+        const result=await saveTargetAction({targetG:next,source:'custom',effectiveDate});
+        if(result?.error) return setMessage(result.error);
+        setMessage(applyToday?`Target updated to ${next} g.`:`Target set to ${next} g from tomorrow.`);
+        router.refresh();
+      } catch {
+        setMessage('Could not save your protein target. Check your connection and try again.');
+      }
     });
   }
 
