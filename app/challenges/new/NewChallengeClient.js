@@ -10,19 +10,20 @@ const TYPES=[
  ['stillness','Stillness','Minutes of sessions','min',30,10000,'🧘',[10,30,60]],
  ['distance','Distance','Estimated km','km',5,10000,'📍',[5,10,25]]
 ];
-const today=()=>new Date().toISOString().slice(0,10);
-const plus7=()=>{const d=new Date();d.setDate(d.getDate()+7);return d.toISOString().slice(0,10)};
-const dayCount=(a,b)=>Math.floor((new Date(b)-new Date(a))/86400000);
+function nairobiDate(offset=0){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((result,part)=>(result[part.type]=part.value,result),{});return new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+offset)).toISOString().slice(0,10)}
+const today=()=>nairobiDate(0);
+const plus7=()=>nairobiDate(7);
+const dayCount=(a,b)=>Math.floor((new Date(b+'T12:00:00+03:00')-new Date(a+'T12:00:00+03:00'))/86400000)+1;
 
 export default function NewChallengeClient({groupId}){
  const router=useRouter();
- const [group,setGroup]=useState(null),[name,setName]=useState(''),[description,setDescription]=useState(''),[type,setType]=useState('steps'),[target,setTarget]=useState('10000'),[score,setScore]=useState('total'),[start,setStart]=useState(today()),[end,setEnd]=useState(plus7()),[visibility,setVisibility]=useState(groupId?'private':'public'),[teams,setTeams]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[dirty,setDirty]=useState(false),[vh,setVh]=useState('100dvh');
+ const [group,setGroup]=useState(null),[groupLoading,setGroupLoading]=useState(Boolean(groupId)),[name,setName]=useState(''),[description,setDescription]=useState(''),[type,setType]=useState('steps'),[target,setTarget]=useState('10000'),[score,setScore]=useState('total'),[start,setStart]=useState(today()),[end,setEnd]=useState(plus7()),[visibility,setVisibility]=useState(groupId?'private':'public'),[teams,setTeams]=useState(false),[busy,setBusy]=useState(false),[error,setError]=useState(''),[dirty,setDirty]=useState(false),[vh,setVh]=useState('100dvh');
  const spec=useMemo(()=>TYPES.find(x=>x[0]===type),[type]);
  const days=start&&end&&end>=start?dayCount(start,end):0;
  const dateError=end<start?'End date cannot be before the start date.':days>90?'Challenges can be at most 90 days.':'';
 
  useEffect(()=>{
-  if(groupId){createClient().from('groups').select('id,name').eq('id',groupId).maybeSingle().then(({data})=>setGroup(data||null))}
+  if(groupId){setGroupLoading(true);createClient().from('groups').select('id,name').eq('id',groupId).maybeSingle().then(({data,error})=>{setGroup(data||null);if(error||!data)setError('This group is no longer available. Return to the group and try again.');setGroupLoading(false)}).catch(()=>{setGroup(null);setGroupLoading(false);setError('Could not verify this group. Check your connection and try again.')})}else{setGroupLoading(false)}
   const vv=window.visualViewport,s=()=>setVh((vv?.height||window.innerHeight)+'px');s();vv?.addEventListener('resize',s);vv?.addEventListener('scroll',s);
   const pop=()=>{if(dirty&&!window.confirm('Discard this?')){history.pushState({},'',location.href);return}router.replace('/challenges')};history.pushState({},'',location.href);
   addEventListener('popstate',pop);return()=>{vv?.removeEventListener('resize',s);vv?.removeEventListener('scroll',s);removeEventListener('popstate',pop)};
@@ -41,10 +42,11 @@ export default function NewChallengeClient({groupId}){
    const {data:c,error:e1}=await supabase.from('challenges').insert({creator_id:user.id,name:name.trim(),description:description.trim()||null,challenge_type:type,target:Number(target),scoring_mode:score,step_target:type==='steps'?Number(target):0,start_date:start,end_date:end,visibility:groupId?'private':visibility,allow_teams:teams,group_id:groupId||null}).select('id').single();
    if(e1)throw e1;createdChallengeId=c.id;
    const m=await supabase.from('challenge_members').insert({challenge_id:c.id,user_id:user.id});if(m.error)throw m.error;
-   setDirty(false);sessionStorage.setItem('protlys-toast','Challenge created');router.replace('/challenges');router.refresh();
+   setDirty(false);try{sessionStorage.setItem('protlys-toast','Challenge created')}catch{}router.replace('/challenges');router.refresh();
   }catch(err){
-   if(createdChallengeId)await supabase.from('challenges').delete().eq('id',createdChallengeId);
-   setError(err?.message||'We could not create that challenge. Please try again.');setBusy(false);
+   let rollbackMessage='';
+   if(createdChallengeId){const {error:rollbackError}=await supabase.from('challenges').delete().eq('id',createdChallengeId).eq('creator_id',user?.id);if(rollbackError)rollbackMessage=' The challenge may have been created, but its membership could not be completed or rolled back. Please contact support.'}
+   setError((err?.message||'We could not create that challenge. Please try again.')+rollbackMessage);setBusy(false);
   }
  }
 
