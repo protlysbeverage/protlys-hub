@@ -119,11 +119,11 @@ Deno.serve(async (req) => {
     }]),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
-  // Health Connect aggregate with a lower phone-only sensor count.
+  // phone-sensor total with a lower count.
   const cleaned = dates.map((date) => {
     const incomingSteps = byDate.get(date) ?? 0;
     const stored = existingByDate.get(date);
-    // Discard a legacy Health Connect value for today when the sensor takes over.
+    // Discard legacy Health Connect values when phone-sensor data takes over.
     const existing = stored?.source === "health_connect" || stored?.is_flagged ? undefined : stored;
     const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
     return {
@@ -147,7 +147,7 @@ Deno.serve(async (req) => {
 
   const { data: allSteps, error: allStepsError } = await admin
     .from("daily_steps")
-    .select("step_date,steps,source")
+    .select("step_date,steps,source,is_flagged")
     .eq("user_id", connection.user_id)
     .gt("steps", 0)
     .order("step_date", { ascending: true });
