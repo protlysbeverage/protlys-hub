@@ -99,7 +99,7 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], email, foundingMember = false }) {
+export default function AccountClient({ profile, greetingName, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], email, foundingMember = false }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -212,7 +212,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     return () => window.clearInterval(timer);
   }, []);
   const greetingText = localHour >= 5 && localHour < 12 ? 'Good morning' : localHour >= 12 && localHour < 18 ? 'Good afternoon' : 'Good evening';
-  const greetingUsername = profile?.display_name?.trim().split(/\s+/)[0];
+  const greetingUsername = (greetingName || profile?.display_name || '').trim().split(/\s+/)[0];
   const avatarUrl = profile?.avatar_url;
   const totalSteps = Number(profile?.total_steps || 0);
   const stepGoal = Number(profile?.step_goal || 0) || 8000;
@@ -324,7 +324,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const links = [
     { href:`/member/${profile?.id}`, label:'Profile', desc:'View your public profile, stats and recent posts.', icon:'profile' },
     { href:'/movement', label:'Movement & steps', desc:'Record movement and see your activity history.', icon:'steps' },
-    { href:'/protein', label:'Protein tracker', desc:'Log today’s intake and review your daily target.', icon:'box' },
     { href:'/leaderboard', label:'Leaderboard', desc:'See how your steps compare this month.', icon:'leaderboard' },
     { href:'/challenges', label:'Challenges', desc:'Join challenges if they are useful to you.', icon:'challenge' },
     { href:'/', label:'Community', desc:'See the progress feed and share with the Hub.', icon:'community' },
