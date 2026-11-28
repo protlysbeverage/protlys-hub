@@ -14,121 +14,136 @@ async function getAuthedClient() {
 
 export async function createFeedPostAction({ body, postType, stats, imageBase64, imageName, imageType }) {
   const { supabase, user } = await getAuthedClient();
-  if (!user) return { error: 'Not signed in' };
-  const rawBody = typeof body === 'string' ? body : '';
-  if (!rawBody.trim() && !imageBase64) return { error: 'Add a caption or photo before posting.' };
+  if (!user) return { error:'Not signed in' };
+  const rawBody = typeof body === 'string' ? body.trim() : '';
+  if (!rawBody && !imageBase64) return { error:'Add a caption or photo before posting.' };
+  if (rawBody.length > 2000) return { error:'Keep your caption under 2,000 characters.' };
+
+  const allowedTypes = new Set(['progress','run','workout','milestone','general']);
+  const safePostType = allowedTypes.has(postType) ? postType : 'general';
   let imageUrl = null;
-  if (imageBase64 && imageName) {
+  let storagePath = null;
+  if (imageBase64) {
+    if (typeof imageBase64 !== 'string' || imageBase64.length > 12 * 1024 * 1024 || !imageName) {
+      return { error:'That photo is too large or could not be read. Choose a smaller image.' };
+    }
+    const mimeTypes = new Map([['image/jpeg','jpg'],['image/png','png'],['image/webp','webp']]);
+    const safeMime = mimeTypes.has(imageType) ? imageType : 'image/jpeg';
     const bytes = Buffer.from(imageBase64, 'base64');
-    const ext = imageName.split('.').pop()?.toLowerCase() || 'jpg';
-    const path = `${user.id}/${Date.now()}.${ext}`;
-    const { error: uploadError } = await supabase.storage.from('feed-images').upload(path, bytes, { contentType: imageType || 'image/jpeg', upsert: false });
-    if (uploadError) return { error: `Photo upload failed: ${uploadError.message}` };
-    const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
+    if (!bytes.length || bytes.length > 8 * 1024 * 1024) return { error:'Photos must be 8MB or smaller.' };
+    storagePath = user.id + '/' + Date.now() + '.' + mimeTypes.get(safeMime);
+    const { error:uploadError } = await supabase.storage.from('feed-images').upload(storagePath, bytes, { contentType:safeMime, upsert:false });
+    if (uploadError) return { error:'Photo upload failed: ' + uploadError.message };
+    const { data:urlData } = supabase.storage.from('feed-images').getPublicUrl(storagePath);
     imageUrl = urlData?.publicUrl || null;
   }
 
-  const { data: createdPost, error } = await supabase
-    .from('feed_posts')
-    .insert({ user_id: user.id, body: rawBody || null, image_url: imageUrl, post_type: postType || 'general', stats: stats || null })
-    .select('id, created_at')
-    .single();
-  if (error) return { error: error.message };
+  const { data:createdPost, error } = await supabase.from('feed_posts')
+    .insert({ user_id:user.id, body:rawBody || null, image_url:imageUrl, post_type:safePostType, stats:stats || null })
+    .select('id,created_at').single();
+  if (error) {
+    if (storagePath) { try { await supabase.storage.from('feed-images').remove([storagePath]); } catch {} }
+    return { error:error.message };
+  }
 
+  let warning = null;
   const steps = extractStepCount(stats);
   if (steps > 0) {
     const movement = await applyMovementDelta({
-      supabase,
-      userId: user.id,
-      stepDate: dateFromTimestamp(createdPost.created_at),
-      delta: steps,
-      source: 'feed',
-      syncedAt: createdPost.created_at,
+      supabase, userId:user.id, stepDate:dateFromTimestamp(createdPost.created_at),
+      delta:steps, source:'feed', syncedAt:createdPost.created_at,
     });
-    if (movement?.error) return { error: `Post created, but movement could not be synced: ${movement.error}` };
+    if (movement?.error) warning = 'Post published, but its movement total could not be updated. Refresh Movement to check it.';
   }
 
-  revalidatePath('/');
-  revalidatePath('/movement');
-  revalidatePath(`/member/${user.id}`);
-  return { ok: true };
+  revalidatePath('/'); revalidatePath('/feed'); revalidatePath('/movement'); revalidatePath('/member/' + user.id);
+  return { ok:true, warning };
 }
 
 export async function updateFeedPostAction({ postId, body, postType, stats, removeImage = false }) {
   const { supabase, user } = await getAuthedClient();
-  if (!user) return { error: 'Not signed in' };
-  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url, stats, created_at').eq('id', postId).single();
-  if (lookupError || !post) return { error: 'Post not found.' };
-  if (post.user_id !== user.id) return { error: 'You can only edit your own posts.' };
+  if (!user) return { error:'Not signed in' };
+  const { data:post, error:lookupError } = await supabase.from('feed_posts')
+    .select('id,user_id,image_url,stats,created_at').eq('id',postId).single();
+  if (lookupError || !post) return { error:'Post not found.' };
+  if (post.user_id !== user.id) return { error:'You can only edit your own posts.' };
 
+  const rawBody = typeof body === 'string' ? body.trim() : '';
+  if (rawBody.length > 2000) return { error:'Keep your caption under 2,000 characters.' };
+  if (!rawBody && (!post.image_url || removeImage)) return { error:'Add a caption or keep a photo on the post.' };
+  const allowedTypes = new Set(['progress','run','workout','milestone','general']);
+  const safePostType = allowedTypes.has(postType) ? postType : 'general';
   let imageUrl = post.image_url;
+  let oldStoragePath = null;
   if (removeImage && imageUrl) {
-    const marker = '/feed-images/'; const index = imageUrl.indexOf(marker);
-    if (index >= 0) {
-      const storagePath = decodeURIComponent(imageUrl.slice(index + marker.length).split('?')[0]);
-      const { error: storageError } = await supabase.storage.from('feed-images').remove([storagePath]);
-      if (storageError) return { error: `Could not remove photo: ${storageError.message}` };
-    }
+    const marker = '/feed-images/';
+    const index = imageUrl.indexOf(marker);
+    if (index >= 0) oldStoragePath = decodeURIComponent(imageUrl.slice(index + marker.length).split('?')[0]);
     imageUrl = null;
   }
 
-  const { error } = await supabase
-    .from('feed_posts')
-    .update({ body: typeof body === 'string' ? (body || null) : null, post_type: postType || 'general', stats: stats || null, image_url: imageUrl })
-    .eq('id', postId)
-    .eq('user_id', user.id);
-  if (error) return { error: error.message };
+  const { data:updatedPost, error } = await supabase.from('feed_posts')
+    .update({ body:rawBody || null, post_type:safePostType, stats:stats || null, image_url:imageUrl })
+    .eq('id',postId).eq('user_id',user.id).select('id').maybeSingle();
+  if (error) return { error:error.message };
+  if (!updatedPost) return { error:'Post could not be updated. Refresh and try again.' };
+
+  let warning = null;
+  if (oldStoragePath) {
+    const { error:storageError } = await supabase.storage.from('feed-images').remove([oldStoragePath]);
+    if (storageError) warning = 'Post updated, but its old photo could not be removed from storage.';
+  }
 
   const oldSteps = extractStepCount(post.stats);
   const newSteps = extractStepCount(stats);
   const delta = newSteps - oldSteps;
   if (delta !== 0) {
     const movement = await applyMovementDelta({
-      supabase,
-      userId: user.id,
-      stepDate: dateFromTimestamp(post.created_at),
-      delta,
-      source: 'feed',
-      syncedAt: post.created_at,
+      supabase, userId:user.id, stepDate:dateFromTimestamp(post.created_at),
+      delta, source:'feed', syncedAt:post.created_at,
     });
-    if (movement?.error) return { error: `Post updated, but movement could not be synced: ${movement.error}` };
+    if (movement?.error) warning = 'Post updated, but its movement total could not be updated. Refresh Movement to check it.';
   }
 
-  revalidatePath('/');
-  revalidatePath('/movement');
-  return { ok: true };
+  revalidatePath('/'); revalidatePath('/feed'); revalidatePath('/movement'); revalidatePath('/member/' + user.id);
+  return { ok:true, warning };
 }
 
 export async function deleteFeedPostAction({ postId }) {
   const { supabase, user } = await getAuthedClient();
-  if (!user) return { error: 'Not signed in' };
-  const { data: post, error: lookupError } = await supabase.from('feed_posts').select('id, user_id, image_url, stats, created_at').eq('id', postId).single();
-  if (lookupError || !post) return { error: 'Post not found.' };
-  if (post.user_id !== user.id) return { error: 'You can only delete your own posts.' };
+  if (!user) return { error:'Not signed in' };
+  const { data:post, error:lookupError } = await supabase.from('feed_posts')
+    .select('id,user_id,image_url,stats,created_at').eq('id',postId).single();
+  if (lookupError || !post) return { error:'Post not found.' };
+  if (post.user_id !== user.id) return { error:'You can only delete your own posts.' };
 
+  const { data:deleted, error } = await supabase.from('feed_posts').delete()
+    .eq('id',postId).eq('user_id',user.id).select('id').maybeSingle();
+  if (error) return { error:error.message };
+  if (!deleted) return { error:'Post could not be deleted. Refresh and try again.' };
+
+  let warning = null;
   if (post.image_url) {
-    const marker = '/feed-images/'; const index = post.image_url.indexOf(marker);
-    if (index >= 0) await supabase.storage.from('feed-images').remove([decodeURIComponent(post.image_url.slice(index + marker.length).split('?')[0])]);
+    const marker = '/feed-images/';
+    const index = post.image_url.indexOf(marker);
+    if (index >= 0) {
+      const storagePath = decodeURIComponent(post.image_url.slice(index + marker.length).split('?')[0]);
+      const { error:storageError } = await supabase.storage.from('feed-images').remove([storagePath]);
+      if (storageError) warning = 'Post deleted, but its photo could not be removed from storage.';
+    }
   }
-  const { error } = await supabase.from('feed_posts').delete().eq('id', postId).eq('user_id', user.id);
-  if (error) return { error: error.message };
 
   const steps = extractStepCount(post.stats);
   if (steps > 0) {
     const movement = await applyMovementDelta({
-      supabase,
-      userId: user.id,
-      stepDate: dateFromTimestamp(post.created_at),
-      delta: -steps,
-      source: 'feed',
-      syncedAt: post.created_at,
+      supabase, userId:user.id, stepDate:dateFromTimestamp(post.created_at),
+      delta:-steps, source:'feed', syncedAt:post.created_at,
     });
-    if (movement?.error) return { error: `Post deleted, but movement could not be synced: ${movement.error}` };
+    if (movement?.error) warning = 'Post deleted, but its movement total could not be updated. Refresh Movement to check it.';
   }
 
-  revalidatePath('/');
-  revalidatePath('/movement');
-  return { ok: true };
+  revalidatePath('/'); revalidatePath('/feed'); revalidatePath('/movement'); revalidatePath('/member/' + user.id);
+  return { ok:true, warning };
 }
 
 export async function getFeedCommentsAction({ postId }) {
@@ -174,7 +189,7 @@ export async function getFeedCommentsAction({ postId }) {
   }
 
   return {
-    comments: comments.map(comment => ({
+    comments: visibleComments.map(comment => ({
       ...comment,
       like_count: counts.get(String(comment.id)) || 0,
       liked: likedIds.has(String(comment.id)),
@@ -202,8 +217,28 @@ export async function toggleFeedLikeAction({ postId }) {
     const { error } = await supabase.from('feed_likes').insert({ post_id: postId, user_id: user.id });
     if (error) return { error: error.message };
   }
-  revalidatePath('/');
+  revalidatePath('/'); revalidatePath('/feed');
   return { ok: true };
+}
+
+export async function deleteFeedCommentAction({ commentId }) {
+  const { supabase, user } = await getAuthedClient();
+  if (!user) return { error:'Not signed in' };
+  const id = String(commentId || '').trim();
+  if (!id || id.length > 80) return { error:'Comment not found.' };
+  const { data:comment, error:lookupError } = await supabase.from('feed_comments')
+    .select('id,user_id,post_id').eq('id',id).maybeSingle();
+  if (lookupError || !comment) return { error:'Comment not found.' };
+  if (String(comment.user_id) !== String(user.id)) return { error:'You can only delete your own comments.' };
+  const { count:replyCount, error:replyError } = await supabase.from('feed_comments').select('id',{count:'exact',head:true}).eq('parent_comment_id',id);
+  if (replyError) return { error:replyError.message };
+  if (Number(replyCount || 0) > 0) return { error:'This comment has replies. Delete the replies first.' };
+  const { data:deleted, error } = await supabase.from('feed_comments').delete()
+    .eq('id',id).eq('user_id',user.id).select('id').maybeSingle();
+  if (error) return { error:error.message };
+  if (!deleted) return { error:'Comment could not be deleted. Refresh and try again.' };
+  revalidatePath('/'); revalidatePath('/feed');
+  return { ok:true };
 }
 
 export async function addFeedCommentAction({ postId, body, parentCommentId = null }) {
@@ -211,6 +246,7 @@ export async function addFeedCommentAction({ postId, body, parentCommentId = nul
   if (!user) return { error: 'Not signed in' };
   const cleanBody = String(body || '').trim();
   if (!cleanBody) return { error: 'Comment cannot be empty.' };
+  if (cleanBody.length > 1000) return { error:'Keep comments under 1,000 characters.' };
 
   const payload = { post_id: postId, user_id: user.id, body: cleanBody };
   if (parentCommentId) payload.parent_comment_id = String(parentCommentId);

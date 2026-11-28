@@ -27,7 +27,7 @@ export default function GoalClient({ targetG, history=[] }) {
   function resetCalculator(){ if(latestCalculator){setValue(Number(latestCalculator.target_g));setMessage('Calculator target loaded. Save to apply it.');} else setMessage('No saved calculator target yet.'); }
 
   return <div className="screen-pad" style={{maxWidth:560,margin:'0 auto',paddingTop:24}}>
-    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><span className="eyebrow">Goal</span><h1 style={{fontSize:25,marginTop:4}}>Your daily protein target</h1></div><button className="link-btn" onClick={()=>router.push('/hub')}>Back</button></div>
+    <div style={{display:'flex',justifyContent:'space-between',alignItems:'center'}}><div><span className="eyebrow">Goal</span><h1 style={{fontSize:25,marginTop:4}}>Your daily protein target</h1></div><button className="link-btn" onClick={()=>router.push('/account')}>Back</button></div>
     <section className="section-card" style={{marginTop:18,textAlign:'center',padding:'28px 18px'}}>
       <div className="mono" style={{fontSize:68,fontWeight:800,lineHeight:1,letterSpacing:'-.05em'}}>{value}<span style={{fontSize:21,opacity:.5}}> g</span></div>
       <div style={{fontSize:12,color:'var(--ink-45)',marginTop:8}}>Daily protein target</div>

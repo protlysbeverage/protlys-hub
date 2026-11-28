@@ -79,7 +79,8 @@ Deno.serve(async (req) => {
   if (!connection) return json({ error: "Tracking connection is not active" }, 401);
 
   const body = await req.json().catch(() => ({}));
-  const source = body?.source === "android_sensor" ? "android_sensor" : "health_connect";
+  const source = body?.source === "android_sensor" ? "android_sensor" : null;
+  if (!source) return json({ error: "Only phone sensor step sync is supported" }, 400);
   const days = Array.isArray(body?.days) ? body.days : [];
   if (days.length < 1 || days.length > 31) return json({ error: "Send between 1 and 31 days" }, 400);
 
@@ -94,8 +95,7 @@ Deno.serve(async (req) => {
   for (const row of days) {
     const date = String(row?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < minimumDate || date > today) continue;
-    // Health Connect is historical backfill only; today's total always comes from the phone sensor.
-    if (date === today && source !== "android_sensor") continue;
+    // Normalize and clamp phone-sensor input before writing daily totals.
     const rawSteps = Number(row?.steps ?? 0);
     if (!Number.isFinite(rawSteps)) continue;
     const steps = Math.max(0, Math.min(60000, Math.floor(rawSteps)));
@@ -106,24 +106,25 @@ Deno.serve(async (req) => {
   const dates = [...byDate.keys()];
   const { data: existingRows, error: existingError } = await admin
     .from("daily_steps")
-    .select("step_date,steps,source")
+    .select("step_date,steps,source,is_flagged")
     .eq("user_id", connection.user_id)
     .in("step_date", dates);
   if (existingError) return json({ error: existingError.message }, 500);
 
-  const existingByDate = new Map<string, { steps: number; source: string }>(
+  const existingByDate = new Map<string, { steps: number; source: string; is_flagged: boolean }>(
     (existingRows || []).map((row: any) => [String(row.step_date), {
       steps: Number(row.steps || 0),
       source: String(row.source || "health_connect"),
+      is_flagged: Boolean(row.is_flagged),
     }]),
   );
   // A delayed or offline phone sync must never overwrite a newer, higher
-  // Health Connect aggregate with a lower phone-only sensor count.
+  // phone-sensor total with a lower count.
   const cleaned = dates.map((date) => {
     const incomingSteps = byDate.get(date) ?? 0;
     const stored = existingByDate.get(date);
-    // Discard a legacy Health Connect value for today when the sensor takes over.
-    const existing = date === today && stored?.source === "health_connect" ? undefined : stored;
+    // Discard legacy Health Connect values when phone-sensor data takes over.
+    const existing = stored?.source === "health_connect" || stored?.is_flagged ? undefined : stored;
     const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
     return {
       step_date: date,
@@ -146,7 +147,7 @@ Deno.serve(async (req) => {
 
   const { data: allSteps, error: allStepsError } = await admin
     .from("daily_steps")
-    .select("step_date,steps,source")
+    .select("step_date,steps,source,is_flagged")
     .eq("user_id", connection.user_id)
     .gt("steps", 0)
     .order("step_date", { ascending: true });
@@ -154,7 +155,7 @@ Deno.serve(async (req) => {
   if (allStepsError) return json({ error: allStepsError.message }, 500);
 
   const validSteps = (allSteps || []).filter((row: any) =>
-    !(row.step_date === today && row.source === "health_connect")
+    row.source !== "health_connect" && !row.is_flagged
   );
   const totalSteps = validSteps.reduce((sum: number, row: any) => sum + Number(row.steps || 0), 0);
   const stepStreak = calculateStreak(validSteps);

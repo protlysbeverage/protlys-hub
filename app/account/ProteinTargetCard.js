@@ -11,8 +11,9 @@ export default function ProteinTargetCard({ targetG }) {
         <div className="mono" style={{fontSize:28, fontWeight:800, marginTop:5}}>
           {Math.round(target)}g <span style={{fontSize:13, fontWeight:600, color:'var(--ink-45)'}}>/ day</span>
         </div>
-        <div style={{fontSize:12, color:'var(--ink-55)', marginTop:5}}>
-          Your daily protein target from the Protlys calculator.
+        <div style={{fontSize:12, color:'var(--ink-55)', marginTop:5,display:'flex',justifyContent:'space-between',alignItems:'center',gap:12}}>
+          <span>Your daily protein target from the Protlys calculator.</span>
+          <a href="/hub/goal" style={{color:'var(--green-dark)',fontWeight:800,whiteSpace:'nowrap',textDecoration:'none'}}>Edit target →</a>
         </div>
       </div>
     </div>

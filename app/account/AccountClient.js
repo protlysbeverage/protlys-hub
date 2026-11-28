@@ -99,7 +99,7 @@ function CircularProgress({ steps, goal, dayKey }) {
   </div>;
 }
 
-export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], email }) {
+export default function AccountClient({ profile, achievements = [], todaySteps = 0, weekSteps = [], movementDays = [], email, foundingMember = false }) {
   const router = useRouter();
   const fileRef = useRef(null);
   const [uploading, setUploading] = useState(false);
@@ -111,10 +111,12 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
   const [dashboardError, setDashboardError] = useState('');
   const [dashboardOffline, setDashboardOffline] = useState(false);
   const [dashboardCachedAt, setDashboardCachedAt] = useState(null);
-  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v1:${profile.id}` : null;
+  const dashboardCacheKey = profile?.id ? `protlys-dashboard-cache-v2:${profile.id}` : null;
+  const dashboardRefreshInFlight = useRef(false);
 
   const refreshDashboard = useCallback(async () => {
-    if (!profile?.id) return;
+    if (!profile?.id || dashboardRefreshInFlight.current) return;
+    dashboardRefreshInFlight.current = true;
     setDashboardRefreshing(true);
     setDashboardError('');
     try {
@@ -125,7 +127,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
-        .select('step_date,steps')
+        .select('step_date,steps,source,is_flagged')
         .eq('user_id', profile.id)
         .gte('step_date', oldest)
         .lte('step_date', today)
@@ -133,7 +135,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         .limit(365);
       if (error) throw error;
 
-      const rows = data || [];
+      const rows = (data || []).filter(row => row.source !== 'health_connect' && !row.is_flagged);
       const weekAgoDate = new Date(today + 'T12:00:00+03:00');
       weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
       const weekAgo = localDateStr(weekAgoDate);
@@ -161,6 +163,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       setDashboardOffline(true);
       setDashboardError('Could not refresh movement history. Saved activity remains visible when available.');
     } finally {
+      dashboardRefreshInFlight.current = false;
       setDashboardRefreshing(false);
     }
   }, [profile?.id, dashboardCacheKey]);
@@ -171,15 +174,25 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       if (raw) {
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.movementDays)) {
-          setDashboardMovementDays(cached.movementDays);
-          setDashboardWeekSteps(Array.isArray(cached.weekSteps) ? cached.weekSteps : []);
-          setDashboardTodaySteps(Number(cached.todaySteps || 0));
+          const safeDays = cached.movementDays.filter(row => row.source !== 'health_connect' && !row.is_flagged);
+          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => row.source !== 'health_connect' && !row.is_flagged);
+          setDashboardMovementDays(safeDays);
+          setDashboardWeekSteps(safeWeek);
+          setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === localDateStr())?.steps || 0));
           setDashboardCachedAt(cached.cachedAt || null);
           setDashboardOffline(!navigator.onLine);
         }
       }
     } catch {}
     refreshDashboard();
+    const onOnline = () => refreshDashboard();
+    const onVisible = () => { if (document.visibilityState === 'visible' && navigator.onLine) refreshDashboard(); };
+    window.addEventListener('online', onOnline);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('online', onOnline);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [dashboardCacheKey, refreshDashboard]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -199,15 +212,16 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     return () => window.clearInterval(timer);
   }, []);
   const greetingText = localHour >= 5 && localHour < 12 ? 'Good morning' : localHour >= 12 && localHour < 18 ? 'Good afternoon' : 'Good evening';
-  const greetingUsername = profile?.username?.trim();
+  const greetingUsername = profile?.display_name?.trim().split(/\s+/)[0];
   const avatarUrl = profile?.avatar_url;
   const totalSteps = Number(profile?.total_steps || 0);
   const stepGoal = Number(profile?.step_goal || 0) || 8000;
   const profileUrl = typeof window !== 'undefined' ? `${window.location.origin}/member/${profile?.id}` : `/member/${profile?.id}`;
   const todayKey = new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi' }).format(new Date());
   const activeDays = Array.from({ length:7 }, (_, index) => {
-    const date = new Date(); date.setDate(date.getDate() - (6 - index));
-    const key = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
+    const date = new Date(todayKey + 'T12:00:00+03:00');
+    date.setUTCDate(date.getUTCDate() - (6 - index));
+    const key = new Intl.DateTimeFormat('en-CA', { timeZone:'Africa/Nairobi' }).format(date);
     const row = dashboardWeekSteps.find(item => item.step_date === key);
     return { key, steps:Number(row?.steps || 0) };
   });
@@ -262,30 +276,55 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
     if (!file.type.startsWith('image/')) return setMessage('Choose an image file.');
     if (file.size > 5 * 1024 * 1024) return setMessage('Photo must be 5MB or smaller.');
     setUploading(true); setMessage('');
+    let supabase = null;
+    let uploadedPath = null;
     try {
-      const supabase = createClient(); const { data: { user } } = await supabase.auth.getUser();
+      supabase = createClient();
+      const { data:{ user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
       const avatarBlob = await prepareAvatarImage(file);
-      const path = `avatars/${user.id}/profile-${Date.now()}.webp`;
-      const { error } = await supabase.storage.from('feed-images').upload(path, avatarBlob, { cacheControl:'31536000', upsert:false, contentType:'image/webp' });
-      if (error) throw error;
-      const { data: urlData } = supabase.storage.from('feed-images').getPublicUrl(path);
-      const { error: profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id);
+      uploadedPath = 'avatars/' + user.id + '/profile-' + Date.now() + '.webp';
+      const { error:uploadError } = await supabase.storage.from('feed-images').upload(uploadedPath, avatarBlob, { cacheControl:'31536000', upsert:false, contentType:'image/webp' });
+      if (uploadError) throw uploadError;
+      const { data:urlData } = supabase.storage.from('feed-images').getPublicUrl(uploadedPath);
+      const { data:updatedProfile, error:profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id).select('id').maybeSingle();
       if (profileError) throw profileError;
+      if (!updatedProfile) throw new Error('Your profile could not be updated. Please try again.');
+      uploadedPath = null;
       setMessage('Profile photo updated.'); router.refresh();
-    } catch (error) { setMessage(error?.message || 'Could not update profile photo.'); }
-    finally { setUploading(false); }
+    } catch (error) {
+      if (supabase && uploadedPath) {
+        try { await supabase.storage.from('feed-images').remove([uploadedPath]); } catch {}
+      }
+      setMessage(error?.message || 'Could not update profile photo.');
+    } finally { setUploading(false); }
   }
 
   async function handleSignOut() {
     setSigningOut(true);
-    try { if (profile?.id) { localStorage.removeItem(`protlys-feed-cache-v1:${profile.id}`); localStorage.removeItem(`protlys-dashboard-cache-v1:${profile.id}`); } } catch {}
-    const supabase = createClient(); await supabase.auth.signOut(); router.push('/login'); router.refresh();
+    const supabase = createClient();
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      try { window.ProtlysNative?.clearSyncToken?.(); } catch {}
+      try {
+        if (profile?.id) {
+          localStorage.removeItem('protlys-feed-cache-v1:' + profile.id);
+          localStorage.removeItem('protlys-dashboard-cache-v1:' + profile.id);
+          localStorage.removeItem('protlys_movement_cache_v2_' + profile.id);
+        }
+      } catch {}
+      router.push('/login'); router.refresh();
+    } catch (error) {
+      setMessage(error?.message || 'Could not sign out. Please try again.');
+      setSigningOut(false);
+    }
   }
 
   const links = [
     { href:`/member/${profile?.id}`, label:'Profile', desc:'View your public profile, stats and recent posts.', icon:'profile' },
     { href:'/movement', label:'Movement & steps', desc:'Record movement and see your activity history.', icon:'steps' },
+    { href:'/protein', label:'Protein tracker', desc:'Log today’s intake and review your daily target.', icon:'box' },
     { href:'/leaderboard', label:'Leaderboard', desc:'See how your steps compare this month.', icon:'leaderboard' },
     { href:'/challenges', label:'Challenges', desc:'Join challenges if they are useful to you.', icon:'challenge' },
     { href:'/', label:'Community', desc:'See the progress feed and share with the Hub.', icon:'community' },
@@ -406,6 +445,6 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       </div>
       <div style={{marginTop:10,textAlign:'center'}}><BuildStamp /></div>
     </div>
-    <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Number(profile?.founding_member)===1 || Number(profile?.founding_member)===true || true} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
+    <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Boolean(foundingMember)} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
   </>;
 }

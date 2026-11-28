@@ -10,6 +10,7 @@ import {
   createFeedPostAction,
   updateFeedPostAction,
   deleteFeedPostAction,
+  deleteFeedCommentAction,
   getFeedCommentsAction,
   toggleFeedLikeAction,
   toggleFeedCommentLikeAction,
@@ -159,13 +160,13 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
     }
   }
   return <div className="profile-comment-input" style={{ marginTop: compact ? 7 : 14, display: 'flex', gap: compact ? 7 : 10, alignItems: 'center' }}>
-    <input ref={ref} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
+    <input ref={ref} maxLength={1000} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
     <button className="btn-secondary" onClick={submit} disabled={loading} style={{ width: 'auto', minWidth: compact ? 62 : 82, padding: compact ? '7px 10px' : '11px 18px', marginTop: 0, fontSize: compact ? 11 : 14 }}>{loading ? 'Posting…' : parentCommentId ? 'Reply' : 'Post'}</button>
     {error && <span style={{ position: 'absolute', marginTop: compact ? 52 : 62, color: '#B3261E', fontSize: 12 }}>{error}</span>}
   </div>;
 }
 
-function CommentRow({ comment, onLike, onReply, postId, depth = 0, currentUserId, onModerate }) {
+function CommentRow({ comment, onLike, onReply, onDelete, postId, depth = 0, currentUserId, onModerate }) {
   const [replyOpen, setReplyOpen] = useState(false);
   const likeCount = Number(comment.like_count || 0);
   return <Message className="protlys-feed-comment">
@@ -175,7 +176,7 @@ function CommentRow({ comment, onLike, onReply, postId, depth = 0, currentUserId
     <MessageContent>
       <MessageHeader>
         <Link href={`/member/${comment.user_id}`} style={{fontWeight:800,color:'var(--ink)',textDecoration:'none'}}>{comment.profiles?.display_name || 'Member'}</Link>
-        <span style={{display:'inline-flex',alignItems:'center',gap:6}}>{timeAgo(comment.created_at)}{String(comment.user_id)!==String(currentUserId)&&<button type="button" aria-label="Comment options" onClick={()=>onModerate?.(comment)} style={{border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:18,lineHeight:1}}>⋮</button>}</span>
+        <span style={{display:'inline-flex',alignItems:'center',gap:8}}>{timeAgo(comment.created_at)}{String(comment.user_id)===String(currentUserId)?<button type="button" aria-label="Delete comment" onClick={()=>onDelete?.(comment)} style={{border:0,background:'transparent',padding:0,color:'#B3261E',fontSize:11,fontWeight:800,cursor:'pointer'}}>Delete</button>:<button type="button" aria-label="Comment options" onClick={()=>onModerate?.(comment)} style={{border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:18,lineHeight:1}}>⋮</button>}</span>
       </MessageHeader>
       <Bubble><BubbleContent>{comment.body}</BubbleContent></Bubble>
       <MessageFooter>
@@ -211,6 +212,15 @@ function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onMod
     if ((initialCount || 0) > 0 && comments === null) loadComments();
   }, [postId, initialCount]);
 
+  async function deleteComment(comment) {
+    if (!window.confirm('Delete this comment?')) return;
+    setError('');
+    const result = await deleteFeedCommentAction({ commentId:comment.id });
+    if (result?.error) { setError(result.error); return; }
+    await loadComments();
+    onCommented?.();
+  }
+
   async function toggleCommentLike(commentId) {
     if (!navigator.onLine) { setError('You are offline. Reconnect to like comments.'); return; }
     setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, Number(comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
@@ -229,8 +239,8 @@ function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onMod
     {error && <div style={{ color: '#B3261E', fontSize: 12, marginBottom: 8 }}>{error}</div>}
     {!error && comments.length > 0 && <div style={{ display: 'grid', gap: 12 }}>
       {visibleRoots.map(comment => <div key={comment.id}>
-        <CommentRow comment={comment} onLike={toggleCommentLike} postId={postId} onReply={loadComments} currentUserId={currentUserId} onModerate={onModerate} />
-        {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 44, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} postId={postId} onReply={loadComments} depth={1} currentUserId={currentUserId} onModerate={onModerate} /></div>)}
+        <CommentRow comment={comment} onLike={toggleCommentLike} postId={postId} onReply={loadComments} onDelete={deleteComment} currentUserId={currentUserId} onModerate={onModerate} />
+        {replies.filter(reply => String(reply.parent_comment_id) === String(comment.id)).map(reply => <div key={reply.id} style={{ marginLeft: 44, marginTop: 9, paddingLeft: 10, borderLeft: '2px solid var(--line)' }}><CommentRow comment={reply} onLike={toggleCommentLike} postId={postId} onReply={loadComments} onDelete={deleteComment} depth={1} currentUserId={currentUserId} onModerate={onModerate} /></div>)}
       </div>)}
       {hiddenCount > 0 && <button onClick={() => setExpanded(value => !value)} style={{ border: 0, background: 'transparent', padding: 0, textAlign: 'left', color: 'var(--ink-60)', fontSize: 12, fontWeight: 800, cursor: 'pointer' }}>{expanded ? 'Show fewer comments' : `View ${hiddenCount} more comment${hiddenCount === 1 ? '' : 's'}`}</button>}
     </div>}
@@ -253,7 +263,7 @@ function EditPost({ post, onDone, onCancel, onToast }) {
     const result = await updateFeedPostAction({ postId: post.id, body, postType, stats: statsData, removeImage });
     setLoading(false);
     if (result?.error) { setError(result.error); return; }
-    onToast('Post updated'); onDone();
+    onToast(result?.warning || 'Post updated'); onDone();
   }
   return <div style={{ marginTop: 12, padding: 14, border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)' }}>
     <textarea value={body} onChange={e => setBody(e.target.value)} className="field-input" style={{ width: '100%', minHeight: 86, resize: 'vertical', padding: 10, fontFamily: 'inherit', marginBottom: 10 }} placeholder="Edit your post…" />
@@ -278,7 +288,7 @@ function ComposePost({ profile, onPosted }) {
     const statsData = (stats.steps || stats.distance || stats.duration) ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null } : null;
     const result = await createFeedPostAction({ body, postType, stats: statsData, imageBase64: imageData?.base64 || null, imageName: imageData?.name || null, imageType: imageData?.type || null });
     setLoading(false); if (result?.error) { setError(result.error); return; }
-    if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted();
+    if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted(result?.warning);
   }
   return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 10, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
     <style>{`
@@ -467,7 +477,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     const result = await deleteFeedPostAction({ postId: post.id });
     if (result?.error) { showToast(result.error); return; }
     setFeedPosts(current => current.filter(item => item.id !== post.id));
-    showToast('Post deleted');
+    showToast(result?.warning || 'Post deleted');
   }
   function handleShare(post) { setSharePost(post); }
   function moderate(target) { setModerationMenu(target); }
@@ -479,7 +489,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     <span className="eyebrow">Community</span>
     <h1>Progress feed</h1>
     <p className="subhead">Share movement, milestones and everyday wins with the Hub.</p>
-    <ComposePost profile={feedProfile} onPosted={() => { showToast('Posted'); refreshFeed(); }} />
+    <ComposePost profile={feedProfile} onPosted={(warning) => { showToast(warning || 'Posted'); refreshFeed(); }} />
 
     <RelaxationContextCard />
 

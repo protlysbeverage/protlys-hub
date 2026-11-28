@@ -169,9 +169,9 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
         cache: 'no-store',
         headers: { Accept: 'application/json' },
       });
-      if (!response.ok) return;
+      if (!response.ok) { weekLoadedRef.current = false; return; }
       const data = await response.json();
-      const rows = Array.isArray(data.rows) ? data.rows : [];
+      const rows = (Array.isArray(data.rows) ? data.rows : []).filter(row => row.source !== 'health_connect' && !row.is_flagged);
       const normalized = [
         ...rows.filter(row => row.step_date !== todayKey),
         { step_date: todayKey, steps: Number(displayedTodayRef.current || 0), source: 'android_sensor' },
@@ -179,14 +179,26 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       weekStepsRef.current = normalized;
       setWeekSteps(normalized);
       persist({ weekSteps: normalized });
-    } catch {}
+      setIsOffline(false);
+    } catch {
+      weekLoadedRef.current = false;
+    }
   }, [persist, todayKey]);
+
+  useEffect(() => {
+    weekLoadedRef.current = false;
+    displayedTodayRef.current = 0;
+    weekStepsRef.current = [];
+    lifetimeStepsRef.current = 0;
+    setTodaySteps(0); setWeekSteps([]); setLifetimeSteps(0);
+    setCurrentStreak(0); setLastSync(null); setSource(null);
+  }, [userId, todayKey]);
 
   useEffect(() => {
     if (!userId) return undefined;
     let cancelled = false;
     const onOffline = () => setIsOffline(true);
-    const onOnline = () => { setIsOffline(false); scheduleRefresh(0); };
+    const onOnline = () => { setIsOffline(false); weekLoadedRef.current = false; loadWeekOnce(); scheduleRefresh(0); };
     window.addEventListener('offline', onOffline);
     window.addEventListener('online', onOnline);
 
@@ -196,16 +208,18 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       if (cached) {
         setOfflineAt(cached.cachedAt || null);
         setIsOffline(!navigator.onLine);
-        if (cached.date === todayKey && Number.isFinite(Number(cached.todaySteps))) {
+        if (cached.date === todayKey && Number.isFinite(Number(cached.todaySteps)) && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged') {
           displayedTodayRef.current = Number(cached.todaySteps);
           setTodaySteps(Number(cached.todaySteps));
+        } else if (!cached.source || cached.source === 'health_connect' || cached.source === 'flagged') {
+          displayedTodayRef.current = 0; setTodaySteps(0);
         }
         if (cached.lastSync) setLastSync(cached.lastSync);
-        if (cached.source) setSource(cached.source);
+        if (cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged') setSource(cached.source);
         if (Array.isArray(cached.weekSteps)) {
           const cachedRows = [
-            ...cached.weekSteps.filter(row => row.step_date !== todayKey),
-            { step_date: todayKey, steps: cached.date === todayKey ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey ? cached.source || null : null },
+            ...cached.weekSteps.filter(row => row.source !== 'health_connect' && !row.is_flagged),
+            { step_date: todayKey, steps: cached.date === todayKey && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged' ? Number(cached.todaySteps || 0) : 0, source: cached.date === todayKey && cached.source && cached.source !== 'health_connect' && cached.source !== 'flagged' ? cached.source || null : null },
           ].sort((a, b) => a.step_date.localeCompare(b.step_date));
           weekStepsRef.current = cachedRows;
           setWeekSteps(cachedRows);
@@ -223,6 +237,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
     const foreground = () => {
       if (document.visibilityState !== 'visible') return;
+      weekLoadedRef.current = false;
+      loadWeekOnce();
       scheduleRefresh(5000);
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       intervalRef.current = window.setInterval(() => {
@@ -250,7 +266,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       window.removeEventListener('offline', onOffline);
       window.removeEventListener('online', onOnline);
     };
-  }, [cacheKey, todayKey, userId, scheduleRefresh]);
+  }, [cacheKey, todayKey, userId, scheduleRefresh, loadWeekOnce]);
 
   useEffect(() => {
     if (!userId || !ready || weekLoadedRef.current) return;
