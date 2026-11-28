@@ -107,10 +107,10 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
       const blob=await exportBlob();
       if(window.ProtlysNative?.shareImage){
         const encoded=await blobToBase64(blob);
-        if(!window.ProtlysNative.shareImage(encoded,'image/png','Protlys post'))throw new Error('Native sharing is unavailable.');
+        if(!window.ProtlysNative.shareImage(encoded,'image/png','Protlys post', 'See this post on Protlys: '+publicUrl(post.id)))throw new Error('Native sharing is unavailable.');
       }else{
         const file=new File([blob],'protlys-post-card.png',{type:'image/png'});
-        if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({files:[file],title:'Protlys post'});
+        if(navigator.share&&(!navigator.canShare||navigator.canShare({files:[file]})))await navigator.share({files:[file],title:'Protlys post',text:'See this post on Protlys.',url:publicUrl(post.id)});
         else{const u=URL.createObjectURL(blob);const a=document.createElement('a');a.href=u;a.download='protlys-post-card.png';document.body.appendChild(a);a.click();a.remove();setTimeout(()=>URL.revokeObjectURL(u),1000)}
       }
     }catch(e){if(e?.name!=='AbortError')setMessage('Could not share the card.')}finally{setBusy(false)}
@@ -129,7 +129,23 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
     }catch{setMessage('Could not save the card.')}finally{setBusy(false)}
   }
   async function copyLink(){
-    try{await navigator.clipboard.writeText(publicUrl(post.id));setMessage('Link copied.')}catch{setMessage('Could not copy the link.')}
+    const link=publicUrl(post.id);
+    let copied=false;
+    try{copied=!!window.ProtlysNative?.copyText?.(link)}catch{}
+    if(!copied&&navigator.clipboard?.writeText){
+      try{await navigator.clipboard.writeText(link);copied=true}catch{}
+    }
+    if(!copied){
+      let field;
+      try{
+        field=document.createElement('textarea');
+        field.value=link;field.setAttribute('readonly','');
+        field.style.position='fixed';field.style.left='-9999px';field.style.opacity='0';
+        document.body.appendChild(field);field.select();
+        copied=document.execCommand('copy');
+      }catch{}finally{field?.remove()}
+    }
+    setMessage(copied?'Link copied.':'Could not copy the link. Try sharing the card or selecting the post URL.');
   }
   if(!open||!mounted)return null;
   const previewStyle={width:360*scale,height:cardHeight*scale,position:'relative',flex:'0 0 auto'};
