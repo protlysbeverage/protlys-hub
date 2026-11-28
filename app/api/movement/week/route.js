@@ -16,7 +16,7 @@ export async function GET() {
   const today = nairobiDate(0);
   const weekStart = nairobiDate(-6);
   const { data, error } = await supabase.from('daily_steps')
-    .select('step_date,steps,source,synced_at')
+    .select('step_date,steps,source,synced_at,is_flagged')
     .eq('user_id',user.id)
     .gte('step_date',weekStart)
     .lte('step_date',today)
@@ -26,7 +26,7 @@ export async function GET() {
 
   // Historical Health Connect backfill is retained; today's total must come from the phone sensor.
   const rows = (data || []).map(row =>
-    row.step_date === today && row.source === 'health_connect'
+    (row.step_date === today && row.source === 'health_connect') || row.is_flagged
       ? { ...row, steps:0, source:null, synced_at:null }
       : { ...row, steps:Number(row.steps || 0) }
   );
