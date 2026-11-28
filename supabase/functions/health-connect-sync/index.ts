@@ -124,7 +124,7 @@ Deno.serve(async (req) => {
     const incomingSteps = byDate.get(date) ?? 0;
     const stored = existingByDate.get(date);
     // Discard a legacy Health Connect value for today when the sensor takes over.
-    const existing = (date === today && stored?.source === "health_connect") || (source === "android_sensor" && stored?.is_flagged) ? undefined : stored;
+    const existing = (date === today && stored?.source === "health_connect") || (source === "android_sensor" && stored?.is_flagged && incomingSteps > 0) ? undefined : stored;
     const keepIncoming = incomingSteps >= (existing?.steps ?? 0);
     return {
       step_date: date,
