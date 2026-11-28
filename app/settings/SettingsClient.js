@@ -16,30 +16,112 @@ export default function SettingsClient({name,bio,email,targetG,joinedAt,showGrou
   const [nativeAndroid,setNativeAndroid]=useState(false),[nativeBuildInfo,setNativeBuildInfo]=useState(null);
   useEffect(()=>{const detect=()=>{const native=window.ProtlysNative;const available=!!(native&&native.isAvailable&&native.isAvailable());setNativeAndroid(available);if(available&&native.buildInfo){try{setNativeBuildInfo(native.buildInfo())}catch{}}};detect();window.addEventListener('protlys:native-ready',detect);return()=>window.removeEventListener('protlys:native-ready',detect);},[]);
   useEffect(()=>{try{setDaily(localStorage.getItem('protlys_daily_reminder')==='1');setEvening(localStorage.getItem('protlys_evening_reminder')==='1');setWeekly(localStorage.getItem('protlys_weekly_summary')==='1')}catch{}},[]);
-  function saveProfile(){const clean=displayName.trim();if(!clean)return setMessage('Name cannot be empty.');startTransition(async()=>{const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user)return setMessage('Not signed in.');const {data:updated,error}=await supabase.from('profiles').update({display_name:clean,bio:about.trim()||null}).eq('id',user.id).select('id').maybeSingle();if(error)return setMessage(error.message);if(!updated)return setMessage('Your profile could not be found. Please reload.');setMessage('Profile updated.');router.refresh();});}
-  useEffect(()=>{let dead=false;(async()=>{const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user){if(!dead)setBlockedLoading(false);return}const {data:rows}=await supabase.from('blocks').select('blocked_id,created_at').eq('blocker_id',user.id).order('created_at',{ascending:false});const ids=(rows||[]).map(r=>r.blocked_id);const {data:profiles}=ids.length?await supabase.from('profiles').select('id,display_name,avatar_url').in('id',ids):{data:[]};const map=new Map((profiles||[]).map(p=>[p.id,p]));if(!dead)setBlockedUsers((rows||[]).map(r=>({...r,profile:map.get(r.blocked_id)||{id:r.blocked_id,display_name:'Protlys member'}})));if(!dead)setBlockedLoading(false)})();return()=>{dead=true}},[]);
+  function saveProfile(){
+    const clean=displayName.trim();
+    if(!clean){setMessage('Name cannot be empty.');return;}
+    startTransition(async()=>{
+      try{
+        const supabase=createClient();
+        const {data:{user},error:authError}=await supabase.auth.getUser();
+        if(authError||!user){setMessage('Not signed in.');return;}
+        const {data:updated,error}=await supabase.from('profiles').update({display_name:clean,bio:about.trim()||null}).eq('id',user.id).select('id').maybeSingle();
+        if(error){setMessage(error.message);return;}
+        if(!updated){setMessage('Your profile could not be found. Please reload.');return;}
+        setMessage('Profile updated.');router.refresh();
+      }catch{
+        setMessage('Could not update your profile. Check your connection and try again.');
+      }
+    });
+  }
+
+  useEffect(()=>{
+    let dead=false;
+    async function loadBlocked(){
+      try{
+        const supabase=createClient();
+        const {data:{user},error:authError}=await supabase.auth.getUser();
+        if(authError)throw authError;
+        if(!user)return;
+        const {data:rows,error:rowsError}=await supabase.from('blocks').select('blocked_id,created_at').eq('blocker_id',user.id).order('created_at',{ascending:false});
+        if(rowsError)throw rowsError;
+        const ids=(rows||[]).map(row=>row.blocked_id);
+        let profiles=[];
+        if(ids.length){
+          const {data,error}=await supabase.from('profiles').select('id,display_name,avatar_url').in('id',ids);
+          if(error)throw error;
+          profiles=data||[];
+        }
+        const map=new Map(profiles.map(profile=>[profile.id,profile]));
+        if(!dead)setBlockedUsers((rows||[]).map(row=>({...row,profile:map.get(row.blocked_id)||{id:row.blocked_id,display_name:'Protlys member'}})));
+      }catch{
+        if(!dead)setMessage('Could not load blocked members. Refresh to try again.');
+      }finally{
+        if(!dead)setBlockedLoading(false);
+      }
+    }
+    loadBlocked();
+    return()=>{dead=true;};
+  },[]);
+
   function pref(key,setter,value){setter(value);try{localStorage.setItem(key,value?'1':'0')}catch{}}
-  async function unblock(blockedUserId){if(blockedBusy)return;setBlockedBusy(blockedUserId);const result=await unblockUserAction({blockedUserId});if(!result?.error)setBlockedUsers(list=>list.filter(row=>row.blocked_id!==blockedUserId));else setMessage(result.error);setBlockedBusy(null)}
-  async function setVisibility(key,value){const before=privacy;setPrivacy(p=>({...p,[key]:value}));setPrivacySaving(true);const supabase=createClient();const {data:{user}}=await supabase.auth.getUser();if(!user){setPrivacy(before);setPrivacySaving(false);setMessage('Not signed in.');return}const {data:updated,error}=await supabase.from('profiles').update({[key]:value}).eq('id',user.id).select('id').maybeSingle();if(error||!updated){setPrivacy(before);setMessage(error?.message||'Could not update profile visibility.')}else{setMessage('Profile visibility updated.');router.refresh()}setPrivacySaving(false)}
+
+  async function unblock(blockedUserId){
+    if(blockedBusy)return;
+    setBlockedBusy(blockedUserId);
+    try{
+      const result=await unblockUserAction({blockedUserId});
+      if(result?.error)throw new Error(result.error);
+      setBlockedUsers(list=>list.filter(row=>row.blocked_id!==blockedUserId));
+      setMessage('Member unblocked.');
+    }catch(error){
+      setMessage(error?.message||'Could not unblock this member. Please try again.');
+    }finally{
+      setBlockedBusy(null);
+    }
+  }
+
+  async function setVisibility(key,value){
+    const before=privacy;
+    setPrivacy(p=>({...p,[key]:value}));
+    setPrivacySaving(true);
+    try{
+      const supabase=createClient();
+      const {data:{user},error:authError}=await supabase.auth.getUser();
+      if(authError||!user)throw new Error('Not signed in.');
+      const {data:updated,error}=await supabase.from('profiles').update({[key]:value}).eq('id',user.id).select('id').maybeSingle();
+      if(error)throw error;
+      if(!updated)throw new Error('Could not update profile visibility.');
+      setMessage('Profile visibility updated.');
+      router.refresh();
+    }catch(error){
+      setPrivacy(before);
+      setMessage(error?.message||'Could not update profile visibility. Please try again.');
+    }finally{
+      setPrivacySaving(false);
+    }
+  }
+
   async function deleteAccount(){
-    if(pending || blockedBusy) return;
+    if(pending || blockedBusy)return;
     const first=window.confirm('Delete your Protlys Hub account? This cannot be undone.');
-    if(!first) return;
+    if(!first)return;
     const second=window.confirm('This will permanently delete your account, profile, movement/protein data and community content. Continue?');
-    if(!second) return;
+    if(!second)return;
     setMessage('Deleting your account…');
     startTransition(async()=>{
       const supabase=createClient();
-      const {error}=await supabase.functions.invoke('delete-account',{body:{}});
-      if(error){
-        setMessage(error.message || 'Could not delete your account. No changes were made to your sign-in account.');
-        return;
+      try{
+        const {error}=await supabase.functions.invoke('delete-account',{body:{}});
+        if(error)throw error;
+        try{window.ProtlysNative?.clearSyncToken?.();localStorage.clear()}catch{}
+        try{await supabase.auth.signOut()}catch{}
+        window.location.href='/delete-account?deleted=1';
+      }catch(error){
+        setMessage(error?.message||'Account deletion could not be completed or confirmed. Contact support before retrying.');
       }
-      try{window.ProtlysNative?.clearSyncToken?.();localStorage.clear()}catch{}
-      await supabase.auth.signOut();
-      window.location.href='/delete-account?deleted=1';
     });
   }
+
   async function signOut(){const supabase=createClient();try{const {data:{user}}=await supabase.auth.getUser();const {error}=await supabase.auth.signOut();if(error)throw error;try{window.ProtlysNative?.clearSyncToken?.();if(user?.id){localStorage.removeItem('protlys-feed-cache-v1:'+user.id);localStorage.removeItem('protlys-dashboard-cache-v1:'+user.id);localStorage.removeItem('protlys-dashboard-cache-v2:'+user.id);localStorage.removeItem('protlys-dashboard-cache-v3:'+user.id);localStorage.removeItem('protlys_movement_cache_v2_'+user.id);localStorage.removeItem('protlys_movement_cache_v3_'+user.id)}}catch{}router.push('/login');router.refresh()}catch(error){setMessage(error?.message||'Could not sign out. Please try again.')}}
   const joined=joinedAt?new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'long',year:'numeric'}).format(new Date(joinedAt)):'—';
   return <div className="screen-pad" style={{maxWidth:600,margin:'0 auto',paddingTop:24}}>
