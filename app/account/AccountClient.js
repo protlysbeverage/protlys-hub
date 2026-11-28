@@ -212,7 +212,7 @@ export default function AccountClient({ profile, greetingName, achievements = []
     return () => window.clearInterval(timer);
   }, []);
   const greetingText = localHour >= 5 && localHour < 12 ? 'Good morning' : localHour >= 12 && localHour < 18 ? 'Good afternoon' : 'Good evening';
-  const greetingUsername = (greetingName || profile?.display_name || '').trim().split(/\s+/)[0];
+  const greetingUsername = (greetingName || profile?.display_name || '').trim();
   const avatarUrl = profile?.avatar_url;
   const totalSteps = Number(profile?.total_steps || 0);
   const stepGoal = Number(profile?.step_goal || 0) || 8000;
