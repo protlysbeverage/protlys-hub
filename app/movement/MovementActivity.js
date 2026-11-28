@@ -1,15 +1,12 @@
 'use client';
 
 import ShareCardSheet, { ShareIconButton } from '@/components/ShareCardSheet';
-import { getShareData, localDateKey } from '@/lib/share-data';
+import { addLocalDays, getShareData, localDateKey, parseLocalDate } from '@/lib/share-data';
 
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 
-function parseKey(key) {
-  const [y, m, d] = key.split('-').map(Number);
-  return new Date(y, m - 1, d);
-}
+function parseKey(key) { return parseLocalDate(key); }
 
 function dayDiff(a, b) {
   return Math.round((parseKey(a) - parseKey(b)) / 86400000);
@@ -26,9 +23,7 @@ function streaks(keys) {
     best = Math.max(best, run);
   }
   const todayKey = localDateKey(new Date());
-  const yesterday = new Date();
-  yesterday.setDate(yesterday.getDate() - 1);
-  const yesterdayKey = localDateKey(yesterday);
+  const yesterdayKey = addLocalDays(todayKey, -1);
   const endKey = sorted[sorted.length - 1];
   if (endKey !== todayKey && endKey !== yesterdayKey) return { current: 0, best };
   let current = 1;
@@ -47,22 +42,17 @@ function distanceForSteps(steps) {
   return Number(steps || 0) * 0.00075;
 }
 
-function monthKey(date) {
-  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
-}
+function monthKey(date) { return localDateKey(date).slice(0, 7); }
 
 function monthRange(date) {
-  const y = date.getFullYear();
-  const m = date.getMonth();
-  return {
-    start: `${y}-${String(m + 1).padStart(2, '0')}-01`,
-    end: localDateKey(new Date(y, m + 1, 0)),
-  };
+  const [y,m] = localDateKey(date).slice(0,7).split('-').map(Number);
+  return { start:y+'-'+String(m).padStart(2,'0')+'-01', end:localDateKey(new Date(Date.UTC(y,m,0,12))) };
 }
 
 function buildMonthCache(rows = []) {
   const cache = {};
   for (const row of rows) {
+    if (row?.source === 'health_connect') continue;
     const key = String(row?.step_date || '').slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(key)) continue;
     if (!cache[key]) cache[key] = [];
@@ -119,7 +109,7 @@ function ProgressRing({ steps, goal }) {
 
 export default function MovementActivity({ days = [], compact = false, title = 'Recent activity', stepGoal = 7500, userId = null, currentStreak = 0, profile = null, onAddSteps }) {
   const [expanded, setExpanded] = useState(false);
-  const [calendarMonthKey, setCalendarMonthKey] = useState(() => monthKey(new Date()));
+  const [calendarMonthKey, setCalendarMonthKey] = useState(() => localDateKey(new Date()).slice(0,7));
   const [monthCache, setMonthCache] = useState(() => buildMonthCache(days));
   const [monthLoading, setMonthLoading] = useState(false);
   const [monthError, setMonthError] = useState('');
@@ -135,22 +125,21 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const sheetDragRaf = useRef(0);
   const sheetTouchStart = useRef(null);
 
-  const byDate = useMemo(() => new Map(days.map(d => [d.step_date, Number(d.steps || 0)])), [days]);
-  const movementKeys = useMemo(() => days.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [days]);
+  const sensorDays = useMemo(() => days.filter(d => d.source !== 'health_connect'), [days]);
+  const byDate = useMemo(() => new Map(sensorDays.map(d => [d.step_date, Number(d.steps || 0)])), [sensorDays]);
+  const movementKeys = useMemo(() => sensorDays.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [sensorDays]);
   const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
   const current = Number(currentStreak || recentStreaks.current || 0);
   const best = Math.max(Number(currentStreak || 0), recentStreaks.best || 0);
-  const movementShareData = getShareData('movement_days', { rows: days, currentStreak: current, bestStreak: best });
+  const movementShareData = getShareData('movement_days', { rows: sensorDays, currentStreak: current, bestStreak: best });
   const hasMovement = movementShareData.hasData;
 
   const today = new Date();
   const todayKey = localDateKey(today);
   const recent = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date(today);
-    d.setHours(12, 0, 0, 0);
-    d.setDate(d.getDate() - 6 + i);
-    const key = localDateKey(d);
-    return { key, date: d, steps: byDate.get(key) || 0, isToday: key === todayKey };
+    const key = addLocalDays(todayKey, -6 + i);
+    const d = parseLocalDate(key);
+    return { key, date:d, steps:byDate.get(key) || 0, isToday:key === todayKey };
   });
   const max = Math.max(...recent.map(d => d.steps), 1);
   const recentTotal = recent.reduce((sum, d) => sum + d.steps, 0);
@@ -158,21 +147,22 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const todaySteps = byDate.get(todayKey) || 0;
   const todayGoalPct = Math.min(100, Math.round((todaySteps / Math.max(Number(stepGoal || 7500), 1)) * 100));
 
-  const todayMonthKey = monthKey(new Date(today.getFullYear(), today.getMonth(), 1));
+  const todayMonthKey = todayKey.slice(0,7);
   const [calendarYear, calendarMonthIndex] = calendarMonthKey.split('-').map(Number);
-  const calendarMonth = useMemo(() => new Date(calendarYear, calendarMonthIndex - 1, 1), [calendarYear, calendarMonthIndex]);
+  const calendarMonth = useMemo(() => new Date(Date.UTC(calendarYear, calendarMonthIndex - 1, 1, 12)), [calendarYear, calendarMonthIndex]);
   const calendarMonthIndexNumber = calendarYear * 12 + (calendarMonthIndex - 1);
-  const todayMonthIndexNumber = today.getFullYear() * 12 + today.getMonth();
+  const [todayYear,todayMonth] = todayMonthKey.split('-').map(Number);
+  const todayMonthIndexNumber = todayYear * 12 + (todayMonth - 1);
   const canGoToNextMonth = calendarMonthIndexNumber < todayMonthIndexNumber;
 
   const calendar = useMemo(() => {
-    const first = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), 1);
-    const last = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + 1, 0);
+    const first = new Date(Date.UTC(calendarYear, calendarMonthIndex - 1, 1, 12));
+    const last = new Date(Date.UTC(calendarYear, calendarMonthIndex, 0, 12));
     const cells = [];
-    for (let i = 0; i < first.getDay(); i += 1) cells.push(null);
-    for (let d = 1; d <= last.getDate(); d += 1) cells.push(new Date(calendarMonth.getFullYear(), calendarMonth.getMonth(), d));
+    for (let i = 0; i < first.getUTCDay(); i += 1) cells.push(null);
+    for (let d = 1; d <= last.getUTCDate(); d += 1) cells.push(new Date(Date.UTC(calendarYear, calendarMonthIndex - 1, d, 12)));
     return cells;
-  }, [calendarMonth]);
+  }, [calendarYear, calendarMonthIndex]);
 
   const currentMonthKey = calendarMonthKey;
   const monthRows = monthCache[currentMonthKey] || [];
@@ -185,8 +175,8 @@ export default function MovementActivity({ days = [], compact = false, title = '
     let n = 1;
     let cursor = parseKey(selectedKey);
     for (let i = 0; i < 366; i += 1) {
-      cursor.setDate(cursor.getDate() - 1);
-      const key = localDateKey(cursor);
+      const key = addLocalDays(localDateKey(cursor), -1);
+      cursor = parseLocalDate(key);
       const row = monthByDate.get(key);
       if (!row || Number(row.steps || 0) <= 0) break;
       n += 1;
@@ -211,7 +201,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
         .order('step_date', { ascending: true });
       if (cancelled) return;
       if (!error) {
-        const incoming = data || [];
+        const incoming = (data || []).filter(row => row.source !== 'health_connect');
         setMonthCache(prev => {
           const existing = prev[currentMonthKey] || [];
           const merged = new Map(existing.map(row => [row.step_date, row]));
@@ -228,7 +218,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   }, [expanded, currentMonthKey, calendarMonth, userId]);
 
   function changeCalendarMonth(offset) {
-    const next = new Date(calendarMonth.getFullYear(), calendarMonth.getMonth() + offset, 1);
+    const next = new Date(Date.UTC(calendarYear, calendarMonthIndex - 1 + offset, 1, 12));
     setSelectedKey(null);
     setCalendarMonthKey(monthKey(next));
   }
