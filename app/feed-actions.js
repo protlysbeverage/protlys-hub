@@ -229,6 +229,9 @@ export async function deleteFeedCommentAction({ commentId }) {
     .select('id,user_id,post_id').eq('id',id).maybeSingle();
   if (lookupError || !comment) return { error:'Comment not found.' };
   if (String(comment.user_id) !== String(user.id)) return { error:'You can only delete your own comments.' };
+  const { count:replyCount, error:replyError } = await supabase.from('feed_comments').select('id',{count:'exact',head:true}).eq('parent_comment_id',id);
+  if (replyError) return { error:replyError.message };
+  if (Number(replyCount || 0) > 0) return { error:'This comment has replies. Delete the replies first.' };
   const { data:deleted, error } = await supabase.from('feed_comments').delete()
     .eq('id',id).eq('user_id',user.id).select('id').maybeSingle();
   if (error) return { error:error.message };
