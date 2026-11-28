@@ -130,23 +130,22 @@ export default function PostShareSheet({open,onClose,post,replies=[],currentUser
   }
   async function copyLink(){
     const link=publicUrl(post.id);
-    try{
-      if(window.ProtlysNative?.copyText){
-        if(!window.ProtlysNative.copyText(link))throw new Error('Native clipboard unavailable');
-      }else if(navigator.clipboard?.writeText){
-        await navigator.clipboard.writeText(link);
-      }else{
-        const field=document.createElement('textarea');
-        field.value=link;field.setAttribute('readonly','');
-        field.style.position='fixed';field.style.opacity='0';field.style.pointerEvents='none';
-        document.body.appendChild(field);field.select();
-        const copied=document.execCommand('copy');field.remove();
-        if(!copied)throw new Error('Clipboard unavailable');
-      }
-      setMessage('Link copied.');
-    }catch{
-      setMessage('Could not copy the link. Try sharing the card or selecting the post URL.');
+    let copied=false;
+    try{copied=!!window.ProtlysNative?.copyText?.(link)}catch{}
+    if(!copied&&navigator.clipboard?.writeText){
+      try{await navigator.clipboard.writeText(link);copied=true}catch{}
     }
+    if(!copied){
+      let field;
+      try{
+        field=document.createElement('textarea');
+        field.value=link;field.setAttribute('readonly','');
+        field.style.position='fixed';field.style.left='-9999px';field.style.opacity='0';
+        document.body.appendChild(field);field.select();
+        copied=document.execCommand('copy');
+      }catch{}finally{field?.remove()}
+    }
+    setMessage(copied?'Link copied.':'Could not copy the link. Try sharing the card or selecting the post URL.');
   }
   if(!open||!mounted)return null;
   const previewStyle={width:360*scale,height:cardHeight*scale,position:'relative',flex:'0 0 auto'};
