@@ -5,6 +5,7 @@ import { usePathname } from 'next/navigation';
 import { useEffect, useState } from 'react';
 import dynamic from 'next/dynamic';
 import ThemeToggle from '@/components/ThemeToggle';
+import FeedVisualPatch from '@/components/FeedVisualPatch';
 const DotClient = dynamic(() => import('@/app/dot/DotClient'), { ssr: false });
 
 const NAV_ITEMS = [
@@ -47,7 +48,7 @@ export default function AppShell({ children }) {
   const fullscreenRoute = pathname.startsWith('/challenges/new-group') || pathname.startsWith('/challenges/new') || pathname.startsWith('/challenges/join') || pathname.startsWith('/join/');
   if (fullscreenRoute) return <>{children}</>;
 
-  return <div className="protlys-app"><style>{`
+  return <div className="protlys-app"><FeedVisualPatch /><style>{`
     .protlys-app .hub-card .mono,.protlys-app .metric-number,.protlys-app .stat-number { font-family:'Space Grotesk',sans-serif!important;font-variant-numeric:tabular-nums;letter-spacing:-.025em; }
     .protlys-app .screen,
     .protlys-app .screen:has(.dashboard-mascot-wrap),

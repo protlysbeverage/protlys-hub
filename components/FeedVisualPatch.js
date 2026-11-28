@@ -10,9 +10,9 @@ export default function FeedVisualPatch() {
     .protlys-app .feed-mode-shell > div { margin: 7px 0 9px !important; }
     .protlys-app .feed-following-content { width:100% !important; max-width:none !important; padding-left:10px !important; padding-right:10px !important; }
 
-    .protlys-app .feed-card.profile-post-card { background:#fff !important; border:1.5px solid var(--line) !important; border-radius:18px !important; padding:16px !important; margin:0 0 11px !important; box-shadow:0 2px 9px rgba(15,42,74,.035) !important; overflow:visible !important; }
-    .protlys-app .profile-post-topline { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px !important; padding:0 0 11px !important; }
-    .protlys-app .profile-post-author { display:flex !important; align-items:center !important; gap:10px !important; min-width:0 !important; }
+    .protlys-app .feed-card.profile-post-card { box-sizing:border-box !important; width:100% !important; max-width:100% !important; min-width:0 !important; flex:0 0 auto !important; position:relative !important; background:#fff !important; border:1.5px solid var(--line) !important; border-radius:18px !important; padding:16px !important; margin:0 0 11px !important; box-shadow:0 2px 9px rgba(15,42,74,.035) !important; overflow:visible !important; }
+    .protlys-app .profile-post-topline { display:flex !important; align-items:center !important; justify-content:space-between !important; gap:10px !important; min-width:0 !important; padding:0 0 11px !important; }
+    .protlys-app .profile-post-author { display:flex !important; align-items:center !important; gap:10px !important; min-width:0 !important; flex:1 1 auto !important; }
     .protlys-app .profile-post-author .feed-author { font-family:'Manrope',sans-serif !important; font-size:14px !important; line-height:1.2 !important; font-weight:800 !important; color:var(--ink) !important; }
     .protlys-app .profile-post-author .feed-meta { font-size:11px !important; color:var(--ink-45) !important; margin-top:4px !important; line-height:1.2 !important; }
     .protlys-app .profile-post-type { display:inline-flex !important; align-items:center !important; min-height:28px !important; padding:4px 10px !important; border-radius:999px !important; background:var(--green-soft) !important; color:var(--green-dark) !important; font-size:10.5px !important; font-weight:800 !important; white-space:nowrap !important; }
@@ -29,7 +29,14 @@ export default function FeedVisualPatch() {
     .protlys-app .profile-comment-input { margin-top:14px !important; gap:9px !important; }
     .protlys-app .profile-comment-input .field-input { min-height:46px !important; padding:11px 14px !important; border-radius:999px !important; font-size:14px !important; background:#fff !important; }
     .protlys-app .profile-comment-input .btn-secondary { min-height:46px !important; min-width:78px !important; padding:10px 16px !important; border-radius:999px !important; font-size:13px !important; white-space:nowrap !important; }
-    .protlys-app .post-more-btn { width:30px !important; height:30px !important; padding:5px !important; border:0 !important; border-radius:50% !important; background:transparent !important; color:var(--ink-45) !important; cursor:pointer !important; }
+    .protlys-app .post-more-btn { box-sizing:border-box !important; width:44px !important; height:44px !important; min-width:44px !important; min-height:44px !important; flex:0 0 44px !important; padding:0 !important; border:0 !important; border-radius:50% !important; background:transparent !important; color:var(--ink-45) !important; cursor:pointer !important; }
+    .protlys-app .feed-card.profile-post-card,
+    .protlys-app .feed-card.profile-post-card * { box-sizing:border-box; }
+    .protlys-app .feed-card.profile-post-card .feed-card-body,
+    .protlys-app .feed-card.profile-post-card .post-content-text { min-width:0; max-width:100%; overflow-wrap:anywhere; word-break:normal; }
+    .protlys-app .feed-card.profile-post-card .feed-card-body img { width:100%; max-width:100%; height:auto; }
+    .protlys-app .feed-card.profile-post-card .profile-post-topline > div:last-child { flex:0 0 auto; min-width:0; }
+    .protlys-app .feed-card.profile-post-card .post-menu { max-width:min(180px,calc(100vw - 40px)); }
     .protlys-app .feed-composer { border:1.5px solid var(--line) !important; border-radius:18px !important; box-shadow:0 2px 8px rgba(15,42,74,.03) !important; padding:14px !important; margin-bottom:13px !important; }
     @media (max-width:420px) { .protlys-app .feed-home{padding-left:10px !important;padding-right:10px !important;} .protlys-app .feed-mode-shell,.protlys-app .feed-following-content{padding-left:10px !important;padding-right:10px !important;} .protlys-app .profile-post-actions{gap:19px !important;} .protlys-app .profile-post-card{padding:15px !important;} }
   `}</style>;

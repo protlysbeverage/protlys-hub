@@ -36,7 +36,6 @@ export default async function AccountPage({ searchParams }) {
       <ProteinTargetCard targetG={profile?.target_g}/>
       <div className="screen-pad" style={{paddingTop:0,paddingBottom:0}}><TargetHistory rows={targetHistory||[]}/></div>
       <AccountClient profile={profile||{}} todaySteps={0} weekSteps={[]} movementDays={[]} email={user.email} foundingMember={foundingMember}/>
-      <div className="screen-pad" style={{paddingTop:8,paddingBottom:0,textAlign:'center',fontSize:9.5,color:'var(--ink-45)'}}>v{String(process.env.NEXT_PUBLIC_BUILD_SHA||'local').slice(0,7)} · {String(process.env.NEXT_PUBLIC_BUILD_DATE||'local').slice(0,10)}</div>
     </div>
   </AppShell>;
 }
