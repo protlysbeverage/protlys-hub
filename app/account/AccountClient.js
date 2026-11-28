@@ -33,18 +33,37 @@ function localDateStr(date = new Date()) {
 }
 
 async function prepareAvatarImage(file) {
-  const bitmap = await createImageBitmap(file);
+  let bitmap;
+  if (typeof createImageBitmap === 'function') {
+    try { bitmap = await createImageBitmap(file); } catch {}
+  }
+  if (!bitmap) {
+    bitmap = await new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(image); };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read profile photo.')); };
+      image.src = objectUrl;
+    });
+  }
   const scale = Math.min(1, 512 / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
   canvas.width = Math.max(1, Math.round(bitmap.width * scale));
   canvas.height = Math.max(1, Math.round(bitmap.height * scale));
   const context = canvas.getContext('2d');
-  if (!context) { bitmap.close(); throw new Error('Could not process profile photo.'); }
+  if (!context) { bitmap.close?.(); throw new Error('Could not process profile photo.'); }
   context.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
-  bitmap.close();
-  const blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  bitmap.close?.();
+  let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
+  let extension = 'webp';
+  let type = 'image/webp';
+  if (!blob) {
+    blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/jpeg', 0.82));
+    extension = 'jpg';
+    type = 'image/jpeg';
+  }
   if (!blob) throw new Error('Could not process profile photo.');
-  return blob;
+  return { blob, extension, type };
 }
 
 function CircularProgress({ steps, goal, dayKey }) {
@@ -282,9 +301,9 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       supabase = createClient();
       const { data:{ user } } = await supabase.auth.getUser();
       if (!user) throw new Error('Not signed in');
-      const avatarBlob = await prepareAvatarImage(file);
-      uploadedPath = 'avatars/' + user.id + '/profile-' + Date.now() + '.webp';
-      const { error:uploadError } = await supabase.storage.from('feed-images').upload(uploadedPath, avatarBlob, { cacheControl:'31536000', upsert:false, contentType:'image/webp' });
+      const avatar = await prepareAvatarImage(file);
+      uploadedPath = 'avatars/' + user.id + '/profile-' + Date.now() + '.' + avatar.extension;
+      const { error:uploadError } = await supabase.storage.from('feed-images').upload(uploadedPath, avatar.blob, { cacheControl:'31536000', upsert:false, contentType:avatar.type });
       if (uploadError) throw uploadError;
       const { data:urlData } = supabase.storage.from('feed-images').getPublicUrl(uploadedPath);
       const { data:updatedProfile, error:profileError } = await supabase.from('profiles').update({ avatar_url:urlData.publicUrl }).eq('id', user.id).select('id').maybeSingle();
