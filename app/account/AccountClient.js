@@ -311,7 +311,10 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         if (profile?.id) {
           localStorage.removeItem('protlys-feed-cache-v1:' + profile.id);
           localStorage.removeItem('protlys-dashboard-cache-v1:' + profile.id);
+          localStorage.removeItem('protlys-dashboard-cache-v2:' + profile.id);
+          localStorage.removeItem('protlys-dashboard-cache-v3:' + profile.id);
           localStorage.removeItem('protlys_movement_cache_v2_' + profile.id);
+          localStorage.removeItem('protlys_movement_cache_v3_' + profile.id);
         }
       } catch {}
       router.push('/login'); router.refresh();
