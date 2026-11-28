@@ -121,11 +121,27 @@ function StatChip({ label, value }) {
 
 async function prepareImage(file) {
   const maxSide = 1600;
-  const bitmap = await createImageBitmap(file);
+  let bitmap;
+  if (typeof createImageBitmap === 'function') {
+    try { bitmap = await createImageBitmap(file); } catch {}
+  }
+  if (!bitmap) {
+    bitmap = await new Promise((resolve, reject) => {
+      const image = new Image();
+      const objectUrl = URL.createObjectURL(file);
+      image.onload = () => { URL.revokeObjectURL(objectUrl); resolve(image); };
+      image.onerror = () => { URL.revokeObjectURL(objectUrl); reject(new Error('Could not read this image. Try another photo.')); };
+      image.src = objectUrl;
+    });
+  }
   const scale = Math.min(1, maxSide / Math.max(bitmap.width, bitmap.height));
   const canvas = document.createElement('canvas');
-  canvas.width = Math.round(bitmap.width * scale); canvas.height = Math.round(bitmap.height * scale);
-  const ctx = canvas.getContext('2d'); ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height); bitmap.close();
+  canvas.width = Math.max(1, Math.round(bitmap.width * scale));
+  canvas.height = Math.max(1, Math.round(bitmap.height * scale));
+  const ctx = canvas.getContext('2d');
+  if (!ctx) throw new Error('Image processing is unavailable on this device.');
+  ctx.drawImage(bitmap, 0, 0, canvas.width, canvas.height);
+  bitmap.close?.();
   let blob = await new Promise(resolve => canvas.toBlob(resolve, 'image/webp', 0.82));
   let extension = 'webp';
   let type = 'image/webp';
@@ -135,7 +151,12 @@ async function prepareImage(file) {
     type = 'image/jpeg';
   }
   if (!blob) throw new Error('Could not process this image. Try another photo.');
-  const base64 = await new Promise((resolve, reject) => { const reader = new FileReader(); reader.onerror = reject; reader.onload = () => resolve(String(reader.result).split(',')[1]); reader.readAsDataURL(blob); });
+  const base64 = await new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('Could not prepare this image. Try another photo.'));
+    reader.onload = () => resolve(String(reader.result).split(',')[1]);
+    reader.readAsDataURL(blob);
+  });
   return { base64, name: `${file.name.replace(/\.[^.]+$/, '')}.${extension}`, type };
 }
 
@@ -215,17 +236,27 @@ function CommentsPanel({ postId, initialCount, onCommented, currentUserId, onMod
   async function deleteComment(comment) {
     if (!window.confirm('Delete this comment?')) return;
     setError('');
-    const result = await deleteFeedCommentAction({ commentId:comment.id });
-    if (result?.error) { setError(result.error); return; }
-    await loadComments();
-    onCommented?.();
+    try {
+      const result = await deleteFeedCommentAction({ commentId:comment.id });
+      if (result?.error) { setError(result.error); return; }
+      await loadComments();
+      onCommented?.();
+    } catch {
+      setError('Could not delete this comment. Check your connection and try again.');
+    }
   }
 
   async function toggleCommentLike(commentId) {
     if (!navigator.onLine) { setError('You are offline. Reconnect to like comments.'); return; }
+    const before = comments || [];
     setComments(current => (current || []).map(comment => comment.id === commentId ? { ...comment, liked: !comment.liked, like_count: Math.max(0, Number(comment.like_count || 0) + (comment.liked ? -1 : 1)) } : comment));
-    const result = await toggleFeedCommentLikeAction({ commentId });
-    if (result?.error) { setError(result.error); await loadComments(); }
+    try {
+      const result = await toggleFeedCommentLikeAction({ commentId });
+      if (result?.error) { setComments(before); setError(result.error); await loadComments(); }
+    } catch {
+      setComments(before);
+      setError('Could not update the comment reaction. Check your connection and try again.');
+    }
   }
 
   if (comments === null) return <div className="profile-comments" style={{ marginTop:10 }}><button type="button" onClick={loadComments} disabled={loading} style={{ border:0,background:'transparent',padding:0,color:'var(--ink-45)',fontSize:12,fontWeight:700,cursor:'pointer' }}>{loading?'Loading…':`${initialCount||0} ${initialCount===1?'comment':'comments'}`}</button>{error&&<div style={{color:'#B3261E',fontSize:12,marginTop:8}}>{error}</div>}<CommentInput postId={postId} onDone={async()=>{await loadComments();onCommented?.();}} /></div>;
@@ -260,10 +291,15 @@ function EditPost({ post, onDone, onCancel, onToast }) {
     if (!body.trim() && !post.image_url) { setError('Add some text or keep a photo on the post.'); return; }
     setLoading(true); setError('');
     const statsData = (stats.steps || stats.distance || stats.duration) ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null } : null;
-    const result = await updateFeedPostAction({ postId: post.id, body, postType, stats: statsData, removeImage });
-    setLoading(false);
-    if (result?.error) { setError(result.error); return; }
-    onToast(result?.warning || 'Post updated'); onDone();
+    try {
+      const result = await updateFeedPostAction({ postId: post.id, body, postType, stats: statsData, removeImage });
+      if (result?.error) { setError(result.error); return; }
+      onToast(result?.warning || 'Post updated'); onDone();
+    } catch {
+      setError('Could not update this post. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
   return <div style={{ marginTop: 12, padding: 14, border: '1px solid var(--line)', borderRadius: 14, background: 'var(--paper)' }}>
     <textarea value={body} onChange={e => setBody(e.target.value)} className="field-input" style={{ width: '100%', minHeight: 86, resize: 'vertical', padding: 10, fontFamily: 'inherit', marginBottom: 10 }} placeholder="Edit your post…" />
@@ -283,12 +319,23 @@ function ComposePost({ profile, onPosted }) {
   const handleStatChange = useCallback(key => e => setStats(current => ({ ...current, [key]: e.target.value })), []);
   async function handlePost() {
     if (!navigator.onLine) { setError('You are offline. Reconnect to publish your post.'); return; }
-    const body = bodyRef.current?.value ?? ''; if (!body.trim() && !imageData) { setError('Add a caption or photo before posting.'); return; }
+    const body = bodyRef.current?.value ?? '';
+    if (!body.trim() && !imageData) { setError('Add a caption or photo before posting.'); return; }
     setLoading(true); setError('');
     const statsData = (stats.steps || stats.distance || stats.duration) ? { steps: stats.steps || null, distance: stats.distance || null, duration: stats.duration || null } : null;
-    const result = await createFeedPostAction({ body, postType, stats: statsData, imageBase64: imageData?.base64 || null, imageName: imageData?.name || null, imageType: imageData?.type || null });
-    setLoading(false); if (result?.error) { setError(result.error); return; }
-    if (bodyRef.current) bodyRef.current.value = ''; if (preview) URL.revokeObjectURL(preview); setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false); if (fileRef.current) fileRef.current.value = ''; onPosted(result?.warning);
+    try {
+      const result = await createFeedPostAction({ body, postType, stats: statsData, imageBase64: imageData?.base64 || null, imageName: imageData?.name || null, imageType: imageData?.type || null });
+      if (result?.error) { setError(result.error); return; }
+      if (bodyRef.current) bodyRef.current.value = '';
+      if (preview) URL.revokeObjectURL(preview);
+      setPreview(null); setImageData(null); setStats({ steps: '', distance: '', duration: '' }); setShowStats(false);
+      if (fileRef.current) fileRef.current.value = '';
+      onPosted(result?.warning);
+    } catch {
+      setError('Could not publish your post. Check your connection and try again.');
+    } finally {
+      setLoading(false);
+    }
   }
   return <div className="feed-composer" style={{ background: '#fff', borderRadius: 20, padding: 10, marginBottom: 16, border: '1.5px solid var(--line)', boxShadow: '0 2px 8px rgba(15,42,74,.04)' }}>
     <style>{`
@@ -414,7 +461,7 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
   }, [cacheKey, refreshFeed]);
 
   useEffect(() => {
-    if (!cacheKey || !feedPosts.length) return;
+    if (!cacheKey) return;
     try {
       localStorage.setItem(cacheKey, JSON.stringify({
         posts: feedPosts,
@@ -462,22 +509,30 @@ export default function FeedClient({ posts, likedIds, userId, profile, loadError
     if (!navigator.onLine) { showToast('You are offline. Likes will be available when you reconnect.'); return; }
     const wasLiked = liked.has(postId);
     const delta = wasLiked ? -1 : 1;
-    setLiked(current => { const next = new Set(current); if (wasLiked) next.delete(postId); else next.add(postId); return next; });
-    setFeedPosts(current => current.map(post => post.id === postId ? { ...post, like_count: Math.max(0, Number(post.like_count || 0) + delta) } : post));
-    const result = await toggleFeedLikeAction({ postId });
-    if (result?.error) {
+    const rollback = () => {
       setLiked(current => { const next = new Set(current); if (wasLiked) next.add(postId); else next.delete(postId); return next; });
       setFeedPosts(current => current.map(post => post.id === postId ? { ...post, like_count: Math.max(0, Number(post.like_count || 0) - delta) } : post));
-      showToast(result.error);
+    };
+    setLiked(current => { const next = new Set(current); if (wasLiked) next.delete(postId); else next.add(postId); return next; });
+    setFeedPosts(current => current.map(post => post.id === postId ? { ...post, like_count: Math.max(0, Number(post.like_count || 0) + delta) } : post));
+    try {
+      const result = await toggleFeedLikeAction({ postId });
+      if (result?.error) { rollback(); showToast(result.error); }
+    } catch {
+      rollback(); showToast('Could not update your like. Check your connection and try again.');
     }
   }
   async function handleDelete(post) {
     setMenu(null);
     if (!window.confirm('Delete this post? This will also remove its photo and comments.')) return;
-    const result = await deleteFeedPostAction({ postId: post.id });
-    if (result?.error) { showToast(result.error); return; }
-    setFeedPosts(current => current.filter(item => item.id !== post.id));
-    showToast(result?.warning || 'Post deleted');
+    try {
+      const result = await deleteFeedPostAction({ postId: post.id });
+      if (result?.error) { showToast(result.error); return; }
+      setFeedPosts(current => current.filter(item => item.id !== post.id));
+      showToast(result?.warning || 'Post deleted');
+    } catch {
+      showToast('Could not delete this post. Check your connection and try again.');
+    }
   }
   function handleShare(post) { setSharePost(post); }
   function moderate(target) { setModerationMenu(target); }
