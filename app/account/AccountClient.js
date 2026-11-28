@@ -178,7 +178,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
           const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => row.source !== 'health_connect');
           setDashboardMovementDays(safeDays);
           setDashboardWeekSteps(safeWeek);
-          setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === todayKey)?.steps || 0));
+          setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === localDateStr())?.steps || 0));
           setDashboardCachedAt(cached.cachedAt || null);
           setDashboardOffline(!navigator.onLine);
         }
@@ -193,7 +193,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       window.removeEventListener('online', onOnline);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [dashboardCacheKey, refreshDashboard, todayKey]);
+  }, [dashboardCacheKey, refreshDashboard]);
   const [confirmSignOut, setConfirmSignOut] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
