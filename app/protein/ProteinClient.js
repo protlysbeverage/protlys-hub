@@ -37,14 +37,19 @@ export default function ProteinClient({ today, targetG = 120, initialLogs = [], 
     event.preventDefault();
     if (busy) return;
     setBusy(true); setError(''); setNotice('');
-    const result = await logProteinAction({ productId:'custom', productLabel:label, grams });
-    if (result && result.error) setError(result.error);
-    else if (result && result.log) {
-      setLogs(current => [...current, result.log].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at)));
-      setNotice(result.warning || 'Protein added to today’s log.');
-      setLabel('Protein'); setGrams('20'); router.refresh();
+    try {
+      const result = await logProteinAction({ productId:'custom', productLabel:label, grams });
+      if (result && result.error) setError(result.error);
+      else if (result && result.log) {
+        setLogs(current => [...current, result.log].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at)));
+        setNotice(result.warning || 'Protein added to today’s log.');
+        setLabel('Protein'); setGrams('20'); router.refresh();
+      }
+    } catch {
+      setError('Could not add this protein entry. Check your connection and try again.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
   function beginEdit(row) {
     setEditing(row.id); setEditGrams(String(row.grams)); setEditLabel(row.product_label || 'Protein');
@@ -54,24 +59,34 @@ export default function ProteinClient({ today, targetG = 120, initialLogs = [], 
     event.preventDefault();
     if (busy || editing == null) return;
     setBusy(true); setError(''); setNotice('');
-    const result = await updateProteinLogAction({ logId:editing, productLabel:editLabel, grams:editGrams });
-    if (result && result.error) setError(result.error);
-    else {
-      setLogs(current => current.map(row => String(row.id) === String(editing) ? result.log : row));
-      setEditing(null); setNotice('Entry updated.'); router.refresh();
+    try {
+      const result = await updateProteinLogAction({ logId:editing, productLabel:editLabel, grams:editGrams });
+      if (result && result.error) setError(result.error);
+      else if (result?.log) {
+        setLogs(current => current.map(row => String(row.id) === String(editing) ? result.log : row));
+        setEditing(null); setNotice('Entry updated.'); router.refresh();
+      } else setError('The updated entry could not be confirmed. Refresh and try again.');
+    } catch {
+      setError('Could not update this protein entry. Check your connection and try again.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
   async function removeLog(row) {
     if (busy || !window.confirm('Delete this protein entry?')) return;
     setBusy(true); setError(''); setNotice('');
-    const result = await deleteProteinLogAction({ logId:row.id });
-    if (result && result.error) setError(result.error);
-    else {
-      setLogs(current => current.filter(item => String(item.id) !== String(row.id)));
-      setNotice('Entry deleted.'); router.refresh();
+    try {
+      const result = await deleteProteinLogAction({ logId:row.id });
+      if (result && result.error) setError(result.error);
+      else {
+        setLogs(current => current.filter(item => String(item.id) !== String(row.id)));
+        setNotice('Entry deleted.'); router.refresh();
+      }
+    } catch {
+      setError('Could not delete this protein entry. Check your connection and try again.');
+    } finally {
+      setBusy(false);
     }
-    setBusy(false);
   }
 
   return <div className="screen-pad" style={{maxWidth:620,margin:'0 auto',paddingTop:24,paddingBottom:24}}>
