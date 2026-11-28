@@ -1,14 +1,3 @@
-drop policy if exists "protein_logs owner update" on public.protein_logs;
-create policy "protein_logs owner update"
-on public.protein_logs for update to authenticated
-using ((select auth.uid()) = user_id)
-with check ((select auth.uid()) = user_id);
-
-drop policy if exists "protein_logs owner delete" on public.protein_logs;
-create policy "protein_logs owner delete"
-on public.protein_logs for delete to authenticated
-using ((select auth.uid()) = user_id);
-
 drop policy if exists "steps: owner update" on public.daily_steps;
 create policy "steps: owner update"
 on public.daily_steps for update to authenticated
