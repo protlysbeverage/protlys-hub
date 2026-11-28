@@ -8,6 +8,11 @@ export default async function ChallengesPage({ searchParams }) {
   const inviteToken = typeof params?.invite === 'string' ? params.invite : '';
   const challengeId = typeof params?.challenge === 'string' ? params.challenge : '';
   const joinCode = typeof params?.join === 'string' ? params.join : '';
+  if (challengeId) {
+    const invitePath = '/hub/challenges?challenge=' + encodeURIComponent(challengeId) + (inviteToken ? '&invite=' + encodeURIComponent(inviteToken) : '');
+    const { redirect } = await import('next/navigation');
+    redirect(invitePath);
+  }
   const supabase = await createClient();
   const { data:{user} } = await supabase.auth.getUser();
   if (!user && joinCode) {
@@ -55,7 +60,7 @@ export default async function ChallengesPage({ searchParams }) {
   const [{ data: members }, { data: counts }, { data: previewRows }, { data: groupMemberRows }] = await Promise.all([
     ids.length ? supabase.from('challenge_members').select('challenge_id').eq('user_id', user.id).in('challenge_id', ids) : Promise.resolve({ data: [] }),
     ids.length ? supabase.rpc('challenge_member_counts', { p_challenge_ids: ids }) : Promise.resolve({ data: [] }),
-    ids.length ? supabase.from('challenge_members').select('challenge_id,user_id,joined_at').in('challenge_id', ids).order('joined_at', { ascending: true }).limit(30) : Promise.resolve({ data: [] }),
+    ids.length ? supabase.rpc('challenge_member_previews', { p_challenge_ids:ids, p_limit_per_challenge:5 }) : Promise.resolve({ data: [] }),
     groupIds.length ? supabase.from('group_members').select('group_id,user_id,role,joined_at,last_read_at').in('group_id', groupIds).order('joined_at', { ascending: true }) : Promise.resolve({ data: [] }),
   ]);
 
