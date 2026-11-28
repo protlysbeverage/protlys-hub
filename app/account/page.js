@@ -19,13 +19,14 @@ export default async function AccountPage({ searchParams }) {
   const supabase = await createClient();
   const { data:{ user } } = await supabase.auth.getUser();
   if (!user) redirect('/login');
+  await supabase.rpc('ensure_founding_250_group_member');
 
   const today = nairobiDate();
   const [{ data:profile }, { data:targetHistory }, { data:proteinRows }, { data:foundingGroup }] = await Promise.all([
     supabase.from('profiles').select('id,display_name,avatar_url,created_at,streak,target_g,step_streak,total_steps,step_goal,onboarding_complete').eq('id',user.id).single(),
     supabase.from('protein_target_history').select('target_g,effective_from,source').eq('user_id',user.id).order('effective_from',{ascending:true}).order('created_at',{ascending:true}),
     supabase.from('protein_logs').select('grams').eq('user_id',user.id).eq('log_date',today),
-    supabase.from('groups').select('id').eq('name','Founding 250').maybeSingle(),
+    supabase.from('groups').select('id').eq('name','Founding 250').eq('is_system',true).maybeSingle(),
   ]);
 
   let foundingMember = false;
