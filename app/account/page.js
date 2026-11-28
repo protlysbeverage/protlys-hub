@@ -27,7 +27,9 @@ export default async function AccountPage({ searchParams }) {
     const { data:membership } = await supabase.from('group_members').select('group_id').eq('group_id',foundingGroup.id).eq('user_id',user.id).maybeSingle();
     foundingMember = Boolean(membership);
   }
-  const firstName = profile?.display_name?.trim().split(/\s+/)[0] || 'there';
+  const metadata = user.user_metadata || {};
+  const greetingName = [metadata.full_name, metadata.name, metadata.given_name, metadata.first_name, profile?.display_name]
+    .find(value => typeof value === 'string' && value.trim().length > 1)?.trim() || 'there';
 
   return <AppShell>
     {showWelcome && <FirstVisitDashboard name={firstName} targetG={profile?.target_g}/>}
@@ -35,7 +37,7 @@ export default async function AccountPage({ searchParams }) {
       <div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div>
       <ProteinTargetCard targetG={profile?.target_g}/>
       <div className="screen-pad" style={{paddingTop:0,paddingBottom:0}}><TargetHistory rows={targetHistory||[]}/></div>
-      <AccountClient profile={profile||{}} todaySteps={0} weekSteps={[]} movementDays={[]} email={user.email} foundingMember={foundingMember}/>
+      <AccountClient profile={profile||{}} greetingName={greetingName} todaySteps={0} weekSteps={[]} movementDays={[]} email={user.email} foundingMember={foundingMember}/>
     </div>
   </AppShell>;
 }
