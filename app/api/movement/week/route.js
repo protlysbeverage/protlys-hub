@@ -24,9 +24,11 @@ export async function GET() {
 
   if (error) return NextResponse.json({ error:'Unable to load movement history' }, { status:500 });
 
-  // Health Connect backfill is intentionally not counted in the phone-sensor tracker.
-  const rows = (data || []).map(row => row.source === 'health_connect'
-    ? { ...row, steps:0, source:null, synced_at:null }
-    : { ...row, steps:Number(row.steps || 0) });
+  // Historical Health Connect backfill is retained; today's total must come from the phone sensor.
+  const rows = (data || []).map(row =>
+    row.step_date === today && row.source === 'health_connect'
+      ? { ...row, steps:0, source:null, synced_at:null }
+      : { ...row, steps:Number(row.steps || 0) }
+  );
   return NextResponse.json({ rows }, { headers:{ 'Cache-Control':'private, no-store' } });
 }
