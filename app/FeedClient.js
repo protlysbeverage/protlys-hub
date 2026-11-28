@@ -160,7 +160,7 @@ function CommentInput({ postId, parentCommentId = null, onDone, compact = false 
     }
   }
   return <div className="profile-comment-input" style={{ marginTop: compact ? 7 : 14, display: 'flex', gap: compact ? 7 : 10, alignItems: 'center' }}>
-    <input ref={ref} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
+    <input ref={ref} maxLength={1000} className="field-input" type="text" placeholder={parentCommentId ? 'Write a reply…' : 'Add a comment…'} style={{ flex: 1, minWidth: 0, padding: compact ? '8px 10px' : '12px 15px', borderRadius: 999, fontSize: compact ? 12 : 14, background: '#fff' }} onKeyDown={e => e.key === 'Enter' && submit()} />
     <button className="btn-secondary" onClick={submit} disabled={loading} style={{ width: 'auto', minWidth: compact ? 62 : 82, padding: compact ? '7px 10px' : '11px 18px', marginTop: 0, fontSize: compact ? 11 : 14 }}>{loading ? 'Posting…' : parentCommentId ? 'Reply' : 'Post'}</button>
     {error && <span style={{ position: 'absolute', marginTop: compact ? 52 : 62, color: '#B3261E', fontSize: 12 }}>{error}</span>}
   </div>;
