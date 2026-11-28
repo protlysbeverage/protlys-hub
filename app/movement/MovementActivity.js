@@ -194,7 +194,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
-        .select('step_date, steps, source, synced_at')
+        .select('step_date, steps, source, synced_at, is_flagged')
         .eq('user_id', userId)
         .gte('step_date', start)
         .lte('step_date', end)
