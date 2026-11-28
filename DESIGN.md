@@ -2,7 +2,7 @@
 
 ## Overview
 
-Protlys Hub is a mobile-first movement and protein-tracking product. The visual language should feel athletic, calm, premium, and distinctly Protlys rather than like a generic SaaS dashboard.
+Protlys Hub is a mobile-first movement, protein-goal and community product. The visual language should feel athletic, calm, premium, and distinctly Protlys rather than like a generic SaaS dashboard.
 
 ## Colors
 
@@ -25,7 +25,8 @@ Protlys Hub is a mobile-first movement and protein-tracking product. The visual 
 ## Layout
 
 - Mobile first.
-- Primary navigation remains five destinations: Feed, Movement, Challenges, Protein, Dashboard.
+- Primary navigation remains five destinations: Feed, Movement, Challenges, Protein calculator, Dashboard.
+- The Protein destination is for calculator and target guidance; protein intake logging is out of scope.
 - Keep navigation in the thumb-reachable bottom zone on mobile.
 - Respect safe-area insets and dynamic viewport height.
 - Prefer one strong primary action per surface.
@@ -38,7 +39,7 @@ Protlys Hub is a mobile-first movement and protein-tracking product. The visual 
 - 3–5 destinations.
 - Icon + visible label.
 - Active state uses Protlys green and a restrained background indicator.
-- Touch targets should remain comfortably tappable.
+- Touch targets should remain comfortably tappable; prefer at least 44×44 CSS px on mobile.
 
 ### Sheets and dialogs
 - On mobile, use a bottom-sheet mental model.
@@ -49,7 +50,7 @@ Protlys Hub is a mobile-first movement and protein-tracking product. The visual 
 ### Buttons
 - Primary CTA: strong filled treatment.
 - Secondary actions: visible border, sufficient contrast, icon + label where space allows.
-- Use visible focus states.
+- Use visible focus states for keyboard and switch-access navigation; never suppress focus without a clear replacement.
 - Disabled state must remain legible.
 - Do not rely on color alone to communicate meaning.
 
@@ -83,6 +84,7 @@ Do not copy another product's visual identity. Borrow interaction patterns and i
 
 - Prefer clarity over novelty.
 - Keep existing approved Protlys layouts intact.
+- Use the project-local UI skills in `.agents/skills/` as review aids, with this file remaining authoritative.
 - Make mobile interactions feel intentional.
 - Reuse components rather than creating parallel variants.
 - Test dark and light themes.
@@ -94,3 +96,17 @@ Do not copy another product's visual identity. Borrow interaction patterns and i
 - Don't replace the Protlys logo with text.
 - Don't introduce a new design language on individual screens.
 - Don't sacrifice export reliability for visual effects.
+- Don't introduce food logging or protein intake logging.
+
+## Interface quality addendum
+
+- Use tabular numerals for live step counts, targets, leaderboard positions, and other changing metrics.
+- Prefer explicit transitions over `transition: all`; keep interactions interruptible and short.
+- Preserve visible focus, keyboard operation, 44×44 px mobile hit areas where controls permit, and a reduced-motion path.
+- Use motion only to communicate a state change or user action. Avoid ambient animation and motion on repeated/high-frequency controls.
+- Keep headings balanced and body copy readable without changing the established font roles.
+- Audit both light and dark themes and narrow Android viewports after shared component or token changes.
+
+## Design skill sources
+
+The project-local skills in `.agents/skills/` are adapted from Moddingflow/better-design, samber/cc-skills, jakubkrehel/make-interfaces-feel-better, and frankxai/awesome-motion-design-agent-skills. Use them selectively; they do not override this design system. See each skill's `UPSTREAM-LICENSE.md` for source license information.
