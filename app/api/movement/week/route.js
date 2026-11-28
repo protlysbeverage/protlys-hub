@@ -16,7 +16,7 @@ export async function GET() {
   const today = nairobiDate(0);
   const weekStart = nairobiDate(-6);
   const { data, error } = await supabase.from('daily_steps')
-    .select('step_date,steps,source,synced_at')
+    .select('step_date,steps,source,synced_at,is_flagged')
     .eq('user_id',user.id)
     .gte('step_date',weekStart)
     .lte('step_date',today)
@@ -25,6 +25,6 @@ export async function GET() {
   if (error) return NextResponse.json({ error:'Unable to load movement history' }, { status:500 });
 
   // Health Connect rows are excluded; Movement uses the phone sensor and other supported historical sources only.
-  const rows = (data || []).filter(row => row.source !== 'health_connect').map(row => ({ ...row, steps:Number(row.steps || 0) }));
+  const rows = (data || []).filter(row => row.source !== 'health_connect' && !row.is_flagged).map(row => ({ ...row, steps:Number(row.steps || 0) }));
   return NextResponse.json({ rows }, { headers:{ 'Cache-Control':'private, no-store' } });
 }
