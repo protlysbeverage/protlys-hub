@@ -194,8 +194,6 @@ export default function AccountClient({ profile, greetingName, achievements = []
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [dashboardCacheKey, refreshDashboard]);
-  const [confirmSignOut, setConfirmSignOut] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   const [memberShareOpen, setMemberShareOpen] = useState(false);
   const [activityOpen, setActivityOpen] = useState(false);
   const [highlightedDay, setHighlightedDay] = useState('');
@@ -298,27 +296,6 @@ export default function AccountClient({ profile, greetingName, achievements = []
       }
       setMessage(error?.message || 'Could not update profile photo.');
     } finally { setUploading(false); }
-  }
-
-  async function handleSignOut() {
-    setSigningOut(true);
-    const supabase = createClient();
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      try { window.ProtlysNative?.clearSyncToken?.(); } catch {}
-      try {
-        if (profile?.id) {
-          localStorage.removeItem('protlys-feed-cache-v1:' + profile.id);
-          localStorage.removeItem('protlys-dashboard-cache-v1:' + profile.id);
-          localStorage.removeItem('protlys_movement_cache_v2_' + profile.id);
-        }
-      } catch {}
-      router.push('/login'); router.refresh();
-    } catch (error) {
-      setMessage(error?.message || 'Could not sign out. Please try again.');
-      setSigningOut(false);
-    }
   }
 
   const links = [
@@ -439,9 +416,6 @@ export default function AccountClient({ profile, greetingName, achievements = []
 
       <div style={{fontWeight:800,fontSize:14,marginBottom:9}}>Your Hub</div>
       <div style={{border:'1.5px solid var(--line)',borderRadius:16,overflow:'hidden',background:'#fff'}}>{links.map((item,index) => <a key={item.label} href={item.href} target={item.external ? '_blank' : undefined} rel={item.external ? 'noopener noreferrer' : undefined} style={{display:'block',textDecoration:'none',borderBottom:index===links.length-1?'none':'1px solid var(--line)'}}><div className="list-row" style={{padding:'15px'}}><div className="left" style={{display:'flex',alignItems:'center',gap:12}}><span style={{color:'var(--green-dark)',display:'flex'}}><Icon name={item.icon}/></span><div><div className="lbl">{item.label}</div><div style={{fontSize:11.5,color:'var(--ink-45)',marginTop:2}}>{item.desc}</div></div></div><svg className="chev" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="m9 18 6-6-6-6"/></svg></div></a>)}</div>
-      <div style={{marginTop:20,textAlign:'center'}}>
-        {!confirmSignOut ? <button type="button" onClick={() => setConfirmSignOut(true)} className="btn-secondary" style={{width:'100%'}}>Sign out</button> : <div><div style={{fontSize:13,fontWeight:800,marginBottom:10}}>Sign out of Protlys Hub?</div><div style={{display:'flex',gap:8}}><button type="button" onClick={() => setConfirmSignOut(false)} className="btn-secondary" style={{flex:1}}>Cancel</button><button type="button" onClick={handleSignOut} disabled={signingOut} className="btn-primary" style={{flex:1}}>{signingOut?'Signing out…':'Sign out'}</button></div></div>}
-      </div>
       <div style={{marginTop:10,textAlign:'center'}}><BuildStamp /></div>
     </div>
     <MemberShareSheet open={memberShareOpen} onClose={()=>setMemberShareOpen(false)} profileId={profile?.id} displayName={name} avatarUrl={avatarUrl || ''} joinedAt={profile?.created_at ? new Intl.DateTimeFormat('en-GB',{timeZone:'Africa/Nairobi',day:'numeric',month:'short',year:'numeric'}).format(new Date(profile.created_at)) : ''} founding={Boolean(foundingMember)} activeDays={movementHistory.slice(-14).map(row=>({key:row.key,steps:row.steps,logged:row.steps>0}))} totalSteps={totalSteps} currentStreak={Number(profile?.step_streak||0)} bestStreak={longestMovementStreak}/>
