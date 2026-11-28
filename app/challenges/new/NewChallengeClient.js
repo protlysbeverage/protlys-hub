@@ -12,7 +12,7 @@ const TYPES=[
 ];
 function nairobiDate(offset=0){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((result,part)=>(result[part.type]=part.value,result),{});return new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+offset)).toISOString().slice(0,10)}
 const today=()=>nairobiDate(0);
-const plus7=()=>nairobiDate(7);
+const plus7=()=>nairobiDate(6);
 const dayCount=(a,b)=>Math.floor((new Date(b+'T12:00:00+03:00')-new Date(a+'T12:00:00+03:00'))/86400000)+1;
 
 export default function NewChallengeClient({groupId}){
@@ -30,22 +30,22 @@ export default function NewChallengeClient({groupId}){
  },[groupId,router]);
  useEffect(()=>setTarget(String(spec[4])),[type,spec]);
 
- const valid=name.trim().length>=3&&name.trim().length<=50&&description.length<=200&&/^\d+$/.test(target)&&Number(target)>0&&Number(target)<=spec[5]&&!!start&&!!end&&!dateError;
+ const valid=name.trim().length>=3&&name.trim().length<=50&&description.length<=200&&/^\d+$/.test(target)&&Number(target)>0&&Number(target)<=spec[5]&&!!start&&!!end&&!dateError&&(!groupId||(!groupLoading&&Boolean(group)));
  const setField=(setter)=>(e)=>{setter(e.target.value);setDirty(true)};
  const close=()=>{if(dirty&&!window.confirm('Discard this?'))return;router.replace('/challenges')};
 
  async function submit(e){
   e.preventDefault();if(!valid||busy)return;setBusy(true);setError('');
-  let createdChallengeId=null;const supabase=createClient();
+  let createdChallengeId=null;let creatorId=null;const supabase=createClient();
   try{
-   const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Please sign in again.');
+   const {data:{user}}=await supabase.auth.getUser();if(!user)throw new Error('Please sign in again.');creatorId=user.id;
    const {data:c,error:e1}=await supabase.from('challenges').insert({creator_id:user.id,name:name.trim(),description:description.trim()||null,challenge_type:type,target:Number(target),scoring_mode:score,step_target:type==='steps'?Number(target):0,start_date:start,end_date:end,visibility:groupId?'private':visibility,allow_teams:teams,group_id:groupId||null}).select('id').single();
    if(e1)throw e1;createdChallengeId=c.id;
    const m=await supabase.from('challenge_members').insert({challenge_id:c.id,user_id:user.id});if(m.error)throw m.error;
    setDirty(false);try{sessionStorage.setItem('protlys-toast','Challenge created')}catch{}router.replace('/challenges');router.refresh();
   }catch(err){
    let rollbackMessage='';
-   if(createdChallengeId){const {error:rollbackError}=await supabase.from('challenges').delete().eq('id',createdChallengeId).eq('creator_id',user?.id);if(rollbackError)rollbackMessage=' The challenge may have been created, but its membership could not be completed or rolled back. Please contact support.'}
+   if(createdChallengeId){const {error:rollbackError}=await supabase.from('challenges').delete().eq('id',createdChallengeId).eq('creator_id',creatorId);if(rollbackError)rollbackMessage=' The challenge may have been created, but its membership could not be completed or rolled back. Please contact support.'}
    setError((err?.message||'We could not create that challenge. Please try again.')+rollbackMessage);setBusy(false);
   }
  }
