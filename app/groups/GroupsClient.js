@@ -34,7 +34,7 @@ export default function GroupsClient({ initialGroups = [] }) {
     <h1 style={{fontSize:26,marginTop:5}}>Your community</h1>
     <p className="subhead">Everyone starts together in the Protlys founding community.</p>
 
-    <section className="hub-card" style={{marginTop:16,padding:18,cursor:group?'pointer':'default'}} onClick={function(){ if(group) window.location.href='/movement?tab=leaderboard'; }}>
+    <section className="hub-card" style={{marginTop:16,padding:18,cursor:group?'pointer':'default'}} onClick={function(){ if(group) window.location.href='/leaderboard'; }}>
       {loading ? <div style={{display:'grid',gap:10}}><div style={{height:16,width:'45%',borderRadius:999,background:'var(--green-soft)'}}/><div style={{height:12,width:'70%',borderRadius:999,background:'var(--green-soft)'}}/></div> :
       group ? <div style={{display:'flex',alignItems:'center',gap:14}}>
         <div style={{width:52,height:52,borderRadius:'50%',display:'grid',placeItems:'center',background:'var(--green-soft)',color:'var(--green-dark)',fontWeight:900,fontSize:15,flex:'0 0 52px'}}>{initials(group.name)}</div>
