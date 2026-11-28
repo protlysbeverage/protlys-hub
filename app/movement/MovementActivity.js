@@ -52,7 +52,7 @@ function monthRange(date) {
 function buildMonthCache(rows = []) {
   const cache = {};
   for (const row of rows) {
-    if (row?.source === 'health_connect') continue;
+    if (row?.source === 'health_connect' || row?.is_flagged) continue;
     const key = String(row?.step_date || '').slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(key)) continue;
     if (!cache[key]) cache[key] = [];
@@ -125,7 +125,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
   const sheetDragRaf = useRef(0);
   const sheetTouchStart = useRef(null);
 
-  const sensorDays = useMemo(() => days.filter(d => d.source !== 'health_connect'), [days]);
+  const sensorDays = useMemo(() => days.filter(d => d.source !== 'health_connect' && !d.is_flagged), [days]);
   const byDate = useMemo(() => new Map(sensorDays.map(d => [d.step_date, Number(d.steps || 0)])), [sensorDays]);
   const movementKeys = useMemo(() => sensorDays.filter(d => Number(d.steps || 0) > 0).map(d => d.step_date), [sensorDays]);
   const recentStreaks = useMemo(() => streaks(movementKeys), [movementKeys]);
@@ -202,7 +202,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       if (cancelled) return;
       if (!error) {
         const todayKey = localDateKey(new Date());
-        const incoming = (data || []).filter(row => row.source !== 'health_connect');
+        const incoming = (data || []).filter(row => row.source !== 'health_connect' && !row.is_flagged);
         setMonthCache(prev => {
           const existing = prev[currentMonthKey] || [];
           const merged = new Map(existing.map(row => [row.step_date, row]));
