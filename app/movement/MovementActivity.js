@@ -56,7 +56,7 @@ function buildMonthCache(rows = []) {
     const key = String(row?.step_date || '').slice(0, 7);
     if (!/^\d{4}-\d{2}$/.test(key)) continue;
     if (!cache[key]) cache[key] = [];
-    cache[key].push(row.step_date === todayKey && row.source === 'health_connect'
+    cache[key].push((row.step_date === todayKey && row.source === 'health_connect') || row.is_flagged
       ? { ...row, steps:0, source:null, synced_at:null }
       : row);
   }
@@ -196,7 +196,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       const supabase = createClient();
       const { data, error } = await supabase
         .from('daily_steps')
-        .select('step_date, steps, source, synced_at')
+        .select('step_date, steps, source, synced_at, is_flagged')
         .eq('user_id', userId)
         .gte('step_date', start)
         .lte('step_date', end)
@@ -204,7 +204,7 @@ export default function MovementActivity({ days = [], compact = false, title = '
       if (cancelled) return;
       if (!error) {
         const todayKey = localDateKey(new Date());
-        const incoming = (data || []).map(row => row.step_date === todayKey && row.source === 'health_connect' ? { ...row, steps:0, source:null, synced_at:null } : row);
+        const incoming = (data || []).map(row => (row.step_date === todayKey && row.source === 'health_connect') || row.is_flagged ? { ...row, steps:0, source:null, synced_at:null } : row);
         setMonthCache(prev => {
           const existing = prev[currentMonthKey] || [];
           const merged = new Map(existing.map(row => [row.step_date, row]));
