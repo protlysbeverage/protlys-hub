@@ -237,6 +237,8 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
 
     const foreground = () => {
       if (document.visibilityState !== 'visible') return;
+      weekLoadedRef.current = false;
+      loadWeekOnce();
       scheduleRefresh(5000);
       if (intervalRef.current) window.clearInterval(intervalRef.current);
       intervalRef.current = window.setInterval(() => {
@@ -264,7 +266,7 @@ export default function MovementClient({ userId = null, currentGoal = 7500 }) {
       window.removeEventListener('offline', onOffline);
       window.removeEventListener('online', onOnline);
     };
-  }, [cacheKey, todayKey, userId, scheduleRefresh]);
+  }, [cacheKey, todayKey, userId, scheduleRefresh, loadWeekOnce]);
 
   useEffect(() => {
     if (!userId || !ready || weekLoadedRef.current) return;
