@@ -11,6 +11,12 @@ function nairobiDate(offset=0) {
     .formatToParts(new Date()).reduce((result, part) => (result[part.type]=part.value,result), {});
   return new Date(Date.UTC(Number(parts.year), Number(parts.month)-1, Number(parts.day)+offset)).toISOString().slice(0,10);
 }
+function weekDates() {
+  const weekday = new Intl.DateTimeFormat('en-US', { timeZone:'Africa/Nairobi', weekday:'short' }).format(new Date());
+  const offsets = { Mon:0, Tue:1, Wed:2, Thu:3, Fri:4, Sat:5, Sun:6 };
+  const mondayOffset = -(offsets[weekday] ?? 0);
+  return Array.from({length:7}, (_, index) => nairobiDate(mondayOffset + index));
+}
 
 export default async function ProteinPage() {
   const supabase = await createClient();
@@ -18,7 +24,8 @@ export default async function ProteinPage() {
   if (!user) redirect('/login?next=/protein');
 
   const today = nairobiDate(0);
-  const start = nairobiDate(-6);
+  const dates = weekDates();
+  const start = dates[0];
   const [{ data:profile }, { data:logs }, { data:weekLogs }, { data:history }] = await Promise.all([
     supabase.from('profiles').select('target_g').eq('id', user.id).maybeSingle(),
     supabase.from('protein_logs').select('id,product_id,product_label,grams,log_date,logged_at').eq('user_id',user.id).eq('log_date',today).order('logged_at',{ascending:true}),
@@ -27,8 +34,7 @@ export default async function ProteinPage() {
   ]);
 
   const target = Number(profile?.target_g) || 120;
-  const weekDays = Array.from({length:7},(_,index)=>{
-    const date = nairobiDate(index-6);
+  const weekDays = dates.map(date=>{
     const grams = (weekLogs||[]).filter(row=>row.log_date===date).reduce((sum,row)=>sum+Number(row.grams||0),0);
     const matches = (history||[]).filter(row=>row.effective_from<=date);
     const dayTarget = Number(matches[matches.length-1]?.target_g) || target;
