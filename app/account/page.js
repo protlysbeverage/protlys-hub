@@ -28,11 +28,19 @@ export default async function AccountPage({ searchParams }) {
     foundingMember = Boolean(membership);
   }
   const metadata = user.user_metadata || {};
-  const greetingName = [metadata.full_name, metadata.name, metadata.given_name, metadata.first_name, profile?.display_name]
-    .find(value => typeof value === 'string' && value.trim().length > 1)?.trim() || 'there';
+  // Auth metadata is the authoritative source for the member's chosen first/full name.
+  // profile.display_name can be a handle or initials (for example, "H I M").
+  const greetingName = [
+    metadata.full_name,
+    metadata.name,
+    metadata.given_name,
+    metadata.first_name,
+    metadata.display_name,
+    profile?.display_name,
+  ].find(value => typeof value === 'string' && value.trim().length > 1)?.trim() || 'there';
 
   return <AppShell>
-    {showWelcome && <FirstVisitDashboard name={firstName} targetG={profile?.target_g}/>}
+    {showWelcome && <FirstVisitDashboard name={greetingName} targetG={profile?.target_g}/>}
     <div className="account-screen-content">
       <div className="screen-pad" style={{paddingBottom:0,display:'flex',justifyContent:'flex-end'}}><a href="/settings" className="link-btn" style={{textDecoration:'none'}}>Settings →</a></div>
       <ProteinTargetCard targetG={profile?.target_g}/>
