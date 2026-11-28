@@ -5,7 +5,6 @@ import {createClient} from '@/lib/supabase/client';
 
 const TYPES=[
  ['steps','Steps','Total steps walked','steps',10000,1000000,'👣',[10000,30000,70000,100000]],
- ['protein','Protein','Grams logged','g',100,10000,'🥛',[50,100,150]],
  ['movement_days','Movement days','Days you moved','days',5,90,'🏃',[3,5,7]],
  ['stillness','Stillness','Minutes of sessions','min',30,10000,'🧘',[10,30,60]],
  ['distance','Distance','Estimated km','km',5,10000,'📍',[5,10,25]]
