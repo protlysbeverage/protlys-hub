@@ -135,7 +135,7 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
         .limit(365);
       if (error) throw error;
 
-      const rows = (data || []).filter(row => row.source !== 'health_connect');
+      const rows = data || [];
       const weekAgoDate = new Date(today + 'T12:00:00+03:00');
       weekAgoDate.setUTCDate(weekAgoDate.getUTCDate() - 6);
       const weekAgo = localDateStr(weekAgoDate);
@@ -174,8 +174,8 @@ export default function AccountClient({ profile, achievements = [], todaySteps =
       if (raw) {
         const cached = JSON.parse(raw);
         if (Array.isArray(cached.movementDays)) {
-          const safeDays = cached.movementDays.filter(row => row.source !== 'health_connect');
-          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => row.source !== 'health_connect');
+          const safeDays = cached.movementDays;
+          const safeWeek = (Array.isArray(cached.weekSteps) ? cached.weekSteps : []).filter(row => !(row.step_date === localDateStr() && row.source === 'health_connect'));
           setDashboardMovementDays(safeDays);
           setDashboardWeekSteps(safeWeek);
           setDashboardTodaySteps(Number(safeWeek.find(row => row.step_date === localDateStr())?.steps || 0));
