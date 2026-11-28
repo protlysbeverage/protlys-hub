@@ -5,8 +5,8 @@ import {createClient} from '@/lib/supabase/client';
 
 const TYPES=[
  ['steps','Steps','Total steps walked','steps',10000,1000000,'👣',[10000,30000,70000,100000]],
- ['movement_days','Movement days','Days you moved','days',5,90,'🏃',[3,5,7]],
- ['stillness','Stillness','Minutes of sessions','min',30,10000,'🧘',[10,30,60]],
+ ['movement_days','Movement days','Days you moved','days',3,90,'🏃',[3,5,7]],
+ ['stillness','Stillness','Minutes of sessions','min',10,10000,'🧘',[10,30,60]],
  ['distance','Distance','Estimated km','km',5,10000,'📍',[5,10,25]]
 ];
 function nairobiDate(offset=0){const parts=new Intl.DateTimeFormat('en-US',{timeZone:'Africa/Nairobi',year:'numeric',month:'2-digit',day:'2-digit'}).formatToParts(new Date()).reduce((result,part)=>(result[part.type]=part.value,result),{});return new Date(Date.UTC(Number(parts.year),Number(parts.month)-1,Number(parts.day)+offset)).toISOString().slice(0,10)}
@@ -76,7 +76,7 @@ export default function NewChallengeClient({groupId}){
 
     <div className="fullscreen-section-label">HOW IS IT SCORED?</div>
     <div className="fullscreen-segmented">{[['total','Total over challenge'],['days_hit','Days you hit it']].map(([v,label])=><button key={v} type="button" className={score===v?'active':''} onClick={()=>{setScore(v);setDirty(true)}}>{label}</button>)}</div>
-    <p className="segmented-help">{score==='total'?"Everyone's steps add up across the dates.":"A day counts when you reach the target."}</p>
+    <p className="segmented-help">{score==='total'?(type==='steps'?"Everyone's steps add up across the dates.":type==='distance'?"Estimated distance adds up across the dates.":type==='stillness'?"Completed Stillness minutes add up across the dates.":"Each day with recorded movement adds one to the total."):"A day counts when you reach the daily target."}</p>
 
     <div className="fullscreen-section-label">DATES</div>
     <div className="date-grid">
