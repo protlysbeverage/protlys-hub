@@ -41,7 +41,7 @@ export default function ProteinClient({ today, targetG = 120, initialLogs = [], 
     if (result && result.error) setError(result.error);
     else if (result && result.log) {
       setLogs(current => [...current, result.log].sort((a,b) => new Date(a.logged_at) - new Date(b.logged_at)));
-      setNotice('Protein added to today’s log.');
+      setNotice(result.warning || 'Protein added to today’s log.');
       setLabel('Protein'); setGrams('20'); router.refresh();
     }
     setBusy(false);
