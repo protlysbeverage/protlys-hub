@@ -95,7 +95,7 @@ Deno.serve(async (req) => {
   for (const row of days) {
     const date = String(row?.date || "");
     if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || date < minimumDate || date > today) continue;
-    // Health Connect is historical backfill only; today's total always comes from the phone sensor.
+    // Normalize and clamp phone-sensor input before writing daily totals.
     const rawSteps = Number(row?.steps ?? 0);
     if (!Number.isFinite(rawSteps)) continue;
     const steps = Math.max(0, Math.min(60000, Math.floor(rawSteps)));
